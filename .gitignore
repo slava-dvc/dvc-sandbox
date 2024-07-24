@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# IDE's
+.idea
+.vscode
+.kdev4
+http-client.private.env.json
+
+# Unit test / coverage reports
+junit.xml
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
+.env
+.venv
