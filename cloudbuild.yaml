@@ -1,0 +1,24 @@
+# GitHub Actions are responsible for the CI: tests, linter, whatever other checks
+# Google cloud build is CD: deployment and cloud configuration
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+steps:
+
+# Build the container image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'us.gcr.io/$PROJECT_ID/synapse:$SHORT_SHA', '-t', 'us.gcr.io/$PROJECT_ID/synapse:latest', '.']
+
+# Push the container image to Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '-a', 'us.gcr.io/$PROJECT_ID/synapse']
+
+## Deploy container image to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args: ['run', 'deploy', 'synapse', '--image', 'us.gcr.io/$PROJECT_ID/synapse:$SHORT_SHA', '--region', '$_REGION' ]
+images:
+- us.gcr.io/$PROJECT_ID/synapse
+
+substitutions:
+  _REGION: 'us-central1'

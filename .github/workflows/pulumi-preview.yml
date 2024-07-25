@@ -1,0 +1,63 @@
+name: Pulumi Infra Diff Preview
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/pulumi-preview.yml'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+env:
+  SERVICE_ACCOUNT: '${{secrets.SERVICE_ACCOUNT}}'
+  GOOGLE_CLOUD_PROJECT: '${{vars.GOOGLE_CLOUD_PROJECT}}'
+  GOOGLE_CLOUD_REGION: '${{vars.GOOGLE_CLOUD_REGION}}'
+
+jobs:
+  infra_diff_preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cloud SDK Auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{secrets.SERVICE_ACCOUNT}}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Set up Pulumi Binary and Configure
+        shell: bash
+        run : | 
+          curl -fsSL https://get.pulumi.com | sh
+          make pulumi-configure
+
+      - name: Pulumi Preview
+        id: pulumi-preview
+        run: |
+          cd infrastructure
+          pulumi preview --non-interactive 
+          pulumi preview --diff --non-interactive --stack prod 2>&1 | tee preview.txt
+
+      - name: Comment PR
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const fs = require('fs');
+            const preview = fs.readFileSync('infrastructure/preview.txt', 'utf8');
+            const truncatedPreview = preview.length > 65000 
+              ? preview.substr(0, 65000) + "\n\n... (truncated)" 
+              : preview;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Pulumi Preview\n```\n' + truncatedPreview + '\n```'
+            })

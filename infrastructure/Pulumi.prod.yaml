@@ -1,0 +1,5 @@
+secretsprovider: gcpkms://projects/vcmate/locations/us-central1/keyRings/pulumi-secrets/cryptoKeys/pulumi-secrets-key
+encryptedkey: CiQAXMMhS3eziX1BvPeefpRNT26QMFI0Yt+plJT/20oVaoGpkTcSSQA0rw7prlTSx+9K58FzzwQ1MPhFjCMDZItxLoEzeYwUocSBmudC/ye/hh7YGK4tC8vvNA8xHE5x1To2NGbD2h0rJy19CbvlK2A=
+config:
+  gcp:project: "vcmate"
+  gcp:region: us-central1

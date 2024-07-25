@@ -1,0 +1,12 @@
+name: vcmate
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: .venv
+description: Synapse VcMate Backend
+config:
+  gcp:project: vcmate
+  pulumi:tags:
+    value:
+      pulumi:template: gcp-python
