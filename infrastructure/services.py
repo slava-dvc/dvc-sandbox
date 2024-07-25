@@ -12,7 +12,7 @@ vcmate_synapse = gcp.cloudrunv2.Service(
     template={
         "containers":  [
             {
-                "image": f"us.gcr.io/{PROJECT_ID}/docker/synapse:latest",
+                "image": f"us.gcr.io/{PROJECT_ID}/synapse:latest",
                 "resources": {
                     "limits": {
                         "cpu": "1",

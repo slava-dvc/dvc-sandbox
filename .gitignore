@@ -27,3 +27,6 @@ htmlcov/
 .env
 .venv
 venv
+
+# Temp files
+infrastructure/preview.txt

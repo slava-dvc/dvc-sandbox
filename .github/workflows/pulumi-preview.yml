@@ -13,6 +13,7 @@ permissions:
 
 env:
   SERVICE_ACCOUNT: '${{secrets.SERVICE_ACCOUNT}}'
+  PULUMI_CONFIG_PASSPHRASE: '${{secrets.PULUMI_CONFIG_PASSPHRASE}}'
   GOOGLE_CLOUD_PROJECT: '${{vars.GOOGLE_CLOUD_PROJECT}}'
   GOOGLE_CLOUD_REGION: '${{vars.GOOGLE_CLOUD_REGION}}'
 
@@ -31,18 +32,9 @@ jobs:
       - name: Set up Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: Set up Pulumi Binary and Configure
+      - name: Set up Pulumi Binary and Make diff
         shell: bash
-        run : | 
-          curl -fsSL https://get.pulumi.com | sh
-          make pulumi-configure
-
-      - name: Pulumi Preview
-        id: pulumi-preview
-        run: |
-          cd infrastructure
-          pulumi preview --non-interactive 
-          pulumi preview --diff --non-interactive --stack prod 2>&1 | tee preview.txt
+        run : make install-infra-tool configure-infra-tool infra-diff
 
       - name: Comment PR
         uses: actions/github-script@v6
