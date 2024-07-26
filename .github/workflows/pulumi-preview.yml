@@ -1,4 +1,4 @@
-name: Pulumi Infra Diff Preview
+name: Infra Diff
 
 on:
   workflow_dispatch:
@@ -19,6 +19,7 @@ env:
 
 jobs:
   infra_diff_preview:
+    name: Preview
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
