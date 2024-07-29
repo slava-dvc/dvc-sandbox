@@ -1,10 +1,12 @@
 import logging
+from contextlib import asynccontextmanager
 
 import uvicorn
 from functools import cached_property
+from fastapi import FastAPI
 
 from .async_server import AsyncServer
-from fastapi import FastAPI, Depends
+from ..middleware import RequestTimeoutMiddleware
 
 
 __all__ = ['FastAPIServer']
@@ -12,26 +14,24 @@ __all__ = ['FastAPIServer']
 
 class FastAPIServer(AsyncServer):
 
+    @asynccontextmanager
+    async def lifespan(self, app: FastAPI):
+        yield
+
     @cached_property
     def app(self):
         app = FastAPI(
+            dependencies=self.dependencies,
             debug=self.args['debug'],
-            dependencies=self.dependencies(),
+            lifespan=self.lifespan
         )
-
+        app.add_middleware(RequestTimeoutMiddleware, timeout=60)
         self.setup_app(app)
         return app
 
-    def health_check(self):
-        return True
-
+    @property
     def dependencies(self):
-        return [
-            Depends(lambda: self.config),
-            Depends(lambda: self.firestore_client),
-            Depends(lambda: self.logging_client),
-            Depends(lambda: self)
-        ]
+        return []
 
     def setup_app(self, app: FastAPI):
         pass

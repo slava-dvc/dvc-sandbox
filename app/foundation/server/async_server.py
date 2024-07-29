@@ -44,7 +44,6 @@ class AsyncServer(metaclass=abc.ABCMeta):
 
     def __init__(self):
         logging.info('Init %s', self.name)
-        self.logging_client = None
 
     def add_arguments(self, parser: argparse.ArgumentParser):
         '''
@@ -63,6 +62,10 @@ class AsyncServer(metaclass=abc.ABCMeta):
             self._setup_local_logging(self.config['debug'])
 
     @cached_property
+    def logging_client(self):
+        return cloud_logging.Client()
+
+    @cached_property
     def loop(self):
         loop = asyncio.get_event_loop()
         loop.set_default_executor(self.loop_executor)
@@ -72,10 +75,6 @@ class AsyncServer(metaclass=abc.ABCMeta):
     @cached_property
     def loop_executor(self):
         return ThreadPoolExecutor(max_workers=self.config.concurrency or os.cpu_count())
-
-    @cached_property
-    def firestore_client(self):
-        return firestore.AsyncClient()
 
     @cached_property
     def args(self):
@@ -167,7 +166,6 @@ class AsyncServer(metaclass=abc.ABCMeta):
         return 1
 
     def _setup_cloud_logging(self, debug=False):
-        self.logging_client = cloud_logging.Client()
         self.logging_client.get_default_handler()
         self.logging_client.setup_logging(log_level=logging.DEBUG if debug else logging.INFO)
 
