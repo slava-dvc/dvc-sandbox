@@ -14,19 +14,12 @@ router = APIRouter(
 )
 
 
-def get_user_email(
-        user_email=Query(regex="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
-):
-    return user_email
-
-
-@router.post('/sync/deals')
-@router.get('/sync/deals')
+@router.post('/sync/deal')
 async def push_deal(
         data: SyncDealRequest = Body(),
         lifespan_objects: LifespanObjects = Depends(lifespan_objects),
-        user_email: str = Depends(get_user_email)
 ):
+    user_email: str = data.user_email
     api_key, base_id, table_id = None, None, None
 
     if user_email.endswith('@ingainer.pro'):

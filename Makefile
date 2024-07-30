@@ -38,7 +38,7 @@ configure-infra-tool:
 	cd infrastructure && pulumi config set gcp:region ${GOOGLE_CLOUD_REGION}
 
 infra-diff:
-	cd infrastructure && pulumi preview && pulumi preview --diff --non-interactive --refresh 2>&1 > preview.txt
+	cd infrastructure && pulumi preview && pulumi preview --diff --non-interactive 2>&1 > preview.txt
 
 infra-apply:
 	cd infrastructure && pulumi up --yes --skip-preview --refresh
