@@ -63,5 +63,5 @@ class FastAPIServer(AsyncServer):
                 port=self.args['port'],
                 access_log=not self.args['cloud'],
                 log_level=logging.DEBUG if self.args['debug'] else logging.INFO,
-                use_colors=True
+                use_colors=not self.args['cloud']
             )

@@ -37,6 +37,10 @@ vcmate_synapse = gcp.cloudrunv2.Service(
                                 version="latest",
                             ),
                         ),
+                    ),
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
+                        name="CLOUD",
+                        value="1",
                     )
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
@@ -56,10 +60,13 @@ llm_analysis_result_subscription = gcp.pubsub.Subscription(
     name="llm-analysis-result-subscription-sync-deal",
     topic=llm_analysis_result_topic.name,
     push_config=gcp.pubsub.SubscriptionPushConfigArgs(
-        push_endpoint=vcmate_synapse.uri.apply(lambda uri: f"{uri}/v1/integrations/sync/deals"),
+        push_endpoint=vcmate_synapse.uri.apply(lambda uri: f"{uri}/{SYNC_DEALS_PATH}"),
         oidc_token=gcp.pubsub.SubscriptionPushConfigOidcTokenArgs(
             service_account_email=service_account.email,
         ),
+        no_wrapper=gcp.pubsub.SubscriptionPushConfigNoWrapperArgs(
+            write_metadata=True
+        )
     ),
     retry_policy=gcp.pubsub.SubscriptionRetryPolicyArgs(
         minimum_backoff="10s",
