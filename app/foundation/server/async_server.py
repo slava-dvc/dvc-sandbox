@@ -81,7 +81,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         parser = argparse.ArgumentParser(prog=self.name)
         parser.add_argument('-d', '--debug', help='Run in debug mode', default=bool(is_debug()), action='store_true')
         parser.add_argument('-c', '--config', help="Path to config file", default='config.yml')
-        parser.add_argument('-p', '--port', help="Port to listen", default=int(port()))
+        parser.add_argument('-p', '--port', help="Port to listen", default=int(port()), type=int)
         parser.add_argument('--cloud', help="Run in cloud mode", default=bool(is_cloud()), action='store_true')
         parser.add_argument('--dry-run', help='Run in dry-run mode', default=bool(is_test()), action='store_true')
         parser.add_argument('--project-id', help='Google Cloud project ID', default=str(get_env('GOOGLE_CLOUD_PROJECT', '')))
@@ -172,7 +172,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
     def _setup_local_logging(self, debug=False):
         ch = local_logging.StreamHandler()
         ch.setLevel(logging.DEBUG if debug else logging.INFO)
-        ch.setFormatter(logging.Formatter(style='{', fmt='{levelname:5}{lineno:4}:{filename:30}{message}'))
+        ch.setFormatter(logging.Formatter(style='{', fmt='{levelname:8}{lineno:5}:{filename:30}{message}'))
 
         local_logging.root.addHandler(ch)
         local_logging.root.setLevel(logging.DEBUG if debug else logging.INFO)

@@ -1,0 +1,187 @@
+# Happy path
+
+POST {{host}}/v1/integrations/sync/deals?user_email=vladimir@ingainer.pro
+Content-Type: application/json
+
+
+{
+  "startup": {
+    "name": "Claritype",
+    "foundation_year": 2023,
+    "website": "www.claritype.com"
+  },
+  "features": {
+    "Product Type": {
+      "criterion": "Product Type",
+      "value": [
+        "Platform as a Service"
+      ],
+      "source": [
+        {
+          "page": "3",
+          "type": "pitch_deck",
+          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "value": "pitch_deck/page=3"
+        },
+        {
+          "page": "5",
+          "type": "pitch_deck",
+          "quote": "\"We extract meaning as connected Concept models ... in minutes\"",
+          "value": "pitch_deck/page=5"
+        },
+        {
+          "page": "3",
+          "type": "pitch_deck",
+          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "value": "pitch_deck/page=3"
+        },
+        {
+          "page": "7",
+          "type": "pitch_deck",
+          "quote": "\"Our modeling engine can see beyond data format problems to extract concepts – without code\"",
+          "value": "pitch_deck/page=7"
+        }
+      ]
+    },
+    "Customer Type": {
+      "criterion": "Customer Type",
+      "value": [
+        "Business"
+      ],
+      "source": [
+        {
+          "page": "8",
+          "type": "pitch_deck",
+          "quote": "\"Our phase 1 customer: Has no easy way to use AI on structured data, Has a cloud data strategy, Mid-market +\"",
+          "value": "pitch_deck/page=8"
+        },
+        {
+          "page": "16",
+          "type": "pitch_deck",
+          "quote": "\"Professional License: Instant outcomes for a first project, at a credit-card price, for a data professional\"",
+          "value": "pitch_deck/page=16"
+        }
+      ]
+    },
+    "Business Model": {
+      "criterion": "Business Model",
+      "value": "Claritype offers a Platform as a Service for businesses, transforming structured data into AI-usable formats through its Claritype Platform, generating revenue through one-time purchases and subscriptions, and leveraging both direct and indirect distribution channels including partnerships and service integrators.",
+      "source": []
+    },
+    "Problem Statement": {
+      "criterion": "Problem Statement",
+      "value": "LLMs can process extensive text but cannot directly understand or access structured data stored in corporate databases, hindering businesses from leveraging AI to extract insights without extensive data engineering.",
+      "source": [
+        {
+          "page": "2",
+          "type": "pitch_deck",
+          "quote": "\"LLMs can summarize the world of text but they don’t understand structured data\"",
+          "value": "pitch_deck/page=2"
+        },
+        {
+          "page": "3",
+          "type": "pitch_deck",
+          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "value": "pitch_deck/page=3"
+        }
+      ]
+    },
+    "Revenue Model Type": {
+      "criterion": "Revenue Model Type",
+      "value": [
+        "One-time purchase",
+        "Subscription"
+      ],
+      "source": [
+        {
+          "page": "16",
+          "type": "pitch_deck",
+          "quote": "\"Professional License: Instant outcomes for a first project, at a credit-card price, for a data professional\"",
+          "value": "pitch_deck/page=16"
+        },
+        {
+          "page": "16",
+          "type": "pitch_deck",
+          "quote": "\"Collaboration Server: The value of data multiplies with each additional dataset/department. This license allows data exploration by unlimited users and departments\"",
+          "value": "pitch_deck/page=16"
+        }
+      ]
+    },
+    "Solution Statement": {
+      "criterion": "Solution Statement",
+      "value": "Claritype provides a platform that transforms structured data into AI-usable formats, enabling businesses to effortlessly extract answers and insights using AI, particularly LLMs.",
+      "source": [
+        {
+          "page": "2",
+          "type": "pitch_deck",
+          "quote": "\"LLMs can summarize the world of text but they don’t understand structured data\"",
+          "value": "pitch_deck/page=2"
+        },
+        {
+          "page": "3",
+          "type": "pitch_deck",
+          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "value": "pitch_deck/page=3"
+        }
+      ]
+    },
+    "Distribution Strategy": {
+      "criterion": "Distribution Strategy",
+      "value": [
+        "Direct",
+        "Indirect"
+      ],
+      "source": [
+        {
+          "page": "9",
+          "type": "pitch_deck",
+          "quote": "\"We reach Databricks customers through their ISV network, co-selling with their sales team\"",
+          "value": "pitch_deck/page=9"
+        },
+        {
+          "page": "9",
+          "type": "pitch_deck",
+          "quote": "\"Claritype offloads services work to SIs – we also train SI sales teams to add our unique offering to their menu, driving new deals and accelerating their time-to-wow\"",
+          "value": "pitch_deck/page=9"
+        }
+      ]
+    },
+    "Product Structure Type": {
+      "criterion": "Product Structure Type",
+      "value": [
+        "Single product"
+      ],
+      "source": [
+        {
+          "page": "3",
+          "type": "pitch_deck",
+          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "value": "pitch_deck/page=3"
+        },
+        {
+          "page": "5",
+          "type": "pitch_deck",
+          "quote": "\"We extract meaning as connected Concept models ... in minutes\"",
+          "value": "pitch_deck/page=5"
+        },
+        {
+          "page": "3",
+          "type": "pitch_deck",
+          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "value": "pitch_deck/page=3"
+        },
+        {
+          "page": "7",
+          "type": "pitch_deck",
+          "quote": "\"Our modeling engine can see beyond data format problems to extract concepts – without code\"",
+          "value": "pitch_deck/page=7"
+        }
+      ]
+    }
+  },
+  "founders": [
+
+  ],
+  "sources": {
+  }
+}
