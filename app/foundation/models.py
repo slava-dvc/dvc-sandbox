@@ -48,4 +48,10 @@ class DataType(str, Enum):
 class Feature(BaseModel):
     criterion: str
     value: list[str] | str | float | int | bool | None
-    source: list[SourceRef] | None
+    source: list[SourceRef] | None = Field(default_factory=list)
+
+
+class Person(BaseModel):
+    name: str
+    linkedin_url: str | None = None
+    features: dict[str, Feature] | None = Field(default_factory=dict)

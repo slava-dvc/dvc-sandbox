@@ -3,9 +3,8 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Body, Depends, Response
 from .http_models import SyncDealRequest
-from .airtable import AirTableClient, AirSyncAction
-from ..foundation import env
-from ..lifespan_objects import lifespan_objects, LifespanObjects
+from .airtable import push_deal_to_airtable
+from ..shared import dependencies, LifespanObjects
 
 __all__ = ['router']
 
@@ -17,24 +16,25 @@ router = APIRouter(
 @router.post('/sync/deal')
 async def push_deal(
         data: SyncDealRequest = Body(),
-        lifespan_objects: LifespanObjects = Depends(lifespan_objects),
+        workspace: dict = Depends(dependencies.workspace_by_user_email),
+        lifespan_objects: LifespanObjects = Depends(dependencies.lifespan_objects),
 ):
-    user_email: str = data.user_email
-    api_key, base_id, table_id = None, None, None
-
-    if user_email.endswith('@ingainer.pro'):
-        base_id = 'appVRbLTU7hLVGn32'
-        table_id = 'tblwJiW7t4LZJS0fS'
-        api_key = str(env.get_env('AIRTABLE_INGAINER'))
-
-    if not all([api_key, base_id, table_id]):
-        logging.info(f"Integration for {user_email} not found")
+    if not workspace:
         return Response(status_code=HTTPStatus.NO_CONTENT)
-
-    airtable_client = AirTableClient(api_key, base_id, lifespan_objects.http_client)
-    sync_action = AirSyncAction(airtable_client, table_id)
-    success = await sync_action.push(data.startup, data.features)
-    if success:
-        return Response(status_code=HTTPStatus.CREATED)
-    else:
-        return Response(status_code=HTTPStatus.BAD_REQUEST)
+    records_created = 0
+    for integration in workspace.get('integrations', []):
+        if integration.get('type') == 'airtable':
+            records_created += await push_deal_to_airtable(
+                http_client=lifespan_objects.http_client,
+                api_key=integration.get('api_key'),
+                base_id=integration.get('base_id'),
+                deal_table_id=integration.get('deal_table_id'),
+                people_table_id=integration.get('people_table_id'),
+                startup=data.startup,
+                features=data.features,
+                people=data.people,
+            )
+    logging.info(f"Synced {records_created} records to Airtable workspace {workspace.get('domain')}")
+    if not records_created:
+        return Response(status_code=HTTPStatus.NO_CONTENT)
+    return Response(status_code=HTTPStatus.CREATED)

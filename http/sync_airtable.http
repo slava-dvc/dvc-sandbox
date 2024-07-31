@@ -1,153 +1,134 @@
 # Happy path
 
-POST {{host}}/v1/integrations/sync/deals?user_email=vladimir@ingainer.pro
+POST {{host}}/v1/integrations/sync/deal
 Content-Type: application/json
 
-
 {
+  "user_email": "vladimir@ingainer.pro",
   "startup": {
-    "name": "Claritype",
-    "foundation_year": 2023,
-    "website": "www.claritype.com"
+    "name": "Careerflow",
+    "website": "https://careerflow.ai",
+    "foundation_year": "Unknown"
   },
   "features": {
     "Product Type": {
-      "criterion": "Product Type",
       "value": [
-        "Platform as a Service"
+        "Educational Service"
       ],
       "source": [
         {
           "page": "3",
           "type": "pitch_deck",
-          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "quote": "\"Provides contextual actions, insights, and recommendations\"",
           "value": "pitch_deck/page=3"
-        },
-        {
-          "page": "5",
-          "type": "pitch_deck",
-          "quote": "\"We extract meaning as connected Concept models ... in minutes\"",
-          "value": "pitch_deck/page=5"
-        },
-        {
-          "page": "3",
-          "type": "pitch_deck",
-          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
-          "value": "pitch_deck/page=3"
-        },
-        {
-          "page": "7",
-          "type": "pitch_deck",
-          "quote": "\"Our modeling engine can see beyond data format problems to extract concepts – without code\"",
-          "value": "pitch_deck/page=7"
         }
-      ]
+      ],
+      "criterion": "Product Type"
     },
     "Customer Type": {
-      "criterion": "Customer Type",
       "value": [
-        "Business"
+        "Consumer"
       ],
       "source": [
         {
-          "page": "8",
+          "page": "9",
           "type": "pitch_deck",
-          "quote": "\"Our phase 1 customer: Has no easy way to use AI on structured data, Has a cloud data strategy, Mid-market +\"",
-          "value": "pitch_deck/page=8"
+          "quote": "\"There are 63M white-collared workers in the US alone\"",
+          "value": "pitch_deck/page=9"
         },
         {
-          "page": "16",
+          "page": "9",
           "type": "pitch_deck",
-          "quote": "\"Professional License: Instant outcomes for a first project, at a credit-card price, for a data professional\"",
-          "value": "pitch_deck/page=16"
+          "quote": "\"Premium Subscription\"",
+          "value": "pitch_deck/page=9"
         }
-      ]
+      ],
+      "criterion": "Customer Type"
     },
     "Business Model": {
-      "criterion": "Business Model",
-      "value": "Claritype offers a Platform as a Service for businesses, transforming structured data into AI-usable formats through its Claritype Platform, generating revenue through one-time purchases and subscriptions, and leveraging both direct and indirect distribution channels including partnerships and service integrators.",
-      "source": []
+      "value": "Careerflow operates a digital platform, including a Chrome Extension and Web app, aimed at simplifying the job search for individual consumers, primarily white-collared workers in the U.S., generating revenue through premium subscriptions and value-added services, and utilizes a mixed distribution strategy of direct engagement and B2B2C partnerships.",
+      "source": [],
+      "criterion": "Business Model"
     },
     "Problem Statement": {
-      "criterion": "Problem Statement",
-      "value": "LLMs can process extensive text but cannot directly understand or access structured data stored in corporate databases, hindering businesses from leveraging AI to extract insights without extensive data engineering.",
+      "value": "Job searching is one of the most stressful experiences for individuals, as indicated by 73% of people.",
       "source": [
         {
           "page": "2",
           "type": "pitch_deck",
-          "quote": "\"LLMs can summarize the world of text but they don’t understand structured data\"",
+          "quote": "\"73% of people say job search is one of the most stressful things in their lives\"",
           "value": "pitch_deck/page=2"
         },
         {
           "page": "3",
           "type": "pitch_deck",
-          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "quote": "\"Provides contextual actions, insights, and recommendations\"",
           "value": "pitch_deck/page=3"
         }
-      ]
+      ],
+      "criterion": "Problem Statement"
     },
     "Revenue Model Type": {
-      "criterion": "Revenue Model Type",
       "value": [
-        "One-time purchase",
-        "Subscription"
+        "Subscription",
+        "Service fees"
       ],
       "source": [
         {
-          "page": "16",
+          "page": "9",
           "type": "pitch_deck",
-          "quote": "\"Professional License: Instant outcomes for a first project, at a credit-card price, for a data professional\"",
-          "value": "pitch_deck/page=16"
+          "quote": "\"Premium Subscription\"",
+          "value": "pitch_deck/page=9"
         },
         {
-          "page": "16",
+          "page": "9",
           "type": "pitch_deck",
-          "quote": "\"Collaboration Server: The value of data multiplies with each additional dataset/department. This license allows data exploration by unlimited users and departments\"",
-          "value": "pitch_deck/page=16"
+          "quote": "\"Value Added Services\"",
+          "value": "pitch_deck/page=9"
         }
-      ]
+      ],
+      "criterion": "Revenue Model Type"
     },
     "Solution Statement": {
-      "criterion": "Solution Statement",
-      "value": "Claritype provides a platform that transforms structured data into AI-usable formats, enabling businesses to effortlessly extract answers and insights using AI, particularly LLMs.",
+      "value": "Careerflow simplifies the job search process through a digital platform that provides contextual actions, insights, and recommendations.",
       "source": [
         {
           "page": "2",
           "type": "pitch_deck",
-          "quote": "\"LLMs can summarize the world of text but they don’t understand structured data\"",
+          "quote": "\"73% of people say job search is one of the most stressful things in their lives\"",
           "value": "pitch_deck/page=2"
         },
         {
           "page": "3",
           "type": "pitch_deck",
-          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "quote": "\"Provides contextual actions, insights, and recommendations\"",
           "value": "pitch_deck/page=3"
         }
-      ]
+      ],
+      "criterion": "Solution Statement"
     },
     "Distribution Strategy": {
-      "criterion": "Distribution Strategy",
       "value": [
         "Direct",
-        "Indirect"
+        "B2B2C"
       ],
       "source": [
         {
-          "page": "9",
+          "page": "10",
           "type": "pitch_deck",
-          "quote": "\"We reach Databricks customers through their ISV network, co-selling with their sales team\"",
-          "value": "pitch_deck/page=9"
+          "quote": "\"Organic / Content Led (100K+ social media followers)\"",
+          "value": "pitch_deck/page=10"
         },
         {
-          "page": "9",
+          "page": "10",
           "type": "pitch_deck",
-          "quote": "\"Claritype offloads services work to SIs – we also train SI sales teams to add our unique offering to their menu, driving new deals and accelerating their time-to-wow\"",
-          "value": "pitch_deck/page=9"
+          "quote": "\"Privileged access via partnerships\"",
+          "value": "pitch_deck/page=10"
         }
-      ]
+      ],
+      "criterion": "Distribution Strategy"
     },
     "Product Structure Type": {
-      "criterion": "Product Structure Type",
       "value": [
         "Single product"
       ],
@@ -155,33 +136,82 @@ Content-Type: application/json
         {
           "page": "3",
           "type": "pitch_deck",
-          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "quote": "\"Provides contextual actions, insights, and recommendations\"",
           "value": "pitch_deck/page=3"
-        },
-        {
-          "page": "5",
-          "type": "pitch_deck",
-          "quote": "\"We extract meaning as connected Concept models ... in minutes\"",
-          "value": "pitch_deck/page=5"
         },
         {
           "page": "3",
           "type": "pitch_deck",
-          "quote": "\"Claritype bridges the gap between structured corporate data and effortless AI answers for humans\"",
+          "quote": "\"Currently focused on job search\"",
           "value": "pitch_deck/page=3"
         },
         {
-          "page": "7",
+          "page": "3",
           "type": "pitch_deck",
-          "quote": "\"Our modeling engine can see beyond data format problems to extract concepts – without code\"",
-          "value": "pitch_deck/page=7"
+          "quote": "\"Provides contextual actions, insights, and recommendations\"",
+          "value": "pitch_deck/page=3"
+        },
+        {
+          "page": "3",
+          "type": "pitch_deck",
+          "quote": "\"Available as a Chrome Extension + Web app\"",
+          "value": "pitch_deck/page=3"
         }
-      ]
+      ],
+      "criterion": "Product Structure Type"
+    },
+    "Deal Size": {
+      "value": [
+        "Unknown"
+      ],
+      "source": [
+        {
+          "page": "11",
+          "type": "pitch_deck",
+          "quote": "\"We are raising pre-seed.\"",
+          "value": "pitch_deck/page=11"
+        }
+      ],
+      "criterion": "Deal Size"
     }
   },
-  "founders": [
-
+  "people": [
+    {
+      "name": "Nikita Gupta",
+      "linkedin_url": "https://www.linkedin.com/in/guptanikita16",
+      "features": {
+        "Founder Name": {
+          "value": "Nikita Gupta",
+          "source": [],
+          "criterion": "Founder Name"
+        },
+        "founder_role": {
+          "value": "COO",
+          "source": [],
+          "criterion": "founder_role"
+        },
+        "linkedin_url": {
+          "value": "https://www.linkedin.com/in/guptanikita16",
+          "source": [],
+          "criterion": "linkedin_url"
+        },
+        "Repeat Founder": {
+          "value": false,
+          "source": [],
+          "criterion": "Repeat Founder"
+        },
+        "Founder Summary": {
+          "value": "Nikita Gupta is a seasoned COO with a strong background in technical recruitment, having worked with top-tier companies like Uber and Amazon Web Services. She holds a Master's degree in IT in Business Analytics from Singapore Management University and a Bachelor's in Computer Science from Jaypee Institute of Information Technology. As a recognized Career Influencer with a substantial following, Gupta has co-founded Careerflow.ai, which has gained notable media attention and is backed by prestigious accelerators like Techstars. She also possesses certifications in Marketing Foundations from The Trade Desk and SEMrush Site Audit.",
+          "source": [],
+          "criterion": "Founder Summary"
+        },
+        "Strong Education": {
+          "value": false,
+          "source": [],
+          "criterion": "Strong Education"
+        }
+      }
+    }
   ],
-  "sources": {
-  }
+  "sources": {}
 }

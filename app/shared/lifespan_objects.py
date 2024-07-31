@@ -1,7 +1,7 @@
 import httpx
 from google.cloud import firestore
 
-from .foundation.server import AppConfig
+from ..foundation.server import AppConfig
 
 
 __all__ = ['lifespan_objects', 'LifespanObjects']

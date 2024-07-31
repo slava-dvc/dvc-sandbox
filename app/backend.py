@@ -1,9 +1,9 @@
 import sys
 from contextlib import asynccontextmanager
 
-from app.foundation import server
 from fastapi import  FastAPI
-from .lifespan_objects import lifespan_objects
+from .foundation import server
+from .shared import lifespan_objects
 
 
 class BackendServer(server.FastAPIServer):
