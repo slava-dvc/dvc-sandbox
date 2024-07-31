@@ -18,16 +18,16 @@ class SourceType(str, Enum):
 
 
 class Source(BaseModel):
-    type: SourceType
+    type: str | None  # It should be SourceType, but there is not validation at rivet site
     url: str | None
     value: str | None
 
 
 class SourceRef(BaseModel):
-    page: int | None = Field(ge=0)
-    type: SourceType | None
-    quote: str | None
-    value: str | None
+    page: int | None = None
+    type: str | None = None  # It should be SourceType, but there is not validation at rivet site
+    quote: str | None = None
+    value: str | None = None
 
 
 class Value(BaseModel):

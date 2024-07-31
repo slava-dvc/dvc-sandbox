@@ -40,6 +40,7 @@ def handler(signum, frame):
 signal.signal(signal.SIGINT, handler)
 
 
+
 class AsyncServer(metaclass=abc.ABCMeta):
 
     def __init__(self):
@@ -106,20 +107,19 @@ class AsyncServer(metaclass=abc.ABCMeta):
     def get_all_config_values(self) -> list:
         return [cfg for cfg in self.config.values()]
 
-    async def check_update_config(self):
+    def check_update_config(self):
+        # Update config every 60 seconds and check for changes.
+        self.loop.call_later(1, self.check_update_config)
         current_config = self.get_all_config_values()
-        while True:
-            await asyncio.sleep(60)
-            try:
-                self.update_config()
-            except Exception as error:
-                logging.warning(f'An error occurred when updating the config - {error}')
-            else:
-                new_config = self.get_all_config_values()
-                if new_config != current_config:
-                    logging.info('Config file update detected. Stop and close all tasks!')
-                    self.stop()
-                    break
+        try:
+            self.update_config()
+        except Exception as error:
+            logging.warning(f'An error occurred when updating the config - {error}')
+        else:
+            new_config = self.get_all_config_values()
+            if new_config != current_config:
+                logging.info('Config file update detected. Stop and close all tasks!')
+                self.stop()
 
     @property
     def name(self):
@@ -136,12 +136,15 @@ class AsyncServer(metaclass=abc.ABCMeta):
         return False
 
     def check_tasks_and_stop(self):
+        logging.warning("Stop tasks")
         loop = self.loop
         running_tasks = [t.get_coro() for t in asyncio.all_tasks(loop) if self.should_wait_task(t)]
         if running_tasks:
             logging.warning(f"Wait for tasks complete: {running_tasks}")
             loop.call_later(2, self.check_tasks_and_stop)
             return
+        for t in asyncio.all_tasks(loop):
+            t.cancel()
         self.loop.stop()
 
     def run(self) -> int:
@@ -155,9 +158,8 @@ class AsyncServer(metaclass=abc.ABCMeta):
                 logging.info('Dry run of %s complete', self.name)
                 return 0
 
-            self.loop.create_task(self.check_update_config())
+            self.loop.call_later(1, self.check_update_config)
             self.execute()
-
         except KeyboardInterrupt:
             logging.info('Interrupted %s', self.name)
         except Exception as err:

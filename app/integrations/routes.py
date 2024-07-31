@@ -1,8 +1,8 @@
 import logging
 from http import HTTPStatus
 
-from fastapi import APIRouter, Query, Body, Depends, Response
-from .http_models import SyncDealRequest, SyncDealResponse
+from fastapi import APIRouter, Body, Depends, Response
+from .http_models import SyncDealRequest
 from .airtable import AirTableClient, AirSyncAction
 from ..foundation import env
 from ..lifespan_objects import lifespan_objects, LifespanObjects

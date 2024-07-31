@@ -59,7 +59,9 @@ class FastAPIServer(AsyncServer):
         with self.loop_executor:
             uvicorn.run(
                 app=self.app,
+                workers=1,
                 host="0.0.0.0",
+                lifespan="off",
                 port=self.args['port'],
                 access_log=not self.args['cloud'],
                 log_level=logging.DEBUG if self.args['debug'] else logging.INFO,
