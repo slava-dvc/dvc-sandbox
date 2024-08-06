@@ -1,0 +1,61 @@
+people_table:
+  Founder Name:
+    airtable_field: Name
+  linkedin_url:
+    airtable_field: LinkedIn
+  founder_role:
+    airtable_field: Role
+  Repeat Founder:
+    airtable_field: Repeat Founder
+  Founder Summary:
+    airtable_field: Bio
+startup_table:
+  VCMate:
+    value: yes
+    airtable_field: VCMate
+  Status:
+    value: New Company
+    airtable_field: Status
+  name:
+    airtable_field: Company
+  Problem Statement:
+    airtable_field: Problem
+  Solution Statement:
+    airtable_field: Blurb
+  One-Liner:
+    airtable_field: Tagline
+  Industry:
+    airtable_field: Main Industry
+  Product Type:
+    airtable_field: Category
+  website:
+    airtable_field: URL
+  Stage:
+    airtable_field: Company Stage
+    value_mapping:
+      "Seed": "Pre-seed/seed early"
+      "Series A": "Series A"
+      "Series B": "Series B"
+      "Series C": "Series C"
+  Round Goal:
+    airtable_field: Round Size
+  Unknown:
+    airtable_field: Comment/Questions/Reason
+  Deal Size:
+    airtable_field: Deal Size
+  Raised Amount:
+    airtable_field: Raised to date
+  executive_summary:
+    airtable_field: DVC Summary
+  CoInvestors List:
+    airtable_field: Co-Investors (mm)
+  Traction:
+    airtable_field: Traction (for minimemo)
+  foundation_year:
+    airtable_field: YearOfFoundation
+  Revenue Model Type:
+    airtable_field: Revenue Model Type
+  Distribution Strategy:
+    airtable_field: Distribution Strategy
+  Business Model:
+    airtable_field: Business Model Description

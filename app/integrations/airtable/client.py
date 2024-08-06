@@ -1,26 +1,10 @@
 import httpx
 from typing import Dict, Any, List
 from pydantic import BaseModel
+from .models import *
 
+__all__ = ['AirTableClient', 'AirTable', 'AirField']
 
-__all__ = ['AirTableClient', 'Table', 'Field']
-
-
-class Field(BaseModel):
-    id: str
-    type: str
-    name: str
-    description: str | None = None
-    options: Dict[str, Any] | None = None
-
-
-class Table(BaseModel):
-    id: str
-    name: str
-    primaryFieldId: str
-    description: str | None = None
-    fields: List['Field']
-    views: List[Any]
 
 
 class AirTableClient(object):
@@ -63,7 +47,7 @@ class AirTableClient(object):
         response.raise_for_status()
         return response.json()
 
-    async def create_record(self, table_name: str, fields: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_record(self, table_name: str, fields: Dict[str, Any], typecast=True) -> Dict[str, Any]:
         """
         Creates a new record.
 
@@ -75,7 +59,8 @@ class AirTableClient(object):
             The created record.
         """
         url = f"{self.base_url}/{self.base_id}/{table_name}"
-        response = await self.http_client.post(url, headers=self.headers, json={"fields": fields})
+        data = {"fields": fields, "typecast": typecast}
+        response = await self.http_client.post(url, headers=self.headers, json=data)
         response.raise_for_status()
         return response.json()
 
@@ -96,7 +81,7 @@ class AirTableClient(object):
         response.raise_for_status()
         return response.json()
 
-    async def get_base_data(self, **kwargs) -> List[Table]:
+    async def get_base_data(self, **kwargs) -> List[AirTable]:
         """
         Gets the base schema.
 
@@ -110,4 +95,4 @@ class AirTableClient(object):
         response = await self.http_client.get(url, headers=self.headers, params=kwargs)
         response.raise_for_status()
         data = response.json()
-        return [Table(**table) for table in data["tables"]]
+        return [AirTable(**table) for table in data["tables"]]

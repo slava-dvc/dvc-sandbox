@@ -1,7 +1,12 @@
 import asyncio
 import logging
+import typing
+
+import yaml
+
+from pathlib import Path
 from typing import Dict, List
-from .client import AirTableClient, Table
+from .client import AirTableClient, AirTable
 from ...foundation import models
 
 
@@ -13,13 +18,15 @@ class AirSyncAction(object):
     def __init__(
             self,
             airtable_client: AirTableClient,
-            startup_table_id: str,
-            people_table_id: str
+            deal_table_id: str,
+            people_table_id: str,
+            field_mapping_file: str = None
     ):
         self.airtable_client = airtable_client
-        self.startup_table_id = startup_table_id
+        self.deal_table_id = deal_table_id
         self.people_table_id = people_table_id
         self._tables = {}
+        self._mapping_schema = self._load_field_mapping(field_mapping_file)
 
     async def push(
             self,
@@ -53,54 +60,85 @@ class AirSyncAction(object):
             self._push_people(people)
         ))
 
-    async def _update_base_data(self) -> Dict[str, Table]:
+    async def _update_base_data(self) -> Dict[str, AirTable]:
         base_config = await self.airtable_client.get_base_data()
         self._tables = {t.id: t for t in base_config}
 
     async def _push_people(self, people: List[models.Person]) -> int:
         target_table = self._tables.get(self.people_table_id) or None
         if target_table is None:
-            logging.error(f"Table {self.startup_table_id} not found in base {self.airtable_client.base_id}")
+            logging.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
             return False
         records = 0
         for person in people:
+
             data = person.model_dump(exclude='features') | {f: v.value for f, v in person.features.items()}
-            fields = self._prepare_fields(data, target_table)
+            data = self._apply_mapping(data, "people_table")
+            target_table.clear_data().set_data(data)
+            record = target_table.model_dump()
+            fields = record.get('fields') or {}
+            fields = {k: v for k, v in fields.items() if v is not None}
+
             if not fields:
                 continue
+
             await self.airtable_client.create_record(self.people_table_id, fields)
             records += 1
         return records
 
-
     async def _push_startup(self, startup: models.Startup, features: dict[str, models.Feature]) -> int:
-        target_table = self._tables.get(self.startup_table_id) or None
+        target_table: AirTable | None = self._tables.get(self.deal_table_id) or None
         if target_table is None:
-            logging.error(f"Table {self.startup_table_id} not found in base {self.airtable_client.base_id}")
+            logging.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
             return 0
 
         data = startup.model_dump() | {f: v.value for f, v in features.items()}
-
-        fields = self._prepare_fields(data, target_table)
+        mapped_data = self._apply_mapping(data, "startup_table")
+        target_table.clear_data().set_data(mapped_data)
+        record = target_table.model_dump()
+        fields = record.get('fields') or {}
+        fields = {k:v for k, v in fields.items() if v is not None}
         if not fields:
             return 0
 
-        await self.airtable_client.create_record(self.startup_table_id, fields)
+        await self.airtable_client.create_record(self.deal_table_id, fields)
         return 1
 
-    def _prepare_fields(self, data: Dict[str, str], table_config: Table):
-        fields_cfg = {f.name: f for f in table_config.fields}
+    def _apply_mapping(self, data: typing.Dict[str, typing.Any], table) -> typing.Dict:
+        result = {}  # It can be more efficient inplace, however, this is a simple and easier to debug
+        table_mapping = self._mapping_schema.get(table) or {}
+        for key, field_mapping in table_mapping.items():
+            airtable_field_name = field_mapping.get('airtable_field')
+            if not airtable_field_name:
+                logging.warning(f'No "airtable_field" mapping found for field "{key}" in table "{table}"')
+                continue
+            mapped_value = field_mapping.get('value')
+            if mapped_value:
+                result[airtable_field_name] = mapped_value
+                continue
+            # Remove data from the original data to eliminated duplicates with different keys
+            data_value = data.pop(key, None) or None
+            if data_value is None:
+                logging.debug(f'No value for field "{key}" -> "{airtable_field_name}" in table "{table}"')
+            else:
+                result[airtable_field_name] = data_value
+        for key in set(data.keys()) - set(result.keys()):
+            result[key] = data[key]
+        return result
 
-        def make_value(v):
-            if isinstance(v, list):
-                return ','.join(v)
-            return v
-
-        fields = {
-            k: make_value(v) for k, v in data.items()
-            if k in fields_cfg
-        }
-        if not fields:
-            logging.error(f"Table {table_config.id} in base {self.airtable_client.base_id} misconfigured")
-            return None
-        return fields
+    def _load_field_mapping(self, field_mapping_file) -> Dict[str, Dict]:
+        if not field_mapping_file:
+            return {}
+        mapping_file = Path('resources') / field_mapping_file
+        if not mapping_file.exists() or not mapping_file.is_file():
+            logging.debug(f"Field mapping file not found: {mapping_file}")
+            return {}
+        try:
+            with mapping_file.open('r') as file:
+                return yaml.safe_load(file)
+        except FileNotFoundError:
+            logging.error(f"Field mapping file not found: {mapping_file}")
+            return {}
+        except yaml.YAMLError as e:
+            logging.error(f"Error parsing YAML file: {e}")
+            return {}

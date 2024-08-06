@@ -159,7 +159,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
                 return 0
 
             self.loop.call_later(1, self.check_update_config)
-            self.execute()
+            return self.execute()
         except KeyboardInterrupt:
             logging.info('Interrupted %s', self.name)
         except Exception as err:

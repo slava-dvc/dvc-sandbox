@@ -40,6 +40,7 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
         except (JSONDecodeError, StreamError):
             pass
 
+
     return JSONResponse(
         content={
             "error": {

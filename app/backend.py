@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import  FastAPI
 from .foundation import server
-from .shared import lifespan_objects
+from .shared.lifespan_objects import lifespan_objects
 
 
 class BackendServer(server.FastAPIServer):

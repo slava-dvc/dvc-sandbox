@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import multiprocessing
+
 import httpx
 from contextlib import asynccontextmanager
 
@@ -56,14 +58,19 @@ class FastAPIServer(AsyncServer):
         pass
 
     def execute(self):
+        multiprocessing.set_start_method('spawn')
+
         with self.loop_executor:
-            uvicorn.run(
+            return uvicorn.run(
                 app=self.app,
-                workers=1,
                 host="0.0.0.0",
-                lifespan="off",
                 port=self.args['port'],
+                # We don't need access logs in cloud environment
                 access_log=not self.args['cloud'],
-                log_level=logging.DEBUG if self.args['debug'] else logging.INFO,
-                use_colors=not self.args['cloud']
+                # Autoreload creates more pain than benefit
+                reload=False,
+                # Following settings have to be None or false so uvicorn doesn't create its own logger'
+                log_config=None,
+                log_level=None,
+                use_colors=False
             )
