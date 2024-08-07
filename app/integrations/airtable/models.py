@@ -1,20 +1,27 @@
 import logging
+from urllib.parse import urlparse
 from functools import cached_property
 from typing import Dict, Any, List
-from pydantic import BaseModel, model_serializer
+from pydantic import BaseModel, model_serializer, Field
 from .serializers import field_serializers
+from ...foundation import models
 
 
 __all__ = ['AirTable', 'AirField']
 
 
 class AirField(BaseModel):
+    '''
+    AirTable and AirField classes. Has mess of the AirTable schema representation. And our custom serialization.
+    Possible refactoring: Split into two class verticals: One description of AirTable schema and another for dumping data in desired format.
+    '''
     id: str
     type: str
     name: str
     description: str | None = None
     options: Dict[str, Any] | None = None
     value: Any | None = None
+    sources: List[models.SourceRef] | None = Field(default_factory=list)
 
     def is_readonly(self) -> bool:
         readonly_type = self.type in _readonly_field_types
@@ -29,9 +36,37 @@ class AirField(BaseModel):
         if not serializer:
             raise ValueError(f"No serializer found for field type {self.type}") from None
         try:
-            return serializer(self.value)
+            raw_value = serializer(self.value)
+            if self.type == 'richText':
+                return '\n'.join([raw_value, self.format_sources()])
+            return raw_value
         except Exception as e:
             raise ValueError(f"Failed to serialize field {self.name}={self.value}: {e}") from e
+
+    def format_sources(self) -> str:
+        """
+        Covert sources to bulletpoint list format as markdown links
+        :return:
+        """
+
+        def make_quote(source: models.SourceRef):
+            if source.quote:
+                quote = source.quote.strip(' \"\n*')
+                if source.page:
+                    return f"Page #{source.page}: {quote}"
+                return f"{quote}"
+            if source.page:
+                return f"(Page #{source.page})"
+            if source.type == models.SourceType.PITCH_DECK:
+                if source.page:
+                    return f"Page #{source.page}"
+                return "Pitch Deck"
+            parsed_url = urlparse(source.url)
+            return parsed_url.netloc
+
+        return '\n'.join([
+            f"* [{make_quote(source)}]({source.url})" for source in self.sources if source.url
+        ])
 
 
 class AirTable(BaseModel):
@@ -52,7 +87,8 @@ class AirTable(BaseModel):
             if not field:
                 logging.debug(f"Unknown field '{k}' in data for table '{self.name}'")
                 continue
-            self.fields_by_name[k].value = v
+            field.value = v.get('value') or None
+            field.sources = v.get('source') or []
         return self
 
     def clear_data(self) -> 'AirTable':

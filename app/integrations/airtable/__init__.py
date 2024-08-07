@@ -24,8 +24,8 @@ async def push_deal_to_airtable(
         http_client: httpx.AsyncClient,
         airtable_config: AirTableConfig,
         startup: models.Feature,
-        features: Dict[str, models.Feature],
-        people: List[models.Person]
+        people: List[models.Person],
+        sources: list[models.Source]
 ) -> bool:
     airtable_client = AirTableClient(
         api_key=airtable_config.api_key,
@@ -38,4 +38,5 @@ async def push_deal_to_airtable(
         people_table_id=airtable_config.people_table_id,
         field_mapping_file=airtable_config.field_mapping_file,
     )
-    return await sync_action.push(startup, features, people)
+
+    return await sync_action.push(startup, people, sources)

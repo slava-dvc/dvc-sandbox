@@ -35,8 +35,8 @@ async def push_deal(
                 http_client=lifespan_objects.http_client,
                 airtable_config=airtable_config,
                 startup=data.startup,
-                features=data.features,
                 people=data.people,
+                sources=data.sources,
             )
     logging.info(f"Synced {records_created} records to Airtable workspace {workspace.get('domain')}")
     if not records_created:

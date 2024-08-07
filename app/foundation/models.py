@@ -2,13 +2,6 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class Startup(BaseModel):
-    name: str
-    website: str | None = None
-    email: str | None = None
-    foundation_year: str | int | None = None
-
-
 class SourceType(str, Enum):
     PITCH_DECK = "pitch_deck"
     COMPANY_WEBSITE = "company_website"
@@ -17,22 +10,19 @@ class SourceType(str, Enum):
     EMAIL_UPDATE = "email_update"
 
 
-class Source(BaseModel):
-    type: str | None  # It should be SourceType, but there is not validation at rivet site
-    url: str | None
-    value: str | None
+SOURCE_TYPES = {
+    SourceType.COMPANY_WEBSITE,
+    SourceType.COMPANY_LINKEDIN,
+    SourceType.EXTERNAL_WEBSITE,
+    SourceType.PITCH_DECK,
+    SourceType.EMAIL_UPDATE
+}
 
 
-class SourceRef(BaseModel):
-    page: int | None = None
-    type: str | None = None  # It should be SourceType, but there is not validation at rivet site
-    quote: str | None = None
-    value: str | None = None
-
-
-class Value(BaseModel):
-    value: str | list | None
-    source: list[SourceRef] | None
+INTERNAL_SOURCES = {
+    SourceType.PITCH_DECK,
+    SourceType.EMAIL_UPDATE
+}
 
 
 class DataType(str, Enum):
@@ -45,13 +35,35 @@ class DataType(str, Enum):
     BOOLEAN = 'boolean'
 
 
+class SourceRef(BaseModel):
+    page: int | None = None
+    type: str | None = None  # It should be SourceType, but there is not validation at rivet site
+    quote: str | None = None
+    url: str | None = None
+    value: str | None = None
+
+
 class Feature(BaseModel):
     criterion: str
     value: list[str] | str | float | int | bool | None
-    source: list[SourceRef] | None = Field(default_factory=list)
+    source: list[SourceRef] | None = Field(default_factory=list) # Its should be sources but keep for compatibility
+
+
+class Startup(BaseModel):
+    name: str
+    website: str | None = None
+    email: str | None = None
+    foundation_year: str | int | None = None
+    features: dict[str, Feature] | None = Field(default_factory=dict)
 
 
 class Person(BaseModel):
     name: str
     linkedin_url: str | None = None
     features: dict[str, Feature] | None = Field(default_factory=dict)
+
+
+class Source(BaseModel):
+    type: str | None  # It should be SourceType, but there is not validation at rivet site
+    url: str | None
+    value: str | None = None

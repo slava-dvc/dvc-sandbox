@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import typing
+from urllib.parse import urlparse
 
 import yaml
 
@@ -31,8 +32,8 @@ class AirSyncAction(object):
     async def push(
             self,
             startup: models.Startup,
-            features: Dict[str, models.Feature],
-            people: List[models.Person]
+            people: List[models.Person],
+            sources: List[models.Source]
     ) -> int:
         """
         Pushes startup, features, and people data to Airtable.
@@ -56,28 +57,24 @@ class AirSyncAction(object):
         """
         await self._update_base_data()
         return sum(await asyncio.gather(
-            self._push_startup(startup, features),
-            self._push_people(people)
+            self._push_startup(startup, sources),
+            self._push_people(people, sources)
         ))
 
     async def _update_base_data(self) -> Dict[str, AirTable]:
         base_config = await self.airtable_client.get_base_data()
         self._tables = {t.id: t for t in base_config}
 
-    async def _push_people(self, people: List[models.Person]) -> int:
-        target_table = self._tables.get(self.people_table_id) or None
-        if target_table is None:
-            logging.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
-            return False
+    async def _push_people(
+            self,
+            people: List[models.Person],
+            sources: List[models.Source]
+    ) -> int:
         records = 0
         for person in people:
-
-            data = person.model_dump(exclude='features') | {f: v.value for f, v in person.features.items()}
-            data = self._apply_mapping(data, "people_table")
-            target_table.clear_data().set_data(data)
-            record = target_table.model_dump()
-            fields = record.get('fields') or {}
-            fields = {k: v for k, v in fields.items() if v is not None}
+            data = {k: {'value': v} for k, v in person.model_dump(exclude='features').items()}
+            data |= {f: v.model_dump() for f, v in person.features.items()}
+            fields = self._make_fields_for_tabile(data, self.people_table_id, "people_table", sources)
 
             if not fields:
                 continue
@@ -86,23 +83,76 @@ class AirSyncAction(object):
             records += 1
         return records
 
-    async def _push_startup(self, startup: models.Startup, features: dict[str, models.Feature]) -> int:
-        target_table: AirTable | None = self._tables.get(self.deal_table_id) or None
-        if target_table is None:
-            logging.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
-            return 0
+    async def _push_startup(
+            self,
+            startup: models.Startup,
+            sources: List[models.Source]
+    ) -> int:
+        data = {k: {'value': v} for k, v in startup.model_dump(exclude='features').items()}
+        data |= {f: v.model_dump() for f, v in startup.features.items()}
+        fields = self._make_fields_for_tabile(data, self.deal_table_id,"startup_table", sources)
 
-        data = startup.model_dump() | {f: v.value for f, v in features.items()}
-        mapped_data = self._apply_mapping(data, "startup_table")
-        target_table.clear_data().set_data(mapped_data)
-        record = target_table.model_dump()
-        fields = record.get('fields') or {}
-        fields = {k:v for k, v in fields.items() if v is not None}
         if not fields:
             return 0
 
         await self.airtable_client.create_record(self.deal_table_id, fields)
         return 1
+
+
+    def _make_fields_for_tabile(self, data, air_table_id, mapping_table_id, sources: List[models.Source]) -> typing.Dict:
+        target_table: AirTable | None = self._tables.get(air_table_id) or None
+        if target_table is None:
+            logging.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
+            return {}
+
+        mapped_data = self._apply_mapping(data, mapping_table_id)
+        mapped_data_with_sources = self._update_sources(mapped_data, sources)
+        target_table.clear_data().set_data(mapped_data_with_sources)
+        record = target_table.model_dump()
+        fields = record.get('fields') or {}
+        fields = {k: v for k, v in fields.items() if v is not None}
+        return fields
+
+    def _update_sources(self, data: typing.Dict[str, typing.Dict], sources: List[models.Source]) -> typing.Dict:
+        '''
+        Replace the urls for the sources for pitch_deck and other internal sources.
+        '''
+        pitch_deck_url, email_update_url = None, None
+        for source in sources:
+            if source.type == models.SourceType.PITCH_DECK:
+                pitch_deck_url = source.url
+            if source.type == models.SourceType.EMAIL_UPDATE:
+                email_update_url = source.url
+
+        for key, value in data.items():
+            mappend_sources = []
+            sources = value.get('source') or []
+            for source_index, source in enumerate(sources):
+                type = source.get('type')
+                quote = source.get('quote')
+                v = source.get('value')
+                url = source.get('url')
+                page = source.get('page')
+
+                if type == models.SourceType.PITCH_DECK:
+                    url = pitch_deck_url
+                    if page and url:
+                        url += f'#page={page}'
+
+                if type == models.SourceType.EMAIL_UPDATE:
+                    url  = email_update_url
+                    continue
+
+                if not url and v and isinstance(v, str):
+                    parsed_url = urlparse(v)
+                    if all([parsed_url.scheme, parsed_url.netloc]):
+                        url = parsed_url.geturl()
+                if url:
+                    mappend_sources.append(models.SourceRef(url=url, type=type, quote=quote, page=page))
+
+            value['source'] = mappend_sources
+        return data
+
 
     def _apply_mapping(self, data: typing.Dict[str, typing.Any], table) -> typing.Dict:
         result = {}  # It can be more efficient inplace, however, this is a simple and easier to debug
@@ -114,7 +164,9 @@ class AirSyncAction(object):
                 continue
             mapped_value = field_mapping.get('value')
             if mapped_value:
-                result[airtable_field_name] = mapped_value
+                result[airtable_field_name] = {
+                    "value": mapped_value,
+                }
                 continue
             # Remove data from the original data to eliminated duplicates with different keys
             data_value = data.pop(key, None) or None
