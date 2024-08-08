@@ -56,10 +56,10 @@ class AirSyncAction(object):
             The total number of records successfully pushed to Airtable.
         """
         await self._update_base_data()
-        return sum(await asyncio.gather(
-            self._push_startup(startup, sources),
-            self._push_people(people, sources)
-        ))
+        return sum([
+            await self._push_startup(startup, sources),
+            await self._push_people(people, sources)
+        ])
 
     async def _update_base_data(self) -> Dict[str, AirTable]:
         base_config = await self.airtable_client.get_base_data()

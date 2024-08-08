@@ -37,8 +37,8 @@ startup_table:
       "Series A": "Series A"
       "Series B": "Series B"
       "Series C": "Series C"
-  Round Goal:
-    airtable_field: Round Size
+#  Round Goal:
+#    airtable_field: Round Size
   Unknown:
     airtable_field: Comment/Questions/Reason
   Deal Size:

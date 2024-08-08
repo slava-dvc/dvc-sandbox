@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Callable
 from urllib.parse import urlparse
 
@@ -14,7 +15,8 @@ def _boolean_serializer(value):
 def _get_value(value: list | tuple | str | int | float):
     if isinstance(value, (list, tuple)):
         if len(value) > 1:
-            raise ValueError(f"Invalid value for field, got {value}")
+            logging.error(f"Invalid value for field, got {value}")
+            return None
         value = value[0]
 
     if not isinstance(value, (str, int, float)):
@@ -70,10 +72,14 @@ def _number_serializer(value):
     except KeyError as e:
         raise ValueError(f"{value} is not a number can be converted")
 
-    if '.' in value:
-        return float(value) * multiplier
+    try:
+        if '.' in value:
+            return float(value) * multiplier
 
-    return int(value) * multiplier
+        return int(value) * multiplier
+    except ValueError:
+        logging.warning(f"{value} is not a number can be converted")
+        return None
 
 
 def _multiple_selects_serializer(value):
