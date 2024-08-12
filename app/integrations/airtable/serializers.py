@@ -41,9 +41,11 @@ def _url_serializer(value):
         if all([result.scheme, result.netloc]):
             return str(value)
         else:
-            raise ValueError(f"Invalid URL: {value}")
+            logging.warning(f"Invalid URL: {value}")
+            return None
     except Exception:
-        raise ValueError(f"Invalid URL: {value}")
+        logging.warning(f"Invalid URL: {value}")
+        return None
 
 
 def _number_serializer(value):
