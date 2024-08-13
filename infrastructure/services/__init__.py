@@ -1,6 +1,6 @@
 import pulumi_gcp as gcp
 from .synapse_service import vcmate_synapse
-
+from .sync_deal_subscription import *
 
 __all__ = ['vcmate_synapse']
 

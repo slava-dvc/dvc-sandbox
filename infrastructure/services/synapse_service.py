@@ -3,7 +3,6 @@ import pulumi_gcp as gcp
 
 from .defaults import REGION, PROJECT_ID
 from .service_account import service_account
-from topics import llm_analysis_result_topic, DEFAULT_SUBSCRIPTION_KWARGS
 
 
 SYNC_DEALS_PATH = "v1/integrations/sync/deal"
@@ -52,27 +51,6 @@ vcmate_synapse = gcp.cloudrunv2.Service(
             )
         ]
     }),
-)
-
-# Create a Pub/Sub subscription that pushes llm analysis result to synapse
-llm_analysis_result_subscription = gcp.pubsub.Subscription(
-    "llm-analysis-result-subscription-sync-deal",
-    name="llm-analysis-result-subscription-sync-deal",
-    topic=llm_analysis_result_topic.name,
-    push_config=gcp.pubsub.SubscriptionPushConfigArgs(
-        push_endpoint=vcmate_synapse.uri.apply(lambda uri: f"{uri}/{SYNC_DEALS_PATH}"),
-        oidc_token=gcp.pubsub.SubscriptionPushConfigOidcTokenArgs(
-            service_account_email=service_account.email,
-        ),
-        no_wrapper=gcp.pubsub.SubscriptionPushConfigNoWrapperArgs(
-            write_metadata=True
-        )
-    ),
-    retry_policy=gcp.pubsub.SubscriptionRetryPolicyArgs(
-        minimum_backoff="10s",
-        maximum_backoff="600s",  # 10 minutes
-    ),
-    **DEFAULT_SUBSCRIPTION_KWARGS
 )
 
 
