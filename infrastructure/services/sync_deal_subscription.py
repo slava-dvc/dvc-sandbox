@@ -22,7 +22,7 @@ llm_analysis_result_subscription_dlq_topic = gcp.pubsub.Topic(
 llm_analysis_result_subscription_dlq_subscription = gcp.pubsub.Subscription(
     f"{llm_analysis_result_subscription_dlq_topic_name}-subscription-debug",
     name=f"{llm_analysis_result_subscription_dlq_topic_name}-subscription-debug",
-    topic=llm_analysis_result_subscription_dlq_topic_name,
+    topic=llm_analysis_result_subscription_dlq_topic.name,
     ** DEFAULT_SUBSCRIPTION_KWARGS
 )
 
@@ -31,7 +31,7 @@ llm_analysis_result_subscription_dlq_subscription = gcp.pubsub.Subscription(
 llm_analysis_result_subscription = gcp.pubsub.Subscription(
     f"{llm_analysis_result_topic_name}-subscription-sync-deal",
     name=f"{llm_analysis_result_topic_name}-subscription-sync-deal",
-    topic=llm_analysis_result_topic_name,
+    topic=llm_analysis_result_topic.name,
     push_config=gcp.pubsub.SubscriptionPushConfigArgs(
         push_endpoint=vcmate_synapse.uri.apply(lambda uri: f"{uri}/{SYNC_DEALS_PATH}"),
         oidc_token=gcp.pubsub.SubscriptionPushConfigOidcTokenArgs(
@@ -46,8 +46,8 @@ llm_analysis_result_subscription = gcp.pubsub.Subscription(
         maximum_backoff="600s",  # 10 minutes
     ),
     dead_letter_policy=gcp.pubsub.SubscriptionDeadLetterPolicyArgs(
-        max_delivery_attempts=3,
-        dead_letter_topic=llm_analysis_result_subscription_dlq_topic.name
+        max_delivery_attempts=5,
+        dead_letter_topic=f"projects/{PROJECT_ID}/topics/{llm_analysis_result_subscription_dlq_topic_name}"
     ),
     **DEFAULT_SUBSCRIPTION_KWARGS
 )
