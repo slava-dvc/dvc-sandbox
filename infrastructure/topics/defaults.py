@@ -2,7 +2,7 @@ import pulumi_gcp as gcp
 
 PROJECT_ID = gcp.config.project or "vcmate"
 REGION = gcp.config.region or "us-central1"
-DEFAULT_RETENTION_PERIOD = '7d'
+DEFAULT_RETENTION_PERIOD = "604800s"  # 7 days, value must be in seconds
 
 DEFAULT_SUBSCRIPTION_KWARGS = dict(
     project=PROJECT_ID,
@@ -10,6 +10,6 @@ DEFAULT_SUBSCRIPTION_KWARGS = dict(
     retain_acked_messages=True,
     ack_deadline_seconds=600,  # 10 minutes
     expiration_policy={
-        "ttl": "30d"
+        "ttl": "2592000s"  # 30 days, value must be in seconds
     }
 )
