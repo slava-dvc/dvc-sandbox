@@ -36,7 +36,7 @@ class DataType(str, Enum):
 
 
 class SourceRef(BaseModel):
-    page: int | None = None
+    page: int | str | None = None
     type: str | None = None  # It should be SourceType, but there is not validation at rivet site
     quote: str | None = None
     url: str | None = None
