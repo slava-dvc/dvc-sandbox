@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import typing
 from urllib.parse import urlparse
@@ -7,6 +6,7 @@ import yaml
 
 from pathlib import Path
 from typing import Dict, List
+
 from .client import AirTableClient, AirTable
 from ...foundation import models
 
@@ -56,6 +56,7 @@ class AirSyncAction(object):
             The total number of records successfully pushed to Airtable.
         """
         await self._update_base_data()
+        startup.features['Founders'] = _founders_summary_feature(people)
         return sum([
             await self._push_startup(startup, sources),
             await self._push_people(people, sources)
@@ -194,3 +195,25 @@ class AirSyncAction(object):
         except yaml.YAMLError as e:
             logging.error(f"Error parsing YAML file: {e}")
             return {}
+
+
+def _founders_summary_feature(founders: List[models.Person]) -> models.Feature:
+    """
+    Returns markdown with Founder name as link to the linkedin_url
+    :param founders:
+    :return:
+    """
+    summaries = []
+    for founder in founders:
+        name = founder.name
+        linkedin_url = founder.linkedin_url
+        founder_summary_feature: models.Feature = founder.features.get('Founder Summary')
+        bio = founder_summary_feature.value if founder_summary_feature else ''
+
+        founder_summary = f"*[{name}]({linkedin_url})*: {bio}\n" if linkedin_url else f"*{name}*: {bio}\n"
+        summaries.append(founder_summary)
+    value = '\n'.join(summaries)
+    return models.Feature(
+        criterion="Founders Summary",
+        value=value
+    )

@@ -13,6 +13,8 @@ startup_table:
   VCMate:
     value: yes
     airtable_field: VCMate
+  Founders:
+    airtable_field: Founders
   Status:
     value: New Company
     airtable_field: Status
