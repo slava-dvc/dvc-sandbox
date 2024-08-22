@@ -213,5 +213,5 @@ Content-Type: application/json
       }
     }
   ],
-  "sources": {}
+  "sources": []
 }

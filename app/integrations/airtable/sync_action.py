@@ -56,9 +56,8 @@ class AirSyncAction(object):
             The total number of records successfully pushed to Airtable.
         """
         await self._update_base_data()
-        startup.features['Founders'] = _founders_summary_feature(people)
         return sum([
-            await self._push_startup(startup, sources),
+            await self._push_main(startup, people, sources),
             await self._push_people(people, sources)
         ])
 
@@ -75,7 +74,7 @@ class AirSyncAction(object):
         for person in people:
             data = {k: {'value': v} for k, v in person.model_dump(exclude='features').items()}
             data |= {f: v.model_dump() for f, v in person.features.items()}
-            fields = self._make_fields_for_tabile(data, self.people_table_id, "people_table", sources)
+            fields = self._make_fields_for_table(data, self.people_table_id, "people_table", sources)
 
             if not fields:
                 continue
@@ -84,14 +83,18 @@ class AirSyncAction(object):
             records += 1
         return records
 
-    async def _push_startup(
+    async def _push_main(
             self,
             startup: models.Startup,
+            people: List[models.Person],
             sources: List[models.Source]
     ) -> int:
         data = {k: {'value': v} for k, v in startup.model_dump(exclude='features').items()}
-        data |= {f: v.model_dump() for f, v in startup.features.items()}
-        fields = self._make_fields_for_tabile(data, self.deal_table_id,"startup_table", sources)
+        features = startup.features | _additional_meta_features(startup, people, sources)
+        features['Unknown'] = models.Feature(criterion="Unknown Fields", value='\n'.join(_get_unknown_fields(features)))
+
+        data |= {f: v.model_dump() for f, v in features.items()}
+        fields = self._make_fields_for_table(data, self.deal_table_id, "startup_table", sources)
 
         if not fields:
             return 0
@@ -100,7 +103,7 @@ class AirSyncAction(object):
         return 1
 
 
-    def _make_fields_for_tabile(self, data, air_table_id, mapping_table_id, sources: List[models.Source]) -> typing.Dict:
+    def _make_fields_for_table(self, data, air_table_id, mapping_table_id, sources: List[models.Source]) -> typing.Dict:
         target_table: AirTable | None = self._tables.get(air_table_id) or None
         if target_table is None:
             logging.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
@@ -141,7 +144,7 @@ class AirSyncAction(object):
                         url += f'#page={page}'
 
                 if type == models.SourceType.EMAIL_UPDATE:
-                    url  = email_update_url
+                    url = email_update_url
                     continue
 
                 if not url and v and isinstance(v, str):
@@ -197,9 +200,43 @@ class AirSyncAction(object):
             return {}
 
 
+def _additional_meta_features(
+        startup: models.Startup,
+        people: List[models.Person],
+        sources: List[models.Source]) -> Dict[str, models.Feature]:
+    pitch_deck_url, email_update_url = None, None
+    for source in sources:
+        if source.type == models.SourceType.PITCH_DECK:
+            pitch_deck_url = source.url
+        if source.type == models.SourceType.EMAIL_UPDATE:
+            email_update_url = source.url
+
+    more_features = {
+        'Founders': _founders_summary_feature(people),
+        'pitch_deck_url': models.Feature(criterion="Pitch Deck URL", value=pitch_deck_url),
+        'email_update_url': models.Feature(criterion="Email Update URL", value=email_update_url)
+    }
+
+    return more_features
+
+
+def _get_unknown_fields(data: Dict[str, models.Feature]) -> List[str]:
+    result = []
+    for key, feature in data.items():
+        if key in ['email_update_url', 'pitch_deck_url', 'Founders']:
+            continue
+        if not feature.value:
+            result.append(feature.criterion)
+            continue
+        value = ','.join([str(v) for v in feature.value]) if isinstance(feature.value, list) else feature.value
+        if str(value).lower() in ['unknown', 'n/a', 'none']:
+            result.append(feature.criterion)
+    return result
+
+
 def _founders_summary_feature(founders: List[models.Person]) -> models.Feature:
     """
-    Returns markdown with Founder name as link to the linkedin_url
+    Returns Markdown with Founder name as link to the linkedin_url
     :param founders:
     :return:
     """
@@ -210,7 +247,7 @@ def _founders_summary_feature(founders: List[models.Person]) -> models.Feature:
         founder_summary_feature: models.Feature = founder.features.get('Founder Summary')
         bio = founder_summary_feature.value if founder_summary_feature else ''
 
-        founder_summary = f"*[{name}]({linkedin_url})*: {bio}\n" if linkedin_url else f"*{name}*: {bio}\n"
+        founder_summary = f"[{name}]({linkedin_url}):\n{bio}\n" if linkedin_url else f"{name}:\n{bio}\n"
         summaries.append(founder_summary)
     value = '\n'.join(summaries)
     return models.Feature(

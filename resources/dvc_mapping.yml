@@ -10,6 +10,16 @@ people_table:
   Founder Summary:
     airtable_field: Bio
 startup_table:
+  Headquarter Location:
+    airtable_field: Company HQ
+  Quantity of Employee:
+    airtable_field: FTE
+  pitch_deck_url:
+    airtable_field: Linktothepitchdeck
+  Product Structure Type:
+    airtable_field: Product Structure
+  Target market:
+    airtable_field: Target Market
   VCMate:
     value: yes
     airtable_field: VCMate

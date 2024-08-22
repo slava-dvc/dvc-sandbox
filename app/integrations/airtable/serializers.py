@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Dict, Callable
 from urllib.parse import urlparse
 
@@ -31,6 +32,12 @@ def _text_serializer(value):
     return str(value)
 
 
+def _is_valid_domain(domain: str) -> bool:
+    # Basic domain validation using regex
+    domain_regex = r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(domain_regex, domain) is not None
+
+
 def _url_serializer(value):
     value = _get_value(value)
     if not value:
@@ -40,9 +47,10 @@ def _url_serializer(value):
         result = urlparse(str(value))
         if all([result.scheme, result.netloc]):
             return str(value)
-        else:
-            logging.warning(f"Invalid URL: {value}")
-            return None
+        if _is_valid_domain(value):
+            return value
+        logging.warning(f"Invalid URL: {value}")
+        return None
     except Exception:
         logging.warning(f"Invalid URL: {value}")
         return None
