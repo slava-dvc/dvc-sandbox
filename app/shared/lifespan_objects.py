@@ -10,7 +10,7 @@ __all__ = ['lifespan_objects', 'LifespanObjects']
 class LifespanObjects(object):
 
     def __init__(self):
-        self.http_client = httpx.AsyncClient()
+        self.http_client = httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(retries=3), timeout=httpx.Timeout(60))
         self.firestore_client = firestore.AsyncClient()
         self.config = AppConfig()
 

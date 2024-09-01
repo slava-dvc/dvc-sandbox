@@ -3,8 +3,8 @@ from typing import Dict, Any, List
 from pydantic import BaseModel
 from .models import *
 
-__all__ = ['AirTableClient', 'AirTable', 'AirField']
 
+__all__ = ['AirTableClient', 'AirTable', 'AirField']
 
 
 class AirTableClient(object):
