@@ -10,6 +10,14 @@ people_table:
   Founder Summary:
     airtable_field: Bio
 startup_table:
+  Target amount:
+    airtable_field: Round Size
+  Market:
+    airtable_field: Market Size
+  Go To Market:
+    airtable_field: GTM
+  Competitors:
+    airtable_field: Competitors
   Headquarter Location:
     airtable_field: Company HQ
   Quantity of Employee:
@@ -70,4 +78,4 @@ startup_table:
   Distribution Strategy:
     airtable_field: Distribution Strategy
   Business Model:
-    airtable_field: Business Model Description
+    airtable_field: Business Model
