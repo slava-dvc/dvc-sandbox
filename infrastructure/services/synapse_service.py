@@ -7,10 +7,10 @@ from .service_account import service_account
 
 SYNC_DEALS_PATH = "v1/integrations/sync/deal"
 
-# Create or reference the secret for an Airtable API key
-airtable_secret_for_ingainer = gcp.secretmanager.Secret(
+# Create or reference the secret for an API key
+openai_secret = gcp.secretmanager.Secret(
     "airtable-secret",
-    secret_id="AIRTABLE_INGAINER",
+    secret_id="OPENAI_API_KEY",
     replication=gcp.secretmanager.SecretReplicationArgs(
         auto=gcp.secretmanager.SecretReplicationAutoArgs()
     )
@@ -29,10 +29,10 @@ vcmate_synapse = gcp.cloudrunv2.Service(
                 image=f"us.gcr.io/{PROJECT_ID}/synapse:latest",
                 envs=[
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
-                        name="AIRTABLE_INGAINER",
+                        name="OPENAI_API_KEY",
                         value_source=gcp.cloudrunv2.ServiceTemplateContainerEnvValueSourceArgs(
                             secret_key_ref=gcp.cloudrunv2.ServiceTemplateContainerEnvValueSourceSecretKeyRefArgs(
-                                secret=airtable_secret_for_ingainer.secret_id,
+                                secret=openai_secret.secret_id,
                                 version="latest",
                             ),
                         ),
@@ -52,7 +52,6 @@ vcmate_synapse = gcp.cloudrunv2.Service(
         ]
     }),
 )
-
 
 # Export the servcie name as a stack output
 pulumi.export("vcmate_synapse_cloud_run_name", vcmate_synapse.name)

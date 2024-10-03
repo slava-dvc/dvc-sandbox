@@ -11,9 +11,10 @@ class BackendServer(server.FastAPIServer):
     def setup_app(self, app: FastAPI):
         super().setup_app(app)
 
-        from app import integrations
+        from app import integrations, pdftotext
 
         app.include_router(integrations.router, prefix='/v1')
+        app.include_router(pdftotext.router, prefix='/v1')
 
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
