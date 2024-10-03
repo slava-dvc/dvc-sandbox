@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from functools import cached_property
 from fastapi import FastAPI
+from fastapi.middleware import gzip, trustedhost
 
 from .async_server import AsyncServer
 from .exception_handlers import *
@@ -47,6 +48,8 @@ class FastAPIServer(AsyncServer):
             app.add_exception_handler(exception_class, http_exception_handler)
 
         app.add_middleware(RequestTimeoutMiddleware, timeout=60)
+        app.add_middleware(trustedhost.TrustedHostMiddleware, allowed_hosts=["*"])
+        app.add_middleware(gzip.GZipMiddleware)
         self.setup_app(app)
         return app
 

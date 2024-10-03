@@ -1,10 +1,7 @@
 from http import HTTPStatus
 
-from fastapi.responses import RedirectResponse
-from fastapi import APIRouter
-from fastapi import UploadFile, File
-from fastapi import HTTPException
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi import APIRouter, Request, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 
 from .processor import converter
 
@@ -44,9 +41,12 @@ async def get_pdf_to_text_page():
 
 
 @router.post('/')
-async def convert_pdf_to_text(pdf_file: UploadFile = File(...)):
+async def convert_pdf_to_text(request: Request, pdf_file: UploadFile = File(...)):
     job_id = converter.submit(await pdf_file.read())
-    return RedirectResponse(url=f"../pdftotext/{job_id}", status_code=HTTPStatus.SEE_OTHER)
+    return RedirectResponse(
+        url=f"{request.url_for('get_job_status', job_id=job_id)}",
+        status_code=HTTPStatus.SEE_OTHER
+    )
 
 
 @router.get('/{job_id}')
