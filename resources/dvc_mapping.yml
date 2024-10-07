@@ -67,8 +67,8 @@ startup_table:
     airtable_field: Raised to date
   executive_summary:
     airtable_field: DVC Summary
-  CoInvestors List:
-    airtable_field: Co-Investors (mm)
+#  CoInvestors List:
+#    airtable_field: Co-Investors (mm)
   Traction:
     airtable_field: Traction (for minimemo)
   foundation_year:
