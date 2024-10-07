@@ -37,7 +37,7 @@ class AirField(BaseModel):
             raise ValueError(f"No serializer found for field type {self.type}") from None
         try:
             raw_value = serializer(self.value)
-            if self.type == 'richText':
+            if raw_value and self.type == 'richText':
                 return '\n'.join([raw_value, self.format_sources()])
             return raw_value
         except Exception as e:

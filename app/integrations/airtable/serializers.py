@@ -26,7 +26,8 @@ def _get_value(value: list | tuple | str | int | float):
 
 
 def _text_serializer(value):
-    value = _get_value(value)
+    if isinstance(value, (list, tuple)):
+        value = ", ".join([str(v) for v in value])
     if not value:
         return None
     return str(value)
