@@ -18,7 +18,7 @@ synapse = gcp.cloudrunv2.Service(
         "service_account": service_account.email,
         "containers": [
             gcp.cloudrunv2.ServiceTemplateContainerArgs(
-                image=f"us.gcr.io/{PROJECT_ID}/synapse:latest",
+                image=f"us.gcr.io/{PROJECT_ID}/docker/synapse:latest",
                 envs=[
                     OPENAI_API_KEY,
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
