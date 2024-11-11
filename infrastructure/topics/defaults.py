@@ -1,7 +1,7 @@
 import pulumi_gcp as gcp
 
-PROJECT_ID = gcp.config.project or "vcmate"
-REGION = gcp.config.region or "us-central1"
+PROJECT_ID = gcp.config.project
+REGION = gcp.config.region
 DEFAULT_RETENTION_PERIOD = "604800s"  # 7 days, value must be in seconds
 
 DEFAULT_SUBSCRIPTION_KWARGS = dict(

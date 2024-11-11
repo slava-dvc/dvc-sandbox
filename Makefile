@@ -5,7 +5,6 @@ endif
 
 SHELL:= /bin/bash
 SHORT_COMMIT_SHA:=$(shell git rev-parse --short HEAD)
-PULUMI_STATE_BUCKET:=vcmate-pulumi
 export IMAGE:=us.gcr.io/${GOOGLE_CLOUD_PROJECT}/docker/synapse:${SHORT_COMMIT_SHA}
 export PATH := ~/.pulumi/bin:$(PATH)
 
@@ -33,7 +32,7 @@ install-infra-tool:
 
 configure-infra-tool:
 	cd infrastructure && pulumi login gs://${PULUMI_STATE_BUCKET}
-	cd infrastructure && pulumi stack select prod
+	cd infrastructure && pulumi stack select prod || (pulumi stack init prod --secrets-provider=passphrase && pulumi stack select prod)
 	cd infrastructure && pulumi config set gcp:project ${GOOGLE_CLOUD_PROJECT}
 	cd infrastructure && pulumi config set gcp:region ${GOOGLE_CLOUD_REGION}
 

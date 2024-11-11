@@ -4,7 +4,7 @@ import pulumi_gcp as gcp
 from topics import llm_analysis_result_topic, llm_analysis_result_topic_name, DEFAULT_SUBSCRIPTION_KWARGS
 from .defaults import PROJECT_ID
 from .service_account import service_account
-from .synapse_service import vcmate_synapse
+from .synapse_service import synapse
 
 SYNC_DEALS_PATH = "v1/integrations/sync/deal"
 
@@ -33,7 +33,7 @@ llm_analysis_result_subscription = gcp.pubsub.Subscription(
     name=f"{llm_analysis_result_topic_name}-subscription-sync-deal",
     topic=llm_analysis_result_topic.name,
     push_config=gcp.pubsub.SubscriptionPushConfigArgs(
-        push_endpoint=vcmate_synapse.uri.apply(lambda uri: f"{uri}/{SYNC_DEALS_PATH}"),
+        push_endpoint=synapse.uri.apply(lambda uri: f"{uri}/{SYNC_DEALS_PATH}"),
         oidc_token=gcp.pubsub.SubscriptionPushConfigOidcTokenArgs(
             service_account_email=service_account.email,
         ),

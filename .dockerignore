@@ -1,3 +1,11 @@
+# Secrets
+.env
+# Ignore stack files with sensitive data
+infrastructure/Pulumi.*.yaml
+# Except the main config
+!infrastructure/Pulumi.yaml
+
+
 # Byte-compiled / optimized / DLL files
 *$py.class
 __pycache__/
@@ -22,9 +30,12 @@ htmlcov/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Node.js dependencies:
+node_modules/
+
 # Environments
-.env
 .venv
+venv
 
 # -----------------------------
 # Git is unnessesary for build
@@ -33,6 +44,9 @@ htmlcov/
 .gitignore
 .github/
 .gitlab-ci.yml
+
+# Temp files
+infrastructure/preview.txt
 
 # Tests and RND
 tests/

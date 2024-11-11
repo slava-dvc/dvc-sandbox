@@ -7,18 +7,19 @@ steps:
 
 # Build the container image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us.gcr.io/$PROJECT_ID/synapse:$SHORT_SHA', '-t', 'us.gcr.io/$PROJECT_ID/synapse:latest', '.']
+  args: ['build', '-t', 'us.gcr.io/$PROJECT_ID/${_SERVICE}:$SHORT_SHA', '-t', 'us.gcr.io/$PROJECT_ID/${_SERVICE}:latest', '.']
 
 # Push the container image to Container Registry
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', '-a', 'us.gcr.io/$PROJECT_ID/synapse']
+  args: ['push', '-a', 'us.gcr.io/$PROJECT_ID/${_SERVICE}']
 
 ## Deploy container image to Cloud Run
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
-  args: ['run', 'deploy', 'synapse', '--image', 'us.gcr.io/$PROJECT_ID/synapse:$SHORT_SHA', '--region', '$_REGION' ]
+  args: ['run', 'deploy', '${_SERVICE}', '--image', 'us.gcr.io/$PROJECT_ID/${_SERVICE}:$SHORT_SHA', '--region', '$_REGION' ]
 images:
-- us.gcr.io/$PROJECT_ID/synapse
+- us.gcr.io/$PROJECT_ID/${_SERVICE}
 
 substitutions:
   _REGION: 'us-central1'
+  _SERVICE: synapse

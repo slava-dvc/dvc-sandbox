@@ -1,12 +1,12 @@
-name: vcmate
+name: dvc-agent
 runtime:
   name: python
   options:
     toolchain: pip
     virtualenv: .venv
-description: Synapse VcMate Backend
+description: Synapse Backend
 config:
-  gcp:project: vcmate
+  gcp:project: dvc-agent
   pulumi:tags:
     value:
       pulumi:template: gcp-python

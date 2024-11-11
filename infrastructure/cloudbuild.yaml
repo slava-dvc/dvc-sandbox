@@ -15,6 +15,7 @@ steps:
     env:
       - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
       - 'GOOGLE_CLOUD_REGION=$LOCATION'
+      - 'PULUMI_STATE_BUCKET=dvc-pulumi'
 
 availableSecrets:
   secretManager:

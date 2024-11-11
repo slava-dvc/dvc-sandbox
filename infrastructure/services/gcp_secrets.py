@@ -1,5 +1,5 @@
-import pulumi_gcp as gcp
 
+import pulumi_gcp as gcp
 
 def create_cloud_run_secret_env(secret_id):
     secret = gcp.secretmanager.Secret.get(
@@ -18,6 +18,6 @@ def create_cloud_run_secret_env(secret_id):
     return secret_env
 
 
-ANTHROPIC_KEY = create_cloud_run_secret_env("ANTHROPIC_KEY")
 OPENAI_API_KEY = create_cloud_run_secret_env("OPENAI_API_KEY")
+ANTHROPIC_KEY = create_cloud_run_secret_env("ANTHROPIC_KEY")
 PERPLEXITY_KEY = create_cloud_run_secret_env("PERPLEXITY_KEY")

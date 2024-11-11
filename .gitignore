@@ -1,3 +1,10 @@
+# Secrets
+.env
+# Ignore stack files with sensitive data
+infrastructure/Pulumi.*.yaml
+# Except the main config
+!infrastructure/Pulumi.yaml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -23,8 +30,10 @@ htmlcov/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Node.js dependencies:
+node_modules/
+
 # Environments
-.env
 .venv
 venv
 
