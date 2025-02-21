@@ -1,4 +1,4 @@
-from .cmd import app
+from app.cmd import app
 
 
 if __name__ == "__main__":

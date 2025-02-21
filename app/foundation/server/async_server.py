@@ -37,13 +37,11 @@ def handler(signum, frame):
     raise KeyboardInterrupt()
 
 
-signal.signal(signal.SIGINT, handler)
-
-
-
 class AsyncServer(metaclass=abc.ABCMeta):
 
     def __init__(self):
+        signal.signal(signal.SIGINT, handler)
+
         logging.info('Init %s', self.name)
 
     def add_arguments(self, parser: argparse.ArgumentParser):

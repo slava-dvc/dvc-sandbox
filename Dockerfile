@@ -1,8 +1,8 @@
 FROM python:3.12-slim
 
 # Allow statements and log messages to immediately appear in the Knative logs
-ENV PYTHONUNBUFFERED True
-ENV APP_HOME /app
+ENV PYTHONUNBUFFERED=True
+ENV APP_HOME=/app
 
 WORKDIR $APP_HOME
 

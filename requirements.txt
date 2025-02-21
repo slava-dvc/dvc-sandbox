@@ -23,3 +23,5 @@ pulumi-gcp>=7.0.0,<8.0.0
 openai
 PyMuPDF
 python-multipart
+typer
+streamlit
