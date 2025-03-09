@@ -17,6 +17,7 @@ coverage
 .idea
 .vscode
 .kdev4
+*pycharm-support-libs.zip
 http-client.private.env.json
 
 # Unit test / coverage reports
