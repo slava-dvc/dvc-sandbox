@@ -1,7 +1,33 @@
-# vcmate-synapse
+# Synapse
 
 ## Description
-VcMate Backend is a FastAPI-based service that processes PDF files with LLM to extract structured data. It serves as the backend for the VcMate project, providing PDF processing, CRM integrations, workspace management, and user management functionalities and everything else. 
+
+Synapse is a FastAPI-powered microservice developed to process PDF files using Large Language Models (LLMs) and extract
+structured data. It serves as a crucial component of the VcMate project, functioning as the backend that supports
+features like PDF data extraction, CRM integrations, workspace management, and user management, among other
+functionalities.
+
+With high performance and scalability in mind, Synapse is designed to streamline complex data workflows while providing
+a robust and extensible API
+
+## Before you begin
+
+1. Ensure you're using the correct Google Cloud Project before initializing:
+   Run the following command to switch to the appropriate project in your shell:
+    ```bash
+    gcloud auth application-default login
+    gcloud init --console-only
+    gcloud config set project [PROJECT_ID]
+    ```
+   Replace `[PROJECT_ID]` with the ID of the Google Cloud project you want to use.
+
+## Troubleshooting
+
+1. If there are wired Pulumi issue it may be useful to remove infrastructure/.venv folder and configure Pulumi again
+   ```bash 
+   rm -rf infrastructure/.venv
+   make configure-infra-tool
+   ```
 
 ## How to Run Locally
 
