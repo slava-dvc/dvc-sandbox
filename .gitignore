@@ -4,6 +4,7 @@
 infrastructure/Pulumi.*.yaml
 # Except the main config
 !infrastructure/Pulumi.yaml
+.streamlit
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

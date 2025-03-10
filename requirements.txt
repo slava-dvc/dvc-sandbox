@@ -25,3 +25,4 @@ PyMuPDF
 python-multipart
 typer
 streamlit
+Authlib>=1.3.2

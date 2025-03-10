@@ -1,6 +1,7 @@
 
 import pulumi_gcp as gcp
 
+
 def create_cloud_run_secret_env(secret_id):
     secret = gcp.secretmanager.Secret.get(
         secret_id,

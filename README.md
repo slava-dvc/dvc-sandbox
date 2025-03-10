@@ -36,6 +36,13 @@ a robust and extensible API
    git clone git@github.com:vctuna/vcmate-synapse.git
    cd vcmate-synapse
    ```
+2. Setup secrets
+   Copy .env.example to .env and fill the blanks 
+   ```bash
+   copy .env.example .env
+   ```
+   Create `.streamlit/secrets.toml`. Use [documentation](https://docs.streamlit.io/develop/tutorials/authentication/google)
+
 
 2. Make venv and Install dependencies:
    ```bash

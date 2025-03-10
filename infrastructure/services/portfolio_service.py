@@ -3,6 +3,8 @@ import pulumi_gcp as gcp
 from .defaults import PROJECT_ID
 from .service_account import service_account
 from .repo import short_sha
+from .gcp_secrets import create_cloud_run_secret_env
+
 
 portfolio = gcp.cloudrunv2.Service(
     "portfolio-cloud-run-service",  # Unique internal name
@@ -23,7 +25,10 @@ portfolio = gcp.cloudrunv2.Service(
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
                         name="CLOUD",
                         value="1",
-                    )
+                    ),
+                ] + [
+                    create_cloud_run_secret_env(secret_id = secret_id)
+                    for secret_id in ['COOKIE_SECRET', 'OAUTH_CLIENT_ID', 'OAUTH_SECRET']
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
