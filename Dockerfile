@@ -6,12 +6,14 @@ ENV APP_HOME=/app
 
 WORKDIR $APP_HOME
 
-COPY . ./
 COPY requirements.txt ./
 
 # Install production dependencies.
 RUN pip install --upgrade pip && pip install --check-build-dependencies --no-cache-dir --compile -U \
     -r requirements.txt && rm requirements.txt
+
+COPY . ./
+
 RUN chmod +x entrypoint.sh
 ENV PATH=/root/.local/bin:$PATH
 
