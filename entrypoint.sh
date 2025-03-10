@@ -13,13 +13,9 @@ if [ "$command" = 'backend' ]; then
 elif [ "$command" = 'job' ]; then
     exec python -m app.job "$@"
 elif [ "$command" = "portfolio" ]; then
-    mkdir -p .streamlit
-    env
-    python3 infrastructure/generate_streamlit_secrets.py > .streamlit/secrets.toml
-    echo "Secrets are configured"
-    cat .streamlit/secrets.toml
-    export PYTHONPATH="$(pwd):$PYTHONPATH"
-    exec streamlit run app/portfolio.py --server.port $PORT --server.headless 1 "$@"
+    python3 infrastructure/generate_streamlit_secrets.py > /app/streamlit_secrets.toml
+    export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
+    exec streamlit run app/portfolio.py --server.port $PORT --server.headless 1 --secrets.files /app/streamlit_secrets.toml "$@"
 else
     exec "$command" "$@"
 fi

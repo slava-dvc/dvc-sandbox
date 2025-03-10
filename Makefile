@@ -19,8 +19,8 @@ build-app:
 
 deploy-app:
 	@echo "Deploying image ${IMAGE}"
-	gcloud --project ${GOOGLE_CLOUD_PROJECT} run deploy synapse image ${IMAGE} --region ${GOOGLE_CLOUD_REGION}
-	gcloud --project ${GOOGLE_CLOUD_PROJECT} run deploy portfolio image ${IMAGE} --region ${GOOGLE_CLOUD_REGION}
+	gcloud --project ${GOOGLE_CLOUD_PROJECT} run deploy portfolio --image ${IMAGE} --region ${GOOGLE_CLOUD_REGION}
+	gcloud --project ${GOOGLE_CLOUD_PROJECT} run deploy synapse --image ${IMAGE} --region ${GOOGLE_CLOUD_REGION}
 	gcloud --project ${GOOGLE_CLOUD_PROJECT} run services --region ${GOOGLE_CLOUD_REGION} add-iam-policy-binding synapse --member="allUsers" --role=roles/run.invoker
 
 install-infra-tool:

@@ -19,14 +19,14 @@ def generate_secrets():
     # Build secrets dictionary
     secrets = {
         'auth': {
-            'redirect_uri': os.environ.get('OAUTH_REDIRECT_URI', 'https://portfolio.dvcagent.com/oauth2callback'),
-            'cookie_secret': os.environ['COOKIE_SECRET'],
-            'client_id': os.environ['OAUTH_CLIENT_ID'],
-            'client_secret': os.environ['OAUTH_SECRET'],
+            'redirect_uri': os.environ.get('OAUTH_REDIRECT_URI', 'https://portfolio.dvcagent.com/oauth2callback').strip(),
+            'cookie_secret': os.environ['COOKIE_SECRET'].strip(),
+            'client_id': os.environ['OAUTH_CLIENT_ID'].strip(),
+            'client_secret': os.environ['OAUTH_SECRET'].strip(),
             'server_metadata_url': os.environ.get(
                 'OAUTH_SERVER_METADATA_URL',
                 'https://accounts.google.com/.well-known/openid-configuration'
-            )
+            ).strip()
         }
     }
 
