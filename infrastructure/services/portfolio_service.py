@@ -28,7 +28,7 @@ portfolio = gcp.cloudrunv2.Service(
                     ),
                 ] + [
                     create_cloud_run_secret_env(secret_id = secret_id)
-                    for secret_id in ['COOKIE_SECRET', 'OAUTH_CLIENT_ID', 'OAUTH_SECRET']
+                    for secret_id in ['COOKIE_SECRET', 'OAUTH_CLIENT_ID', 'OAUTH_SECRET', 'AIRTABLE_API_KEY']
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
