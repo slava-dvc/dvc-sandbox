@@ -1,10 +1,16 @@
 import sys
 import pandas as pd
 import streamlit as st
+import plotly.express as px
+
 from pathlib import Path
 from app.integrations import airtable
-from data import get_investments
+from data import get_investments, get_companies
 
+EMAIL_ALLOW_LIST = {
+    'galilei.mail@gmail.com',
+    'neverproof@gmail.com',
+}
 
 st.set_page_config(
     page_title="DVC Portfolio Management",
@@ -20,7 +26,7 @@ def login_screen():
 
 def is_email_allowed():
     email = st.experimental_user.email
-    return email == 'galilei.mail@gmail.com' or email.endswith('davidovs.com')
+    return email in EMAIL_ALLOW_LIST or email.endswith('davidovs.com')
 
 
 def handle_not_authorized():
@@ -37,15 +43,15 @@ def show_fund_selector(investments):
     return selected_fund if selected_fund != 'Select...' else None
 
 
-def show_keymetrics(investments: pd.DataFrame):
+def show_keymetrics(investments: pd.DataFrame, companies: pd.DataFrame):
     fund_metrics = {
         "Deployed Capital": investments['Amount Invested'].sum(),
         "Total Deals": len(investments),
         "Initial Investments": len(investments) - investments['Is it follow-on?'].sum(),
         "Follow ons": investments['Is it follow-on?'].sum(),
-        "NOEC": 'TBD',
-        "Portf.": 'TBD',
-        "Write offs": 'TBD',
+        "MOIC": 'TBD',
+        "Exits": sum(list(companies.Status == 'Exit')),
+        "Write offs": sum(list(companies['Status'] == 'Write-off')),
         "TVPI": 'TBD',
     }
 
@@ -53,11 +59,11 @@ def show_keymetrics(investments: pd.DataFrame):
 
     with col1:
         st.metric("Deployed Capital", fund_metrics["Deployed Capital"])
-        st.metric("NOEC", fund_metrics["NOEC"])
+        st.metric("MOIC", fund_metrics["MOIC"])
 
     with col2:
         st.metric("Total Deals", fund_metrics["Total Deals"])
-        st.metric("Portf.", fund_metrics["Portf."])
+        st.metric("Exits", fund_metrics["Exits"])
 
     with col3:
         st.metric("Initial Investments", fund_metrics["Initial Investments"])
@@ -67,15 +73,57 @@ def show_keymetrics(investments: pd.DataFrame):
         st.metric("Follow ons", fund_metrics["Follow ons"])
         st.metric("TVPI", fund_metrics["TVPI"])
 
-    pass
+
+def show_counted_pie(df: pd.DataFrame, title: str, column):
+    st.subheader(title)
+
+    # Count values for the specified column
+    value_counts = df[column].value_counts().reset_index()
+    value_counts.columns = [column, 'Count']
+    # st.dataframe(value_counts)
+
+    fig = px.pie(
+        value_counts, values='Count', names=column, title=None,
+    )
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def show_companies(companies: pd.DataFrame):
+    st.subheader("Portfolio Companies")
+    search_query = st.text_input("Search Company Name...", "")
+    companies_to_display = companies[['Company', 'Company Stage', 'LastUpdate']]
+    st.dataframe(
+        companies_to_display,
+        hide_index=True,
+        use_container_width=True
+    )
 
 
 def show_fund():
     all_investments = get_investments()
+    all_companies = get_companies()
     selected_fund = show_fund_selector(all_investments)
+    st.markdown("---")
     investments = all_investments[all_investments['Fund'] == selected_fund] if selected_fund else all_investments
-    show_keymetrics(investments)
-
+    companies = all_companies[all_companies['Initial Fund Invested From'] == selected_fund] if selected_fund else all_companies
+    show_keymetrics(investments, companies)
+    st.markdown("---")
+    chart_col1, chart_col2 = st.columns([1, 1])
+    with chart_col1:
+        show_counted_pie(
+            df=companies[companies['Status'].isin(["Invested", "Exit", "Write-off"])],
+            title="Stage when we invested",
+            column="Stage when we invested"
+        )
+    with chart_col2:
+        show_counted_pie(
+            df=companies[companies['Status'].isin(["Invested", "Exit", "Write-off"])],
+            title="Companies by industry",
+            column="Main Industry"
+        )
+    st.markdown("---")
+    show_companies(companies)
 
 if not st.experimental_user.is_logged_in:
     login_screen()
