@@ -21,16 +21,28 @@ def fetch_table_as_rows(table_name: str, **options) -> typing.List[dict]:
 
 
 def fetch_table_as_df(table_name: str, **options) -> pd.DataFrame:
-    rows = fetch_table_as_rows(table_name)
-    return pd.DataFrame([r['fields'] for r in rows])
+    rows = fetch_table_as_rows(table_name, **options)
+    return pd.DataFrame([r['fields'] | {'id': r.get('id')} for r in rows]).set_index('id')
 
 
-def get_investments():
-    return fetch_table_as_df('tblrsrZTHW8famwpw')
+def get_investments(**options):
+    return fetch_table_as_df('tblrsrZTHW8famwpw', **options)
 
 
-def get_companies():
-    return fetch_table_as_df('tblJL5aEsZFa0x6zY')
+def get_companies(**options):
+    return fetch_table_as_df('tblJL5aEsZFa0x6zY', **options)
+
+
+def get_ask_to_task(**options):
+    return fetch_table_as_df('tblos3pGBciCaxXp0', **options)
+
+
+def get_people(**options):
+    return fetch_table_as_df('tbl5cyHdQ9ijkbz7K', **options)
+
+
+def get_updates(**options):
+    return fetch_table_as_df('tblBA51bFtn6dZmRX', **options)
 
 
 def get_companies_config():

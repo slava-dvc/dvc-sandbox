@@ -5,7 +5,7 @@ import plotly.express as px
 
 from pathlib import Path
 from app.integrations import airtable
-from data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
+from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
 
 EMAIL_ALLOW_LIST = {
     'galilei.mail@gmail.com',
@@ -38,9 +38,9 @@ def handle_not_authorized():
 
 
 def show_fund_selector(investments):
-    fund_options = ['Select...'] + list(reversed(sorted(investments['Fund'].unique())))
-    selected_fund = st.selectbox("Pick the fund", fund_options)
-    return selected_fund if selected_fund != 'Select...' else None
+    fund_options = list(reversed(sorted(investments['Fund'].unique())))
+    selected_fund = st.selectbox("Pick the fund", fund_options, index=None, placeholder="Select...")
+    return selected_fund
 
 
 def show_keymetrics(investments: pd.DataFrame, companies: pd.DataFrame):
@@ -95,11 +95,15 @@ def show_companies(companies: pd.DataFrame):
     companies_to_display = companies[
         ['Company', 'URL', 'Initial Valuation', 'Current Valuation', 'Current Stage', 'Main Industry']
     ]
+    companies_to_display['Open'] = [f"/company?id={x}" for x in companies.index]
     if search_query:
         index = companies_to_display['Company'].str.lower().str.contains(search_query, na=False)
         companies_to_display = companies_to_display[index]
     st.dataframe(
         companies_to_display,
+        column_config={
+            'Open': st.column_config.LinkColumn("Open", display_text="Learn more"),
+        },
         hide_index=True,
         use_container_width=True
     )
@@ -135,6 +139,7 @@ def show_fund():
         )
     st.markdown("---")
     show_companies(companies)
+
 
 if not st.experimental_user.is_logged_in:
     login_screen()
