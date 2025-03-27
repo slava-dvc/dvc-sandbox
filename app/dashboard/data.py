@@ -45,6 +45,10 @@ def get_updates(**options):
     return fetch_table_as_df('tblBA51bFtn6dZmRX', **options)
 
 
+def get_portfolio(**options):
+    return fetch_table_as_df('tblxeUBhlLFnoG6QC', **options)
+
+
 def get_companies_config():
     return get_table_config('tblJL5aEsZFa0x6zY')
 

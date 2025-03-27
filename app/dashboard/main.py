@@ -95,7 +95,7 @@ def show_companies(companies: pd.DataFrame):
     companies_to_display = companies[
         ['Company', 'URL', 'Initial Valuation', 'Current Valuation', 'Current Stage', 'Main Industry']
     ]
-    companies_to_display['Open'] = [f"/company?id={x}" for x in companies.index]
+    companies_to_display.insert(0, 'Open', [f"/company?id={x}" for x in companies.index])
     if search_query:
         index = companies_to_display['Company'].str.lower().str.contains(search_query, na=False)
         companies_to_display = companies_to_display[index]
