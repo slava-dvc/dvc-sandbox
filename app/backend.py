@@ -8,18 +8,13 @@ from app.shared.lifespan_objects import lifespan_objects
 
 class BackendServer(server.FastAPIServer):
 
-    def setup_app(self, app: FastAPI):
-        super().setup_app(app)
+    def setup_routes(self, app: FastAPI):
+        super().setup_routes(app)
 
         from app import integrations, pdftotext
 
         app.include_router(integrations.router, prefix='/v1')
         app.include_router(pdftotext.router, prefix='/v1')
-
-    @asynccontextmanager
-    async def lifespan(self, app: FastAPI):
-        async with lifespan_objects:
-            yield
 
 
 server = BackendServer()

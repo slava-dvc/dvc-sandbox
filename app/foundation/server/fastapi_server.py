@@ -1,18 +1,25 @@
 import asyncio
-import logging
 import multiprocessing
+from contextlib import asynccontextmanager
+from typing import Dict, Any, AnyStr as Str
 
 import httpx
-from contextlib import asynccontextmanager
-
 import uvicorn
+from fastapi.exceptions import RequestValidationError
+
+from pymongo import AsyncMongoClient
+from pymongo.errors import PyMongoError
+from pymongo.asynchronous import database
+from google.cloud import firestore, pubsub
 from functools import cached_property
 from fastapi import FastAPI
 from fastapi.middleware import gzip, trustedhost
+from starlette.middleware.authentication import AuthenticationMiddleware
 
 from .async_server import AsyncServer
 from .exception_handlers import *
 from ..middleware import RequestTimeoutMiddleware
+from ..env import get_env
 
 
 __all__ = ['FastAPIServer']
@@ -20,20 +27,75 @@ __all__ = ['FastAPIServer']
 
 class FastAPIServer(AsyncServer):
 
-    @asynccontextmanager
-    async def lifespan(self, app: FastAPI):
-        yield
-
     @cached_property
     def app(self):
+
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            async with self as resources:
+                yield resources
+
         app = FastAPI(
-            dependencies=self.dependencies,
-            debug=self.args['debug'],
-            lifespan=self.lifespan
+            lifespan=lifespan,
+            openapi_url="/docs/openapi.json"
         )
+
+        self.setup_exception_handlers(app)
+        self.setup_middleware(app)
+        self.setup_routes(app)
+        return app
+
+    @cached_property
+    def http_client(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(
+            transport=httpx.AsyncHTTPTransport(retries=3),
+            timeout=httpx.Timeout(60*5),
+        )
+
+    @cached_property
+    def firestore_client(self) -> firestore.AsyncClient:
+        return firestore.AsyncClient()
+
+    @cached_property
+    def pubsub_client(self) -> pubsub.PublisherClient:
+        return pubsub.PublisherClient()
+
+    @cached_property
+    def mongo_client(self) -> AsyncMongoClient:
+        return AsyncMongoClient(str(get_env('MONGODB_URI')))
+
+    @cached_property
+    def default_database(self) -> database.AsyncDatabase:
+        return self.mongo_client.get_default_database()
+
+    async def __aenter__(self) -> Dict[Str, Any]:
+        await self.http_client.__aenter__()
+        return {
+            "http_client": self.http_client,
+            "firestore_client": self.firestore_client,
+            "pubsub_client": self.pubsub_client,
+            "mongo_client": self.mongo_client,
+            "config": self.config,
+            "args": self.args,
+            "logger": self.logger,
+            "logging_client": self.logging_client,
+        }
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.http_client.__aexit__(exc_type, exc_val, exc_tb)
+        await self.mongo_client.close()
+        self.firestore_client.close()
+        self.pubsub_client.transport.close()
+
+    def setup_exception_handlers(self, app: FastAPI):
+        for exception_class in [
+            RequestValidationError
+        ]:
+            app.add_exception_handler(exception_class, request_validation_exception_handler)
+
         for exception_class in [
             ArithmeticError, AssertionError, AttributeError, LookupError, ImportError, MemoryError,
-            ReferenceError, ValueError, TypeError, OSError, RuntimeError
+            ReferenceError, ValueError, TypeError, OSError, RuntimeError, PyMongoError
         ]:
             app.add_exception_handler(exception_class, runtime_exception_handler)
 
@@ -47,33 +109,30 @@ class FastAPIServer(AsyncServer):
         ]:
             app.add_exception_handler(exception_class, http_exception_handler)
 
+    def setup_middleware(self, app: FastAPI):
         app.add_middleware(RequestTimeoutMiddleware, timeout=60)
         app.add_middleware(trustedhost.TrustedHostMiddleware, allowed_hosts=["*"])
         app.add_middleware(gzip.GZipMiddleware)
-        self.setup_app(app)
-        return app
+        # app.add_middleware(AuthenticationMiddleware)
 
-    @property
-    def dependencies(self):
-        return []
+    def setup_routes(self, app: FastAPI):
 
-    def setup_app(self, app: FastAPI):
-        pass
+        @app.get('/')
+        async def root():
+            return "OK"
 
     def execute(self):
         multiprocessing.set_start_method('spawn')
-
-        with self.loop_executor:
-            return uvicorn.run(
-                app=self.app,
-                host="0.0.0.0",
-                port=self.args['port'],
-                # We don't need access logs in cloud environment
-                access_log=not self.args['cloud'],
-                # Autoreload creates more pain than benefit
-                reload=False,
-                # Following settings have to be None or false so uvicorn doesn't create its own logger'
-                log_config=None,
-                log_level=None,
-                use_colors=False
-            )
+        return uvicorn.run(
+            app=self.app,
+            host="0.0.0.0",
+            port=self.args['port'],
+            # We don't need access logs in cloud environment
+            access_log=not self.args['cloud'],
+            # Autoreload creates more pain than benefit
+            reload=False,
+            # Following settings have to be None or false so uvicorn doesn't create its own logger'
+            log_config=None,
+            log_level=None,
+            use_colors=False
+        )

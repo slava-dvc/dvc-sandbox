@@ -3,9 +3,7 @@ import functools
 import typing
 from http import HTTPStatus
 
-from tornado.web import HTTPError
-
-from app.foundation.server.config import AppConfig
+from .server.config import AppConfig
 
 __all__ = ['as_async', 'map_async', 'as_task']
 
@@ -24,7 +22,7 @@ async def map_async(array: typing.List[typing.Any], async_fn: typing.Callable, *
 
         done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=kwargs.get('timeout', 60))
         if pending:
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, "Map async timeout")
+            raise RuntimeError(HTTPStatus.INTERNAL_SERVER_ERROR, "Map async timeout")
 
         results.extend([p.result() for p in done if p.result() is not None])
     return results

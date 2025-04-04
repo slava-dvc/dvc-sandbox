@@ -4,11 +4,17 @@ from datetime import datetime, timedelta
 import pytz
 from dateutil.parser import parse
 
-__all__ = ['as_local', 'to_utc', 'as_utc', 'to_tz',
-           'is_today', 'ES_Eastern', 'midnight',
-           'any_to_datetime', 'convert_values_to_date']
+__all__ = [
+    'as_local', 'to_utc', 'as_utc', 'to_tz',
+    'is_today', 'midnight',
+    'any_to_datetime', 'convert_values_to_date',
+    'US_Eastern', 'US_Central', 'US_Mountain', 'US_Pacific'
+]
 
-ES_Eastern = pytz.timezone('US/Eastern')
+US_Eastern = pytz.timezone('US/Eastern')
+US_Pacific = pytz.timezone('US/Pacific')
+US_Central = pytz.timezone('US/Central')
+US_Mountain = pytz.timezone('US/Mountain')
 
 
 def now():
@@ -50,7 +56,10 @@ def any_to_datetime(v, default=None):
     default = default or as_local(datetime.now())
     if isinstance(v, datetime):
         return as_local(v)
-
+    if isinstance(v, int):
+        if v > 10 ** 10:  # Check if the timestamp is in milliseconds
+            v = v / 1000  # Convert milliseconds to seconds
+        return as_local(datetime.fromtimestamp(v))
     if isinstance(v, str):
         try:
             d = parse(v)
