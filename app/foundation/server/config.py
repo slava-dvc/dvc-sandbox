@@ -1,8 +1,8 @@
 import logging
-import yaml
-
 from collections import UserDict
 from pathlib import Path
+
+import yaml
 from google.api_core.exceptions import PermissionDenied
 from google.cloud import firestore
 
@@ -72,13 +72,17 @@ class AppConfig(metaclass=Singleton):
         return self
 
     def load_db(self, db: firestore.Client):
+        changed = False
         try:
             for doc in db.collection('config').stream():
-                old = dict(self[doc.id])
+                old = dict(self.get(doc.id, {}))
                 new = doc.to_dict()
-                self[doc.id] = Config(data=old | new, path=doc.id)
+                if old != new:
+                    changed = True
+                self[doc.id] = Config(data={**old, **new}, path=doc.id)
         except PermissionDenied as e:
-            logging.error(f'Failed load config from firestore: {e}')
+            logging.error(f'Failed to load config from Firestore: {e}')
+        return changed
 
     def __getitem__(self, item):
         return self._cfg.__getitem__(item)

@@ -1,22 +1,28 @@
-import logging
 import asyncio
-
+import logging
 from http import HTTPStatus
 from json import JSONDecodeError
 
-from fastapi.responses import JSONResponse, Response
-from httpx import HTTPStatusError, ResponseNotRead, StreamError
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, Response
+from google.cloud import logging as cloud_logging
+from httpx import HTTPStatusError, StreamError
+from starlette.requests import ClientDisconnect
+
 from .config import AppConfig
+from .dependencies import get_cloud_logger
+
+__all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_exception_handler',
+           'request_validation_exception_handler']
 
 
-__all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_exception_handler']
+logger = logging.getLogger(__name__)
 
-
-config = AppConfig()
 
 def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
-    logging.warning(f"Timeout: {request.client.host} -> {request.method} {request.url}")
+    logger.warning(f"Timeout: {request.client.host} -> {request.method} {request.url}")
     return JSONResponse(
         content={
             "error": {
@@ -29,7 +35,8 @@ def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
 
 
 def http_exception_handler(request: Request, exc: HTTPStatusError):
-    logging.warning(f"Downstream http code {exc.response.status_code}: {request.client.host} -> {request.method} {request.url}")
+    config: AppConfig = request.state.config
+    logger.warning(f"Downstream http code {exc.response.status_code}: {request.client.host} -> {request.method} {request.url}")
     if config.debug:
         try:
             return Response(
@@ -39,7 +46,6 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
             )
         except (JSONDecodeError, StreamError):
             pass
-
 
     return JSONResponse(
         content={
@@ -54,7 +60,7 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
 
 def runtime_exception_handler(request: Request, exc: Exception):
     code = HTTPStatus.INTERNAL_SERVER_ERROR
-    logging.error(f"Exception: {request.client.host} -> {request.method} {request.url} -> {exc}", exc_info=exc)
+    logger.error(f"Exception: {request.client.host} -> {request.method} {request.url}: {exc}", exc_info=exc)
     return JSONResponse(
         content={
             "error": {
@@ -64,3 +70,31 @@ def runtime_exception_handler(request: Request, exc: Exception):
         },
         status_code=code
     )
+
+
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger: cloud_logging.Logger = get_cloud_logger(request)
+
+    try:
+        try:
+            body = await request.json()
+        except JSONDecodeError:
+            body = await request.body()
+            body = body.decode("utf-8")
+    except (AttributeError, TypeError, ValueError, ClientDisconnect) as e:
+        body = f"Unable to decode body: {e}"
+
+    logger.log_struct({
+        "severity": 'WARNING',
+        "message": "Validation error occurred",
+        "client_host": request.client.host if request.client else "Unknown",
+        "method": request.method,
+        "url": str(request.url),
+        "body": body,
+        "errors": jsonable_encoder(exc.errors())  # Ensure types are JSON serializable
+        })
+    return JSONResponse(
+        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+        content={"detail": jsonable_encoder(exc.errors())},
+    )
+    

@@ -1,7 +1,7 @@
 import os
 import secrets
 
-__all__ = ['is_cloud', 'is_debug', 'is_test', 'token', 'project_id', 'get_env']
+__all__ = ['is_cloud', 'is_debug', 'is_test', 'token', 'project_id', 'get_env', 'port']
 
 
 class EnvValue(object):

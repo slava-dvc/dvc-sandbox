@@ -8,6 +8,9 @@ from .primitives.name import fn_name
 __all__ = ['do_nothing', 'do_nothing_sync', 'on_exception']
 
 
+logger = logging.getLogger(__name__)
+
+
 async def do_nothing(exception: None, *args, **kwargs):
     pass
 
@@ -34,18 +37,18 @@ def on_exception(
             try:
                 ret_val = await fn(*args, **kwargs)
             except asyncio.CancelledError:
-                logging.warning(f"Coroutine {_name} was cancelled. Live is different", _name)
+                logger.warning(f"Coroutine {_name} was cancelled. Live is different", _name)
             except (SystemExit, KeyboardInterrupt, GeneratorExit):
                 raise
             except exceptions as e:
-                logging.info(f'{_name} called with {args}, {kwargs}')
+                logger.info(f'{_name} called with {args}, {kwargs}')
                 msg = f'{e} while call {_name}'
                 if isinstance(e, warn_exceptions):
-                    logging.warning(msg)
+                    logger.warning(msg)
                 elif isinstance(e, skip_traceback_exceptions):
-                    logging.error(msg)
+                    logger.error(msg)
                 else:
-                    logging.exception(msg)
+                    logger.exception(msg)
 
                 if is_do_async:
                     ret_val = await do(*args, exception=e, **kwargs)
