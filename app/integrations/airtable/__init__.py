@@ -5,11 +5,11 @@ import httpx
 
 from .client import *
 from .sync_action import *
-from .pull_companies import pull_companies_from_airtable, process_company_record
+from .pull_companies import pull_companies_from_airtable
 from ...foundation import models
 
 
-__all__ = ['AirTableConfig', 'push_deal_to_airtable', 'pull_companies_from_airtable', 'process_company_record']
+__all__ = ['AirTableConfig', 'push_deal_to_airtable', 'pull_companies_from_airtable']
 
 
 @dataclass
