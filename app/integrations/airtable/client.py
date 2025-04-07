@@ -6,16 +6,22 @@ from .models import *
 
 __all__ = ['AirTableClient', 'AirTable', 'AirField']
 
+RECORDS_PER_PAGE = 100
+MAX_RECORDS_PER_REQUEST = 1_000_000
+
 
 class AirTableClient(object):
     def __init__(self, api_key: str, base_id: str, http_client: httpx.AsyncClient):
-        self.api_key = api_key
+        self.api_key = str(api_key)
         self.http_client = http_client
         self.base_id = base_id
         self.base_url = f"https://api.airtable.com/v0"
         self.headers = {"Authorization": f"Bearer {self.api_key.strip()}","Content-Type": "application/json"}
 
-    async def list_records(self, table_name: str, **kwargs) -> List[Dict[str, Any]]:
+    async def list_records(
+            self, table_name: str, page_size=RECORDS_PER_PAGE,
+            max_records=MAX_RECORDS_PER_REQUEST, **kwargs
+    ) -> List[Dict[str, Any]]:
         """
         Lists records from a table.
 
@@ -27,9 +33,30 @@ class AirTableClient(object):
             A list of records.
         """
         url = f"{self.base_url}/{self.base_id}/{table_name}"
-        response = await self.http_client.get(url, headers=self.headers, params=kwargs)
-        response.raise_for_status()
-        return response.json()["records"]
+        all_records = []
+        params = {**kwargs, "pageSize": page_size}
+
+        while True:
+            response = await self.http_client.get(url, headers=self.headers, params=params)
+            response.raise_for_status()
+            response_data = response.json()
+
+            if "records" in response_data:
+                all_records.extend(response_data["records"])
+
+            # Check if we've reached the maximum number of records
+            if len(all_records) >= max_records:
+                all_records = all_records[:max_records]
+                break
+
+            # Check if there's an offset for the next page
+            if "offset" in response_data:
+                params["offset"] = response_data["offset"]
+            else:
+                # No more pages
+                break
+
+        return all_records
 
     async def get_record(self, table_name: str, record_id: str) -> Dict[str, Any]:
         """

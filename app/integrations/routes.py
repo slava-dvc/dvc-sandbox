@@ -1,10 +1,13 @@
 import logging
 from http import HTTPStatus
 
-from fastapi import APIRouter, Body, Depends, Response
+from fastapi import APIRouter, Body, Depends, Response, Query
+from pymongo import MongoClient
 from .http_models import SyncDealRequest
-from .airtable import push_deal_to_airtable, AirTableConfig
+from .airtable import push_deal_to_airtable, AirTableConfig, pull_companies_from_airtable, AirTableClient
+from ..foundation import get_env
 from ..shared import dependencies, LifespanObjects
+from ..foundation.server.dependencies import get_mongo_client
 
 __all__ = ['router']
 
@@ -42,3 +45,37 @@ async def push_deal(
     if not records_created:
         return Response(status_code=HTTPStatus.NO_CONTENT)
     return Response(status_code=HTTPStatus.CREATED)
+
+
+@router.post('/airtable/pull_companies')
+async def airtable_pull_companies(
+        lifespan_objects: LifespanObjects = Depends(dependencies.lifespan_objects),
+        mongo_client: MongoClient = Depends(get_mongo_client),
+):
+    """
+    Pull companies from Airtable and store them to MongoDB.
+    
+    Query Parameters:
+        table_id: The Airtable table ID containing company data
+    """
+
+    records_processed = 0
+    airtable_client = AirTableClient(
+        api_key=get_env('AIRTABLE_API_KEY'),
+        base_id='appRfyOgGDu7UKmeD',
+        http_client=lifespan_objects.http_client
+    )
+
+    records_processed = await pull_companies_from_airtable(
+        airtable_client=airtable_client,
+        mongo_client=mongo_client,
+        table_id='tblJL5aEsZFa0x6zY'
+    )
+    
+    logging.info(f"Pulled {records_processed} companies from Airtable to MongoDB")
+    
+    if records_processed == 0:
+        return {"status": "warning", "message": "No records processed"}
+    
+    return {"status": "success", "records_processed": records_processed}
+

@@ -1,6 +1,6 @@
 from fastapi import Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pymongo import MongoClient
+from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from google.cloud import firestore, pubsub, logging
 from httpx import AsyncClient
 
@@ -21,7 +21,7 @@ def get_cloud_logger(request: Request) -> logging.Logger:
 
 
 # Dependency to get the MongoDB client
-def get_mongo_client(request: Request) -> MongoClient:
+def get_mongo_client(request: Request) -> AsyncMongoClient:
     return request.state.mongo_client
 
 
