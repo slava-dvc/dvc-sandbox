@@ -13,11 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Code Style Guidelines
 - Python 3.12 with type hints in function signatures
 - Imports organized: stdlib → third-party → local modules
-- Use snake_case for functions/variables, PascalCase for classes
+- Use snake_case for functions/variables, PascalCase for classes, camelCase for json and database fields
 - 4-space indentation throughout
-- Error handling via decorators in `on_exception.py`
 - Domain-driven structure with common code in `foundation/`
 - Use provided design patterns: `singleton.py`, `class_factory.py` 
 - Exception handling with proper HTTP status codes
-- Add docstrings to functions and classes
 - Use `__all__` to define public API in modules
+- Follow instructions and Keep it as simple as possible. Avoid overengineering 
+- Avoid `else`. Use plain flow as much as possible.
