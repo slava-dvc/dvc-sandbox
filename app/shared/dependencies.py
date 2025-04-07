@@ -2,10 +2,14 @@ import re
 from fastapi import Depends, Query, Body, Request
 from google.cloud import firestore
 from .lifespan_objects import *
+from app.shared.spectr import SpectrClient
 
 
-__all__ = ['workspace_by_user_email', 'lifespan_objects']
+__all__ = ['workspace_by_user_email', 'lifespan_objects', 'get_spectr_client']
 
+
+async def get_spectr_client(request: Request) -> SpectrClient:
+    return request.state.resources["spectr_client"]
 
 
 def workspace_collection(

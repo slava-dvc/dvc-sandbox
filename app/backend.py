@@ -1,9 +1,9 @@
 import sys
-from contextlib import asynccontextmanager
+from typing import Dict, Any, AnyStr as Str
 
 from fastapi import FastAPI
 from app.foundation import server
-from app.shared.lifespan_objects import lifespan_objects
+from app.shared.spectr import SpectrClient
 
 
 class BackendServer(server.FastAPIServer):
@@ -15,6 +15,11 @@ class BackendServer(server.FastAPIServer):
 
         app.include_router(integrations.router, prefix='/v1')
         app.include_router(pdftotext.router, prefix='/v1')
+    
+    async def __aenter__(self) -> Dict[Str, Any]:
+        resources = await super().__aenter__()
+        resources["spectr_client"] = SpectrClient(resources["logging_client"], resources["http_client"])
+        return resources
 
 
 server = BackendServer()
