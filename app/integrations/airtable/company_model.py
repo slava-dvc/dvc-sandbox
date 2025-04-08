@@ -9,7 +9,8 @@ class Company(BaseModel):
     name: str = Field(description="Company name")
     website: str = Field(None, description="Company website URL")
     updatedAt: datetime = Field(default_factory=lambda: to_utc(datetime.now()), description="Last time record was updated")
-    airtableId: str | None = Field(description="Unique identifier from Airtable")
+    airtableId: str | None = Field(description="Unique identifier from Airtable", default=None)
+    spectrId: str | None = Field(description="Unique identifier from Spectr", default=None)
 
     class Config:
         json_schema_extra = {
