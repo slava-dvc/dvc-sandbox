@@ -1,7 +1,7 @@
 import httpx
 
 from app.foundation import get_env, server
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 
 class SpectrClient(object):
@@ -117,7 +117,7 @@ class SpectrClient(object):
             linkedin_url: str = None,
             linkedin_id: str = None,
             crunchbase_url: str = None,
-    ) -> Dict[str, Any]:
+    ) -> List[Dict[str, Any]]:
         """
         Enrich companies using the POST /companies endpoint.
         https://api.tryspecter.com/api-ref/companies
@@ -130,7 +130,7 @@ class SpectrClient(object):
             crunchbase_url: Full URL from Crunchbase
     
         Returns:
-            A dictionary containing a list of companies or an empty list if no matches were found.
+            The list of companies that were found in the query
     
         Raises:
             HTTPError: For server-side or client-side HTTP errors.

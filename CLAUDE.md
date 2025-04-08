@@ -21,3 +21,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Use `__all__` to define public API in modules
 - Follow instructions and Keep it as simple as possible. Avoid overengineering 
 - Avoid `else`. Use plain flow as much as possible.
+- Implement only the function that was asked. DO NOT OVERENGINEERING. Avoid counting processed results.  
+- However proper logging is required

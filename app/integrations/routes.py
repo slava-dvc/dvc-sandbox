@@ -5,9 +5,10 @@ from fastapi import APIRouter, Body, Depends, Response, Query
 from pymongo import MongoClient
 from .http_models import SyncDealRequest
 from .airtable import push_deal_to_airtable, AirTableConfig, pull_companies_from_airtable, AirTableClient
+from .spectr import SpectrSyncAction
 from ..foundation import get_env
 from ..shared import dependencies, LifespanObjects
-from ..foundation.server.dependencies import get_mongo_client
+from ..foundation.server.dependencies import get_mongo_client, get_cloud_logger
 
 __all__ = ['router']
 
@@ -79,3 +80,16 @@ async def airtable_pull_companies(
     
     return {"status": "success", "records_processed": records_processed}
 
+
+@router.post('/spectr/sync_companies')
+async def spectr_sync_companies(
+    mongo_client: MongoClient = Depends(get_mongo_client),
+    logger = Depends(get_cloud_logger),
+    spectr_clinet = Depends(dependencies.get_spectr_client),
+):
+    spectr_sync_action = SpectrSyncAction(
+        mongo_client,
+        spectr_clinet,
+        logger
+    )
+    await spectr_sync_action()

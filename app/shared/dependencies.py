@@ -9,7 +9,7 @@ __all__ = ['workspace_by_user_email', 'lifespan_objects', 'get_spectr_client']
 
 
 async def get_spectr_client(request: Request) -> SpectrClient:
-    return request.state.resources["spectr_client"]
+    return request.state.spectr_client
 
 
 def workspace_collection(
