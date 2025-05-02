@@ -64,8 +64,7 @@ class SpectrSyncAction:
                     {'spectrUpdatedAt': {'$lte': three_days_ago}},
                     {'spectrUpdatedAt': None}
                 ],
-            },
-            limit=10
+            }
         )
         async for company_doc in cursor:
             try:
