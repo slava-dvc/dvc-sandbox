@@ -18,7 +18,10 @@ class BackendServer(server.FastAPIServer):
     
     async def __aenter__(self) -> Dict[Str, Any]:
         resources = await super().__aenter__()
-        resources["spectr_client"] = SpectrClient(resources["logging_client"], resources["http_client"])
+        resources["spectr_client"] = SpectrClient(
+            logging_client=resources["logging_client"].logger('spectr'),
+            http_client=resources["http_client"]
+        )
         return resources
 
 

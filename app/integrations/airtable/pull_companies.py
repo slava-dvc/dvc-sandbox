@@ -39,7 +39,7 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
     # Upsert to MongoDB (update if exists, insert if new)
     result = await companies_collection.update_one(
         {"airtableId": company.airtableId},
-        {"$set": company.model_dump()},
+        {"$set": company.model_dump(exclude_none=True)},
         upsert=True
     )
 
