@@ -1,4 +1,9 @@
-# Happy path
+### Pull company from Airtable and push to MongoDB
+
+POST {{host}}/v1/integrations/airtable/pull_companies
+
+
+### Happy path push comany to Airtable
 
 POST {{host}}/v1/integrations/sync/deal
 Content-Type: application/json

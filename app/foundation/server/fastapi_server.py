@@ -28,7 +28,7 @@ __all__ = ['FastAPIServer']
 class FastAPIServer(AsyncServer):
 
     @cached_property
-    def app(self):
+    def app(self) -> FastAPI:
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
