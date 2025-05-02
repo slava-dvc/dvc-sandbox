@@ -51,3 +51,4 @@ infrastructure/preview.txt
 
 # Tests and RND
 tests/
+rnd/

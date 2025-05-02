@@ -38,7 +38,7 @@ def handle_not_authorized():
 
 
 def show_fund_selector(investments):
-    fund_options = list(reversed(sorted(investments['Fund'].unique())))
+    fund_options = list(reversed(sorted(investments['Fund'].notna().unique())))
     selected_fund = st.selectbox("Pick the fund", fund_options, index=None, placeholder="Select...")
     return selected_fund
 
