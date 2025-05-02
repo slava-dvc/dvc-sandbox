@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Depends, Response, Query
 from pymongo import MongoClient
 from .http_models import SyncDealRequest
 from .airtable import push_deal_to_airtable, AirTableConfig, pull_companies_from_airtable, AirTableClient
-# from .spectr import SpectrSyncAction
+from .spectr import SpectrSyncAction
 from ..foundation import get_env
 from ..shared import dependencies, LifespanObjects
 from ..foundation.server.dependencies import get_mongo_client, get_cloud_logger

@@ -1,0 +1,8 @@
+POST https://app.tryspecter.com/api/v1/companies
+Content-Type: application/json
+X-API-KEY: {{SPECTR_API_KEY}}
+
+
+{
+  "website_url": "https://cr8tr.ai"
+}

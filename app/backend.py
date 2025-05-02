@@ -23,7 +23,7 @@ class BackendServer(server.FastAPIServer):
 
 
 server = BackendServer()
-app = server.app
+app: FastAPI = server.app
 
 
 if __name__ == '__main__':

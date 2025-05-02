@@ -1,0 +1,3 @@
+### Enrich company with Spectr insights
+
+POST {{host}}/v1/integrations/spectr/sync_companies
