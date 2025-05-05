@@ -6,7 +6,7 @@ import plotly.express as px
 from pathlib import Path
 from app.integrations import airtable
 from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
-from app.dashboard.formatting import format_as_dollars
+from app.dashboard.formatting import format_as_dollars, get_preview
 
 EMAIL_ALLOW_LIST = {
     'galilei.mail@gmail.com',
@@ -95,33 +95,66 @@ def show_counted_pie(df: pd.DataFrame, title: str, column):
 def show_companies(companies: pd.DataFrame):
     st.subheader("Portfolio Companies")
     search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')
-    companies_to_display = companies[
-        ['Company', 'URL', 'Initial Valuation', 'Current Valuation', 'Current Stage', 'Main Industry']
-    ]
-    companies_to_display.insert(0, 'Open', [f"/company?id={x}" for x in companies.index])
     if search_query:
         index = companies_to_display['Company'].str.lower().str.contains(search_query, na=False)
-        companies_to_display = companies_to_display[index]
-    st.dataframe(
-        companies_to_display,
-        column_config={
-            'Open': st.column_config.LinkColumn("Open", display_text="Learn more"),
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+        companies_to_display = companies[index]
+    else:
+        companies_to_display = companies
+    for company_id, company in companies_to_display.iterrows():
+        # st.write(company)
+        company_name = company['Company']
+        company_website = company['URL']
+        company_stage = company['Company Stage']
+        company_stage = company_stage[0] if isinstance(company_stage, list) and company_stage else 'N/A'
+        initial_fund = company['Initial Fund Invested From']
+        initial_valuation = company['Initial Valuation']
+        current_valuation = company['Last Valuation/cap (from DVC Portfolio 3)']
+        current_valuation = current_valuation[0] if isinstance(current_valuation, list) and current_valuation else 'N/A'
+        logo_url = get_preview(company['Logo'])
+        st.write({
+            'Company': company_name,
+            "url": company_website,
+            'Stage': company_stage,
+            'Website': company_website,
+            'Initial Fund': initial_fund,
+            'Initial Valuation': initial_valuation,
+            'current_valuation': current_valuation,
+            'logo': logo_url,
+        })
+        st.link_button("View", f"/company?id={company_id}")
+        st.write(dict(company))
+        break
+
+    # companies_to_display = companies[
+    #     ['Company', 'URL', 'Initial Valuation', 'Current Valuation', 'Current Stage', 'Main Industry']
+    # ]
+    # companies_to_display.insert(0, 'Open', [f"/company?id={x}" for x in companies.index])
+    # if search_query:
+    #     index = companies_to_display['Company'].str.lower().str.contains(search_query, na=False)
+    #     companies_to_display = companies_to_display[index]
+    # st.dataframe(
+    #     companies_to_display,
+    #     column_config={
+    #         'Open': st.column_config.LinkColumn("Open", display_text="Learn more"),
+    #     },
+    #     hide_index=True,
+    #     use_container_width=True
+    # )
     st.write(f"Total companies: {len(companies_to_display)}")
 
 
 def show_fund():
-    all_investments = get_investments()
-    all_companies = get_companies()
+    with st.spinner("Loading investments..."):
+        all_investments = get_investments()
+    with st.spinner("Loading companies..."):
+        all_companies = get_companies()
     selected_fund = show_fund_selector(all_investments)
     st.markdown("---")
     investments = all_investments[all_investments['Fund'] == selected_fund] if selected_fund else all_investments
     companies = all_companies[all_companies['Initial Fund Invested From'] == selected_fund] if selected_fund \
         else all_companies[~all_companies['Initial Fund Invested From'].isna()]
-
+    with st.spinner("Enrich data..."):
+        all_companies = get_companies()
     investments = replace_ids_with_values(get_investments_config(), investments)
     companies = replace_ids_with_values(get_companies_config(), companies)
 

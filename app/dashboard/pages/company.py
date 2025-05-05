@@ -3,7 +3,7 @@ import requests
 import streamlit as st
 import numpy as np
 from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
-from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number
+from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
 
 
 st.set_page_config(
@@ -114,10 +114,10 @@ def show_team(company: pd.Series):
         st.info("No founders for this company.")
 
     for founder in founders.itertuples():
-        photo_url = founder.Photo[0]['url'] if isinstance(founder.Photo, list) and len(founder.Photo) > 0 else None
-        image_column, col1, col2, col3 = st.columns([2, 2, 5, 1], gap='medium', vertical_alignment='center')
+        image_column, col1, col2, col3 = st.columns([1, 2, 3, 1], gap='small', vertical_alignment='center')
+        photo_url = get_preview(founder.Photo)
         if photo_url:
-            requests.get(photo_url)
+
             image_column.image(photo_url)
 
         col1.subheader(founder.Name)
