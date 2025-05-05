@@ -34,6 +34,7 @@ def is_valid_number(number):
         bool: True if the number is valid, False otherwise.
     """
     return number is not None and not (
+            (isinstance(number, str)) or
             (hasattr(number, "dtype") and np.isnan(number)) or
             (isinstance(number, float) and np.isnan(number))
     )

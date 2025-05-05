@@ -96,7 +96,7 @@ def show_companies(companies: pd.DataFrame):
     st.subheader("Portfolio Companies")
     search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')
     if search_query:
-        index = companies_to_display['Company'].str.lower().str.contains(search_query, na=False)
+        index = companies['Company'].str.lower().str.contains(search_query, na=False)
         companies_to_display = companies[index]
     else:
         companies_to_display = companies
@@ -111,19 +111,55 @@ def show_companies(companies: pd.DataFrame):
         current_valuation = company['Last Valuation/cap (from DVC Portfolio 3)']
         current_valuation = current_valuation[0] if isinstance(current_valuation, list) and current_valuation else 'N/A'
         logo_url = get_preview(company['Logo'])
-        st.write({
-            'Company': company_name,
-            "url": company_website,
-            'Stage': company_stage,
-            'Website': company_website,
-            'Initial Fund': initial_fund,
-            'Initial Valuation': initial_valuation,
-            'current_valuation': current_valuation,
-            'logo': logo_url,
-        })
-        st.link_button("View", f"/company?id={company_id}")
-        st.write(dict(company))
-        break
+        # st.write({
+        #     'Company': company_name,
+        #     "url": company_website,
+        #     'Stage': company_stage,
+        #     'Website': company_website,
+        #     'Initial Fund': initial_fund,
+        #     'Initial Valuation': initial_valuation,
+        #     'current_valuation': current_valuation,
+        #     'logo': logo_url,
+        # })
+        # st.link_button("View", f"/company?id={company_id}")
+        # st.write(dict(company))
+        col1, col2, col3 = st.columns([1, 5, 1], gap='small')
+
+        with col1:
+            if logo_url:
+                try:
+                    st.image(logo_url, width=64)
+                except Exception:
+                    st.write("📊")
+            else:
+                st.write("📊")
+
+        with col2:
+            # Use a smaller header and put company name and stage on same line
+            if company_website and isinstance(company_website, str):
+                st.markdown(f"**[{company_name}]({company_website})** | {company_stage} | {initial_fund}")
+            else:
+                st.markdown(f"**{company_name}** | {company_stage} | {initial_fund}")
+
+            # All financial information in one row using 3 smaller columns
+            c2, c3 = st.columns(2)
+            # c1.markdown(f"Fund: **{initial_fund}**")
+            c2.markdown(f"Initial Val: **{initial_valuation if initial_valuation else 'N/A'}**")
+            c3.markdown(f"Current Val: **{format_as_dollars(current_valuation) if current_valuation else 'N/A'}**")
+
+        with col3:
+            # Push the button higher on the row by adding padding
+            st.write("")  # Small spacer to align with company name
+            st.link_button("View", f"/company?id={company_id}", use_container_width=True)
+
+        # # Thinner divider
+        st.markdown("<hr style='margin: 0.25em 0.25em; border-width: 0; background-color: #e0e0e0; height: 1px'>",
+                    unsafe_allow_html=True)
+
+
+        # st.markdown("---")
+
+        # break
 
     # companies_to_display = companies[
     #     ['Company', 'URL', 'Initial Valuation', 'Current Valuation', 'Current Stage', 'Main Industry']
