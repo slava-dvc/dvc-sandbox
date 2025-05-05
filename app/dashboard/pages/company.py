@@ -11,6 +11,8 @@ st.set_page_config(
     layout="wide"
 )
 
+st.link_button("← To Main ", "/")
+
 company_id = st.query_params.get('id')
 companies = get_companies()
 companies_in_portfolio = companies[~companies['Initial Fund Invested From'].isna()].sort_values(by='Company')

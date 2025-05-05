@@ -6,6 +6,7 @@ import plotly.express as px
 from pathlib import Path
 from app.integrations import airtable
 from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
+from app.dashboard.formatting import format_as_dollars
 
 EMAIL_ALLOW_LIST = {
     'galilei.mail@gmail.com',
@@ -25,7 +26,7 @@ def login_screen():
 
 
 def is_email_allowed():
-    email = st.experimental_user.email
+    email = st.user.email
     return email in EMAIL_ALLOW_LIST or email.endswith('davidovs.com')
 
 
@@ -38,14 +39,16 @@ def handle_not_authorized():
 
 
 def show_fund_selector(investments):
-    fund_options = list(reversed(sorted(investments['Fund'].notna().unique())))
+    funds = investments['Fund']
+    unique_funds = funds[funds.notna()].unique()
+    fund_options = list(reversed(sorted(unique_funds)))
     selected_fund = st.selectbox("Pick the fund", fund_options, index=None, placeholder="Select...")
     return selected_fund
 
 
 def show_keymetrics(investments: pd.DataFrame, companies: pd.DataFrame):
     fund_metrics = {
-        "Deployed Capital": investments['Amount Invested'].sum(),
+        "Deployed Capital": format_as_dollars(investments['Amount Invested'].sum()),
         "Total Deals": len(investments),
         "Initial Investments": len(investments) - investments['Is it follow-on?'].sum(),
         "Follow ons": investments['Is it follow-on?'].sum(),
@@ -141,7 +144,7 @@ def show_fund():
     show_companies(companies)
 
 
-if not st.experimental_user.is_logged_in:
+if not st.user.is_logged_in:
     login_screen()
 elif not is_email_allowed():
     handle_not_authorized()
