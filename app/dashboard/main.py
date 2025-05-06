@@ -5,19 +5,22 @@ import plotly.express as px
 
 from pathlib import Path
 from app.integrations import airtable
-from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
+from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, \
+    replace_ids_with_values, get_portfolio, get_updates
 from app.dashboard.formatting import format_as_dollars, get_preview
+
+from app.dashboard.fund import show_fund_page
+from app.dashboard.company import show_company_page
+
+st.set_page_config(
+    page_title="DVC Portfolio Dashboard", page_icon=":bar_chart:",
+    layout='wide'
+)
 
 EMAIL_ALLOW_LIST = {
     'galilei.mail@gmail.com',
     'neverproof@gmail.com',
 }
-
-st.set_page_config(
-    page_title="DVC Portfolio Management",
-    layout="wide"
-)
-
 
 def login_screen():
     st.header("This app is private.")
@@ -38,184 +41,31 @@ def handle_not_authorized():
     st.button("Log out", on_click=st.logout)
 
 
-def show_fund_selector(investments):
-    funds = investments['Fund']
-    unique_funds = funds[funds.notna()].unique()
-    fund_options = list(reversed(sorted(unique_funds)))
-    selected_fund = st.selectbox("Pick the fund", fund_options, index=None, placeholder="Select...")
-    return selected_fund
-
-
-def show_keymetrics(investments: pd.DataFrame, companies: pd.DataFrame):
-    fund_metrics = {
-        "Deployed Capital": format_as_dollars(investments['Amount Invested'].sum()),
-        "Total Deals": len(investments),
-        "Initial Investments": len(investments) - investments['Is it follow-on?'].sum(),
-        "Follow ons": investments['Is it follow-on?'].sum(),
-        "MOIC": 'TBD',
-        "Exits": sum(list(companies.Status == 'Exit')),
-        "Write offs": sum(list(companies['Status'] == 'Write-off')),
-        "TVPI": 'TBD',
-    }
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric("Deployed Capital", fund_metrics["Deployed Capital"])
-        st.metric("MOIC", fund_metrics["MOIC"])
-
-    with col2:
-        st.metric("Total Deals", fund_metrics["Total Deals"])
-        st.metric("Exits", fund_metrics["Exits"])
-
-    with col3:
-        st.metric("Initial Investments", fund_metrics["Initial Investments"])
-        st.metric("Write offs", fund_metrics["Write offs"])
-
-    with col4:
-        st.metric("Follow ons", fund_metrics["Follow ons"])
-        st.metric("TVPI", fund_metrics["TVPI"])
-
-
-def show_counted_pie(df: pd.DataFrame, title: str, column):
-    st.subheader(title)
-
-    # Count values for the specified column
-    value_counts = df[column].value_counts().reset_index()
-    value_counts.columns = [column, 'Count']
-    # st.dataframe(value_counts)
-
-    fig = px.pie(
-        value_counts, values='Count', names=column, title=None,
-    )
-    fig.update_traces(textposition='inside', textinfo='percent+label')
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def show_companies(companies: pd.DataFrame):
-    st.subheader("Portfolio Companies")
-    search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')
-    if search_query:
-        index = companies['Company'].str.lower().str.contains(search_query, na=False)
-        companies_to_display = companies[index]
-    else:
-        companies_to_display = companies
-    for company_id, company in companies_to_display.iterrows():
-        # st.write(company)
-        company_name = company['Company']
-        company_website = company['URL']
-        company_stage = company['Company Stage']
-        company_stage = company_stage[0] if isinstance(company_stage, list) and company_stage else 'N/A'
-        initial_fund = company['Initial Fund Invested From']
-        initial_valuation = company['Initial Valuation']
-        current_valuation = company['Last Valuation/cap (from DVC Portfolio 3)']
-        current_valuation = current_valuation[0] if isinstance(current_valuation, list) and current_valuation else 'N/A'
-        logo_url = get_preview(company['Logo'])
-        # st.write({
-        #     'Company': company_name,
-        #     "url": company_website,
-        #     'Stage': company_stage,
-        #     'Website': company_website,
-        #     'Initial Fund': initial_fund,
-        #     'Initial Valuation': initial_valuation,
-        #     'current_valuation': current_valuation,
-        #     'logo': logo_url,
-        # })
-        # st.link_button("View", f"/company?id={company_id}")
-        # st.write(dict(company))
-        col1, col2, col3 = st.columns([1, 5, 1], gap='small')
-
-        with col1:
-            if logo_url:
-                try:
-                    st.image(logo_url, width=64)
-                except Exception:
-                    st.write("📊")
-            else:
-                st.write("📊")
-
-        with col2:
-            # Use a smaller header and put company name and stage on same line
-            if company_website and isinstance(company_website, str):
-                st.markdown(f"**[{company_name}]({company_website})** | {company_stage} | {initial_fund}")
-            else:
-                st.markdown(f"**{company_name}** | {company_stage} | {initial_fund}")
-
-            # All financial information in one row using 3 smaller columns
-            c2, c3 = st.columns(2)
-            # c1.markdown(f"Fund: **{initial_fund}**")
-            c2.markdown(f"Initial Val: **{initial_valuation if initial_valuation else 'N/A'}**")
-            c3.markdown(f"Current Val: **{format_as_dollars(current_valuation) if current_valuation else 'N/A'}**")
-
-        with col3:
-            # Push the button higher on the row by adding padding
-            st.write("")  # Small spacer to align with company name
-            st.link_button("View", f"/company?id={company_id}", use_container_width=True)
-
-        # # Thinner divider
-        st.markdown("<hr style='margin: 0.25em 0.25em; border-width: 0; background-color: #e0e0e0; height: 1px'>",
-                    unsafe_allow_html=True)
-
-
-        # st.markdown("---")
-
-        # break
-
-    # companies_to_display = companies[
-    #     ['Company', 'URL', 'Initial Valuation', 'Current Valuation', 'Current Stage', 'Main Industry']
-    # ]
-    # companies_to_display.insert(0, 'Open', [f"/company?id={x}" for x in companies.index])
-    # if search_query:
-    #     index = companies_to_display['Company'].str.lower().str.contains(search_query, na=False)
-    #     companies_to_display = companies_to_display[index]
-    # st.dataframe(
-    #     companies_to_display,
-    #     column_config={
-    #         'Open': st.column_config.LinkColumn("Open", display_text="Learn more"),
-    #     },
-    #     hide_index=True,
-    #     use_container_width=True
-    # )
-    st.write(f"Total companies: {len(companies_to_display)}")
-
-
-def show_fund():
-    with st.spinner("Loading investments..."):
-        all_investments = get_investments()
-    with st.spinner("Loading companies..."):
-        all_companies = get_companies()
-    selected_fund = show_fund_selector(all_investments)
-    st.markdown("---")
-    investments = all_investments[all_investments['Fund'] == selected_fund] if selected_fund else all_investments
-    companies = all_companies[all_companies['Initial Fund Invested From'] == selected_fund] if selected_fund \
-        else all_companies[~all_companies['Initial Fund Invested From'].isna()]
-    with st.spinner("Enrich data..."):
-        all_companies = get_companies()
-    investments = replace_ids_with_values(get_investments_config(), investments)
-    companies = replace_ids_with_values(get_companies_config(), companies)
-
-    show_keymetrics(investments, companies)
-    st.markdown("---")
-    chart_col1, chart_col2 = st.columns([1, 1])
-    with chart_col1:
-        show_counted_pie(
-            df=companies[companies['Status'].isin(["Invested", "Exit", "Write-off"])],
-            title="Stage when we invested",
-            column="Stage when we invested"
-        )
-    with chart_col2:
-        show_counted_pie(
-            df=companies[companies['Status'].isin(["Invested", "Exit", "Write-off"])],
-            title="Companies by industry",
-            column="Main Industry"
-        )
-    st.markdown("---")
-    show_companies(companies)
-
 
 if not st.user.is_logged_in:
     login_screen()
 elif not is_email_allowed():
     handle_not_authorized()
 else:
-    show_fund()
+
+    with st.spinner("Loading investments..."):
+        investments = get_investments()
+    with st.spinner("Loading companies..."):
+        companies = get_companies()
+        companies = companies[companies['Initial Fund Invested From'].notna()]
+    with st.spinner("Loading portfolio..."):
+        portfolio = get_portfolio()
+    with st.spinner("Loading updates..."):
+        updates = get_updates()
+    with st.spinner("Load dependencies..."):
+        investments = replace_ids_with_values(get_investments_config(), investments)
+        companies = replace_ids_with_values(get_companies_config(), companies)
+
+    company_id = st.session_state.get('company_id')
+    if not company_id:
+        company_id = st.query_params.get('company_id')
+        st.session_state['company_id'] = company_id
+    if company_id:
+        show_company_page(investments, companies, portfolio, updates)
+    else:
+        show_fund_page(investments, companies, updates)

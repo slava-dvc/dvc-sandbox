@@ -14,7 +14,7 @@ def api_client() -> Api:
     return Api(os.environ['AIRTABLE_API_KEY'])
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def fetch_table_as_rows(table_name: str, **options) -> typing.List[dict]:
     api = api_client()
     return api.table( AIRTABLE_BASE_ID, table_name).all(**options)
@@ -57,7 +57,7 @@ def get_investments_config():
     return get_table_config('tblrsrZTHW8famwpw')
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def fetch_tables_config() -> dict:
     url = f"https://api.airtable.com/v0/meta/bases/{AIRTABLE_BASE_ID}/tables"
     headers = {
