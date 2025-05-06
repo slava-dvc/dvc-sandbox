@@ -2,7 +2,8 @@ import sys
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-
+from typing import Optional, Union, List, Any
+from dataclasses import dataclass
 from pathlib import Path
 from app.integrations import airtable
 from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
@@ -11,6 +12,70 @@ from app.foundation.primitives import datetime
 
 
 __all__ = ['show_fund_page']
+
+
+@dataclass
+class CompanySummary:
+    """Represents a company with its relevant data."""
+    company_id: str
+    name: str
+    website: Optional[str] = None
+    stage: Optional[str] = None
+    status: Optional[str] = None
+    initial_fund: Optional[str] = None
+    initial_valuation: Optional[Union[str, float, int]] = None
+    current_valuation: Optional[Union[str, float, int]] = None
+    logo_url: Optional[str] = None
+    last_update: Optional[Any] = None
+    new_highlights: Optional[List[str]] = None
+
+    def __lt__(self, other):
+        status_map = {
+            "Invested": 0,
+            "Exit": -2,
+            "Offered To Invest": 2,
+            "Write-off": -1,
+        }
+
+        def get_sorting_tuple(obj):
+            highlights_count = 0 if not isinstance(obj.new_highlights, list) else len(obj.new_highlights)
+            last_update = datetime.now() if not isinstance(obj.last_update, datetime.datetime) else obj.last_update
+            return (
+                highlights_count,
+                last_update,
+                status_map.get(obj.status, 0),
+            )
+        return get_sorting_tuple(self) < get_sorting_tuple(other)
+
+    @classmethod
+    def from_row(cls, company, company_id, last_update=None):
+
+        stage = company['Company Stage']
+        if isinstance(stage, list) and stage:
+            stage = stage[0]
+        else:
+            stage = 'N/A'
+
+        # Handle current valuation - if it's a list, take the first element
+        current_val = company['Last Valuation/cap (from DVC Portfolio 3)']
+        if isinstance(current_val, list) and current_val:
+            current_val = current_val[0]
+        else:
+            current_val = 'N/A'
+
+        return cls(
+            company_id=company_id,
+            name=company['Company'],
+            status=company['Status'],
+            website=company['URL'],
+            stage=stage,
+            initial_fund=company['Initial Fund Invested From'],
+            initial_valuation=company['Initial Valuation'],
+            current_valuation=current_val,
+            logo_url=get_preview(company['Logo']),
+            last_update=last_update,
+            new_highlights=company.get('new_highlights')
+        )
 
 
 def show_fund_selector(investments):
@@ -84,27 +149,30 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
             created = datetime.any_to_datetime(update['Created'])
             company_id_to_last_update.setdefault(company_id, created)
             company_id_to_last_update[company_id] = max(company_id_to_last_update[company_id], created)
+    summaries = [
+        CompanySummary.from_row(company, company_id, company_id_to_last_update.get(company_id))
+        for company_id, company in companies_to_display.iterrows()
+    ]
 
-    for company_id, company in companies_to_display.iterrows():
-        # st.write(company)
-        company_name = company['Company']
-        company_website = company['URL']
-        company_stage = company['Company Stage']
-        company_stage = company_stage[0] if isinstance(company_stage, list) and company_stage else 'N/A'
-        initial_fund = company['Initial Fund Invested From']
-        initial_valuation = company['Initial Valuation']
-        current_valuation = company['Last Valuation/cap (from DVC Portfolio 3)']
-        current_valuation = current_valuation[0] if isinstance(current_valuation, list) and current_valuation else 'N/A'
-        logo_url = get_preview(company['Logo'])
-        company_last_update = company_id_to_last_update.get(company_id)
+    for company_summary in reversed(sorted(summaries)):
+        company_id = company_summary.company_id
+        company_name = company_summary.name
+        company_website = company_summary.website
+        company_stage = company_summary.stage
+        initial_fund = company_summary.initial_fund
+        initial_valuation = company_summary.initial_valuation
+        current_valuation = company_summary.current_valuation
+
+
+        company_last_update = company_summary.last_update
 
         with st.container(border=True):
             col1, col2, col3 = st.columns([1, 5, 1], gap='small')
 
             with col1:
-                if logo_url:
+                if company_summary.logo_url:
                     try:
-                        st.image(logo_url, width=64)
+                        st.image(company_summary.logo_url, width=64)
                     except Exception:
                         st.write("📊")
                 else:
@@ -131,7 +199,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                         header.append("❌ No updates")
                     st.markdown("&nbsp; | &nbsp;".join(header))
                 with c2:
-                    new_highlights = company.get('new_highlights')
+                    new_highlights = company_summary.new_highlights
                     if isinstance(new_highlights, list) and len(new_highlights) > 0:
                         text = '⚠️ ' + ', '.join([h.replace('_', ' ').capitalize() for h in new_highlights])
                         st.badge(text, color='orange')
