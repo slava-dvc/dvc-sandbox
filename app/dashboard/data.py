@@ -4,19 +4,22 @@ import streamlit as st
 import os
 import pandas as pd
 from pyairtable import Api
-
+from pymongo import MongoClient
 
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
 
 
 @st.cache_resource
-def api_client() -> Api:
+def airtable_api_client() -> Api:
     return Api(os.environ['AIRTABLE_API_KEY'])
 
+@st.cache_resource
+def mongodb_client():
+    return MongoClient(os.environ['MONGODB_URI'])
 
 @st.cache_data(show_spinner=False)
 def fetch_table_as_rows(table_name: str, **options) -> typing.List[dict]:
-    api = api_client()
+    api = airtable_api_client()
     return api.table( AIRTABLE_BASE_ID, table_name).all(**options)
 
 
@@ -30,7 +33,39 @@ def get_investments(**options):
 
 
 def get_companies(**options):
-    return fetch_table_as_df('tblJL5aEsZFa0x6zY', **options)
+    air_table_rows = fetch_table_as_rows('tblJL5aEsZFa0x6zY', **options)
+    mongo_rows = list(mongodb_client().get_default_database('fund').get_collection('companies').find())
+    mongo_index = {item['airtableId']: item for item in mongo_rows}
+    rows = []
+    all_fields = {
+        'new_highlights', 'highlights', 'Company', 'URL', 'Status', 'Logo', 'Initial Fund Invested From', 'Stage when we invested',
+        'Main Industry', 'Company Stage', 'Initial Valuation', 'Last Valuation/cap (from DVC Portfolio 3)',
+        'Blurb'
+    }
+    for air_row in air_table_rows:
+        airtable_id = air_row['id']
+        airfields = air_row['fields']
+        if not airfields.get('Initial Fund Invested From'):
+            continue
+        row = {
+            k:v for k, v in air_row['fields'].items()
+            if k in all_fields
+        } | {'id': airtable_id}
+        mongo_row = mongo_index.get(airtable_id)
+        if mongo_row:
+            row = row | {
+                'spectrId': mongo_row.get('spectrId'),
+                'spectrUpdatedAt': mongo_row.get('spectrUpdatedAt'),
+            }
+            spectrData = mongo_row.get('spectrData')
+            if spectrData:
+                row = row | {
+                    k: v for k, v in spectrData.items()
+                    if k in all_fields
+                }
+
+        rows.append(row)
+    return pd.DataFrame(rows).set_index('id')
 
 
 def get_ask_to_task(**options):
@@ -55,7 +90,6 @@ def get_companies_config():
 
 def get_investments_config():
     return get_table_config('tblrsrZTHW8famwpw')
-
 
 @st.cache_data(show_spinner=False)
 def fetch_tables_config() -> dict:
