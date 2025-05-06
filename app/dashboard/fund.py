@@ -112,23 +112,30 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
 
             with col2:
                 header = []
-                # Use a smaller header and put company name and stage on same line
-                if company_website and isinstance(company_website, str):
-                    header.append(f"**[{company_name}]({company_website})**")
-                else:
-                    header.append(f"**{company_name}**")
-                header.append(company_stage)
-                if company_last_update:
-                    now = datetime.now()
-                    if company_last_update < now - datetime.timedelta(days=7):
-                        header.append(f"🕐 This week")
-                    elif company_last_update < now - datetime.timedelta(days=30):
-                        header.append(f"🕐 This month")
+                c1, c2 = st.columns(2)
+                with c1:
+                    if company_website and isinstance(company_website, str):
+                        header.append(f"**[{company_name}]({company_website})**")
                     else:
-                        header.append(f"🕐 {company_last_update.strftime('%d %b %Y')}")
-                else:
-                    header.append("❌ No updates")
-                st.markdown("&nbsp; | &nbsp;".join(header))
+                        header.append(f"**{company_name}**")
+                    header.append(company_stage)
+                    if company_last_update:
+                        now = datetime.now()
+                        if company_last_update < now - datetime.timedelta(days=7):
+                            header.append(f"🕐 This week")
+                        elif company_last_update < now - datetime.timedelta(days=30):
+                            header.append(f"🕐 This month")
+                        else:
+                            header.append(f"🕐 {company_last_update.strftime('%d %b %Y')}")
+                    else:
+                        header.append("❌ No updates")
+                    st.markdown("&nbsp; | &nbsp;".join(header))
+                with c2:
+                    new_highlights = company.get('new_highlights')
+                    if isinstance(new_highlights, list) and len(new_highlights) > 0:
+                        text = '⚠️ ' + ', '.join([h.replace('_', ' ').capitalize() for h in new_highlights])
+                        st.badge(text, color='orange')
+
                 # All information in one row using 3 smaller columns
                 c1, c2, c3 = st.columns(3)
                 c1.markdown(f"Initial Fund: **{initial_fund}**")

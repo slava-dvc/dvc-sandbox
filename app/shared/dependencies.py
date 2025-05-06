@@ -1,7 +1,7 @@
 import re
 from fastapi import Depends, Query, Body, Request
 from google.cloud import firestore
-from .lifespan_objects import *
+from app.shared.lifespan_objects import *
 from app.shared.spectr import SpectrClient
 
 
