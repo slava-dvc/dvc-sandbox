@@ -167,7 +167,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
         company_last_update = company_summary.last_update
 
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1, 5, 1], gap='small')
+            col1, col2, col3 = st.columns([1, 10, 1], gap='small')
 
             with col1:
                 if company_summary.logo_url:
@@ -205,7 +205,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                         st.badge(text, color='orange')
 
                 # All information in one row using 3 smaller columns
-                c1, c2, c3 = st.columns(3)
+                c1, c2, c3, c4 = st.columns(4)
                 c1.markdown(f"Initial Fund: **{initial_fund}**")
                 c2.markdown(f"Initial Val: **{initial_valuation if initial_valuation else 'N/A'}**")
                 c3.markdown(f"Current Val: **{format_as_dollars(current_valuation) if current_valuation else 'N/A'}**")
