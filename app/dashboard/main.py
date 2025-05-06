@@ -61,11 +61,9 @@ else:
         investments = replace_ids_with_values(get_investments_config(), investments)
         companies = replace_ids_with_values(get_companies_config(), companies)
 
-    company_id = st.session_state.get('company_id')
-    if not company_id:
-        company_id = st.query_params.get('company_id')
-        st.session_state['company_id'] = company_id
+    company_id = st.query_params.get('company_id')
+
     if company_id:
-        show_company_page(investments, companies, portfolio, updates)
+        show_company_page(investments, companies, portfolio, updates, company_id)
     else:
         show_fund_page(investments, companies, updates)

@@ -117,7 +117,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                 else:
                     st.markdown(f"**{company_name}** | {company_stage} | {initial_fund}")
 
-                # All financial information in one row using 3 smaller columns
+                # All information in one row using 3 smaller columns
                 c1, c2, c3 = st.columns(3)
                 c1.markdown(f"Last update: **{company_last_update}**")
                 c2.markdown(f"Initial Val: **{initial_valuation if initial_valuation else 'N/A'}**")
@@ -125,7 +125,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
 
             with col3:
                 def update_company_id(company_id):
-                    st.session_state['company_id'] = company_id
+                    st.query_params.update({'company_id': company_id})
 
                 # Push the button higher on the row by adding padding
                 st.write("")  # Small spacer to align with company name

@@ -108,17 +108,15 @@ def show_team(company: pd.Series):
         col3.link_button("Contact", founder.LinkedIn)
 
 
-def show_company_page(investments, companies, portfolio, updates):
+def show_company_page(investments, companies, portfolio, updates, company_id):
 
     def reset_company_id():
-        st.session_state['company_id'] = None
         st.query_params.pop('company_id', None)
 
     col1, col2 = st.columns([1, 10], vertical_alignment='bottom')
     with col1:
         st.button("← To Main ", on_click=reset_company_id)
 
-    company_id = st.session_state.get('company_id')
     companies_in_portfolio = companies.sort_values(by='Company')
     with col2:
         selected_company_id = st.selectbox(
