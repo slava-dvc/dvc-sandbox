@@ -111,15 +111,27 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                     st.write("📊")
 
             with col2:
+                header = []
                 # Use a smaller header and put company name and stage on same line
                 if company_website and isinstance(company_website, str):
-                    st.markdown(f"**[{company_name}]({company_website})** | {company_stage} | {initial_fund}")
+                    header.append(f"**[{company_name}]({company_website})**")
                 else:
-                    st.markdown(f"**{company_name}** | {company_stage} | {initial_fund}")
-
+                    header.append(f"**{company_name}**")
+                header.append(company_stage)
+                if company_last_update:
+                    now = datetime.now()
+                    if company_last_update < now - datetime.timedelta(days=7):
+                        header.append(f"🕐 This week")
+                    elif company_last_update < now - datetime.timedelta(days=30):
+                        header.append(f"🕐 This month")
+                    else:
+                        header.append(f"🕐 {company_last_update.strftime('%d %b %Y')}")
+                else:
+                    header.append("❌ No updates")
+                st.markdown("&nbsp; | &nbsp;".join(header))
                 # All information in one row using 3 smaller columns
                 c1, c2, c3 = st.columns(3)
-                c1.markdown(f"Last update: **{company_last_update}**")
+                c1.markdown(f"Initial Fund: **{initial_fund}**")
                 c2.markdown(f"Initial Val: **{initial_valuation if initial_valuation else 'N/A'}**")
                 c3.markdown(f"Current Val: **{format_as_dollars(current_valuation) if current_valuation else 'N/A'}**")
 
