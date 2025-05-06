@@ -3,25 +3,10 @@ import requests
 import streamlit as st
 import numpy as np
 from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
-from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number
+from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
 
 
-st.set_page_config(
-    page_title="Portfolio company",
-    layout="wide"
-)
-
-company_id = st.query_params.get('id')
-companies = get_companies()
-companies_in_portfolio = companies[~companies['Initial Fund Invested From'].isna()].sort_values(by='Company')
-
-selected_company_id = st.selectbox(
-    "Pick the company",
-    options=companies_in_portfolio.index,
-    index=companies_in_portfolio.index.get_loc(company_id) if company_id in companies_in_portfolio.index else None,
-    placeholder="Select...",
-    format_func=lambda x: companies_in_portfolio.loc[x]['Company']
-)
+__all__ = ['show_company_page']
 
 
 def show_company_basic_details(company: pd.Series):
@@ -48,7 +33,7 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
     moic = np.nan
     initial_investment = np.nan
     total_investment=company_investments['Amount Invested'].sum()
-    if company_in_portfolio is not None:
+    if company_in_portfolio is not None and total_investment:
         last_valuation = company_in_portfolio['Last Valuation/cap']
         initial_investment = company_in_portfolio['Initial Investment']
         entry_valuation = company_in_portfolio['Entry Valuation /cap']
@@ -90,9 +75,8 @@ def show_asks(company: pd.Series):
         st.dataframe(filtered_asks[columns], hide_index=True, use_container_width=True)
 
 
-def show_last_updates_and_news(company: pd.Series):
+def show_last_updates_and_news(company: pd.Series, updates):
     company_id = company.name
-    updates = get_updates()
     filtered_index = updates['Company Name'].apply(lambda x: company_id in x if isinstance(x, list) else False)
     filtered_updates = updates[filtered_index]
     if len(filtered_updates) == 0:
@@ -112,10 +96,10 @@ def show_team(company: pd.Series):
         st.info("No founders for this company.")
 
     for founder in founders.itertuples():
-        photo_url = founder.Photo[0]['url'] if isinstance(founder.Photo, list) and len(founder.Photo) > 0 else None
-        image_column, col1, col2, col3 = st.columns([2, 2, 5, 1], gap='medium', vertical_alignment='center')
+        image_column, col1, col2, col3 = st.columns([1, 2, 3, 1], gap='small', vertical_alignment='center')
+        photo_url = get_preview(founder.Photo)
         if photo_url:
-            requests.get(photo_url)
+
             image_column.image(photo_url)
 
         col1.subheader(founder.Name)
@@ -124,21 +108,40 @@ def show_team(company: pd.Series):
         col3.link_button("Contact", founder.LinkedIn)
 
 
-if selected_company_id:
-    selected_company = companies_in_portfolio.loc[selected_company_id]
-    show_company_basic_details(selected_company)
-    st.markdown("---")
-    investments = get_investments()
-    portfolio = get_portfolio()
-    show_company_investment_details(selected_company, investments, portfolio)
-    st.markdown("---")
-    st.subheader("Asks")
-    show_asks(selected_company)
-    st.markdown("---")
-    st.subheader("Last Updates and News")
-    show_last_updates_and_news(selected_company)
-    st.markdown("---")
-    st.subheader("Team")
-    show_team(selected_company)
-else:
-    st.warning("Please select a company.")
+def show_company_page(investments, companies, portfolio, updates, company_id):
+
+    def reset_company_id():
+        st.query_params.pop('company_id', None)
+
+    col1, col2 = st.columns([1, 10], vertical_alignment='bottom')
+    with col1:
+        st.button("← To Main ", on_click=reset_company_id)
+
+    companies_in_portfolio = companies.sort_values(by='Company')
+    with col2:
+        selected_company_id = st.selectbox(
+            "Pick the company",
+            options=companies_in_portfolio.index,
+            index=companies_in_portfolio.index.get_loc(company_id) if company_id in companies_in_portfolio.index else None,
+            placeholder="Select company...",
+            format_func=lambda x: companies_in_portfolio.loc[x]['Company'],
+            label_visibility='hidden'
+        )
+
+    if selected_company_id:
+        st.query_params.update({'company_id': selected_company_id})
+        selected_company = companies_in_portfolio.loc[selected_company_id]
+        show_company_basic_details(selected_company)
+        st.divider()
+        show_company_investment_details(selected_company, investments, portfolio)
+        st.divider()
+        st.subheader("Asks")
+        show_asks(selected_company)
+        st.divider()
+        st.subheader("Last Updates and News")
+        show_last_updates_and_news(selected_company, updates)
+        st.divider()
+        st.subheader("Team")
+        show_team(selected_company)
+    else:
+        st.warning("Please select a company.")

@@ -1,6 +1,28 @@
 import numpy as np
 
 
+def get_preview(photo_field):
+    """
+    Extracts the URL from the 'large' thumbnail in a photo field structure.
+    """
+    if not isinstance(photo_field, list) or not photo_field:
+        return None
+
+    first_item = photo_field[0]
+
+    if not isinstance(first_item, dict):
+        return None
+
+    thumbnails = first_item.get('thumbnails')
+    if isinstance(thumbnails, dict) and 'large' in thumbnails:
+        large_thumbnail_info = thumbnails['large']
+        url = large_thumbnail_info['url']
+        return url
+
+    # Return None if the expected structure or URL is not found
+    return None
+
+
 def is_valid_number(number):
     """
     Checks if the input is a valid number (not None, NaN).
@@ -12,6 +34,7 @@ def is_valid_number(number):
         bool: True if the number is valid, False otherwise.
     """
     return number is not None and not (
+            (isinstance(number, str)) or
             (hasattr(number, "dtype") and np.isnan(number)) or
             (isinstance(number, float) and np.isnan(number))
     )
