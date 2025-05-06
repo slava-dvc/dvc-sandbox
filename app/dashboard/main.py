@@ -53,8 +53,6 @@ else:
     with st.spinner("Loading companies..."):
         companies = get_companies()
         companies = companies[companies['Initial Fund Invested From'].notna()]
-    with st.spinner("Loading portfolio..."):
-        portfolio = get_portfolio()
     with st.spinner("Loading updates..."):
         updates = get_updates()
     with st.spinner("Load dependencies..."):
@@ -64,6 +62,6 @@ else:
     company_id = st.query_params.get('company_id')
 
     if company_id:
-        show_company_page(investments, companies, portfolio, updates, company_id)
+        show_company_page(investments, companies,updates, company_id)
     else:
         show_fund_page(investments, companies, updates)

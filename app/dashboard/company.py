@@ -108,7 +108,9 @@ def show_team(company: pd.Series):
         col3.link_button("Contact", founder.LinkedIn)
 
 
-def show_company_page(investments, companies, portfolio, updates, company_id):
+def show_company_page(investments, companies, updates, company_id):
+    with st.spinner("Loading portfolio..."):
+        portfolio = get_portfolio()
 
     def reset_company_id():
         st.query_params.pop('company_id', None)
