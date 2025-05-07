@@ -202,7 +202,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                     new_highlights = company_summary.new_highlights
                     if isinstance(new_highlights, list) and len(new_highlights) > 0:
                         text = '⚠️ ' + ', '.join([h.replace('_', ' ').capitalize() for h in new_highlights])
-                        st.badge(text, color='orange')
+                        st.badge(text, color='green')
 
                 # All information in one row using 3 smaller columns
                 c1, c2, c3, c4 = st.columns(4)
