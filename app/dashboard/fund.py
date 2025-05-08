@@ -87,8 +87,8 @@ def show_fund_selector(investments):
     funds = investments['Fund']
     unique_funds = funds[funds.notna()].unique()
     fund_options = list(reversed(sorted(unique_funds)))
-    selected_fund = st.selectbox("Pick the fund", fund_options, index=None, placeholder="Pick the fund...", label_visibility='collapsed')
-    return selected_fund
+    selected_funds = st.multiselect("Pick the fund(s)", fund_options, default=None, placeholder="Pick the fund(s)...", label_visibility='collapsed')
+    return selected_funds
 
 
 def show_keymetrics(investments: pd.DataFrame, companies: pd.DataFrame):
@@ -231,10 +231,12 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
 
 
 def show_fund_page(investments, companies, updates):
-    selected_fund = show_fund_selector(investments)
+    selected_funds = show_fund_selector(investments)
     st.markdown("---")
-    investments = investments[investments['Fund'] == selected_fund] if selected_fund else investments
-    companies = companies[companies['Initial Fund Invested From'] == selected_fund] if selected_fund else companies
+    
+    if selected_funds:
+        investments = investments[investments['Fund'].isin(selected_funds)]
+        companies = companies[companies['Initial Fund Invested From'].isin(selected_funds)]
 
     show_keymetrics(investments, companies)
     st.markdown("---")
