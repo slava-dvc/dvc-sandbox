@@ -55,7 +55,6 @@ else:
     with st.spinner("Loading updates..."):
         updates = get_updates()
     with st.spinner("Load dependencies..."):
-        investments = replace_ids_with_values(get_investments_config(), investments)
         companies = replace_ids_with_values(get_companies_config(), companies)
 
     company_id = st.query_params.get('company_id')

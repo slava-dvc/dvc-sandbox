@@ -62,6 +62,11 @@ class CompanySummary:
             current_val = current_val[0]
         else:
             current_val = 'N/A'
+        initial_val = company['Entry Valuation /cap (from DVC Portfolio 3)']
+        if isinstance(initial_val, list) and initial_val:
+            initial_val = initial_val[0]
+        else:
+            initial_val = 'N/A'
 
         return cls(
             company_id=company_id,
@@ -70,7 +75,7 @@ class CompanySummary:
             website=company['URL'],
             stage=stage,
             initial_fund=company['Initial Fund Invested From'],
-            initial_valuation=company['Initial Valuation'],
+            initial_valuation=initial_val,
             current_valuation=current_val,
             logo_url=get_preview(company['Logo']),
             last_update=last_update,
@@ -207,8 +212,8 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                 # All information in one row using 3 smaller columns
                 c1, c2, c3, c4 = st.columns(4)
                 c1.markdown(f"Initial Fund: **{initial_fund}**")
-                c2.markdown(f"Initial Val: **{initial_valuation if initial_valuation else 'N/A'}**")
-                c3.markdown(f"Current Val: **{format_as_dollars(current_valuation) if current_valuation else 'N/A'}**")
+                c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, 'N/A')}**")
+                c3.markdown(f"Current Val: **{format_as_dollars(current_valuation, 'N/A')}**")
 
             with col3:
                 def update_company_id(company_id):

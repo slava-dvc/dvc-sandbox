@@ -33,7 +33,7 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
     moic = np.nan
     initial_investment = np.nan
     total_investment=company_investments['Amount Invested'].sum()
-    if company_in_portfolio is not None and total_investment:
+    if company_in_portfolio is not None:
         last_valuation = company_in_portfolio['Last Valuation/cap']
         initial_investment = company_in_portfolio['Initial Investment']
         entry_valuation = company_in_portfolio['Entry Valuation /cap']
@@ -45,7 +45,7 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
         if np.isnan(current_ownership):
             current_ownership = initial_ownership
         total_nav = current_ownership * last_valuation
-        moic = total_nav / total_investment
+        moic = float(total_nav) / float(total_investment) if is_valid_number(total_investment) and total_investment > 0 else None
 
     with col1:
         st.metric("Invested", format_as_dollars(initial_investment))

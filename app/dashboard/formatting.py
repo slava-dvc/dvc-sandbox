@@ -85,9 +85,7 @@ def format_as_dollars(number, default="N/A"):
     if not is_valid_number(number):
         return default
 
-    # Convert numpy types to Python float
-    if hasattr(number, "dtype"):
-        number = float(number)
+    number = float(number)
 
     # Format the number with commas and two decimal places
     formatted = "${:,.2f}".format(float(number))
