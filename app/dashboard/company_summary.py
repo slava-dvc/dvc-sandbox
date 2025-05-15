@@ -1,12 +1,28 @@
-from typing import Optional, Union, List, Any
+import streamlit as st
+from typing import Optional, Union, List, Any, Dict
 
 from dataclasses import dataclass
+from app.foundation.primitives import datetime
+from app.dashboard.formatting import format_as_dollars, get_preview, format_metric_badge
+
 
 @dataclass
 class TractionValue:
     value: str | int | float
     change: int | float | None = None
     percentage: int | float | None = None
+
+    @classmethod
+    def from_dict(cls, traction_value: dict):
+        if not traction_value:
+            return cls(value=0)
+        
+        return cls(
+            value=traction_value.get('value', 0),
+            change=traction_value.get('change'),
+            percentage=traction_value.get('percentage')
+        )
+
 
 @dataclass
 class TractionMetric:
@@ -17,20 +33,52 @@ class TractionMetric:
 
     @classmethod
     def from_dict(cls, traction_metric: dict):
+        if not traction_metric:
+            return None
+        
+        latest = traction_metric.get('latest', 0)
+        t1mo = TractionValue.from_dict(traction_metric.get('1mo', {}))
+        t2mo = TractionValue.from_dict(traction_metric.get('2mo', {}))
+        
         return cls(
-
+            latest=latest,
+            t1mo=t1mo,
+            t2mo=t2mo
         )
 
 @dataclass
 class TractionMetrics:
-    popularity_rank: TractionMetric
-    web_visits: TractionMetric
+    popularity_rank: Optional[TractionMetric] = None
+    web_visits: Optional[TractionMetric] = None
+    employee_count: Optional[TractionMetric] = None
+    linkedin_followers: Optional[TractionMetric] = None
+    twitter_followers: Optional[TractionMetric] = None
+    instagram_followers: Optional[TractionMetric] = None
+    itunes_reviews: Optional[TractionMetric] = None
+    googleplay_reviews: Optional[TractionMetric] = None
+    app_downloads: Optional[TractionMetric] = None
+    g2_reviews: Optional[TractionMetric] = None
+    trustpilot_reviews: Optional[TractionMetric] = None
+    chrome_extensions_reviews: Optional[TractionMetric] = None
+    chrome_extensions_users: Optional[TractionMetric] = None
 
     @classmethod
-    def from_dict(cls, traction_metrics: dict):
-        return cls(
-
-        )
+    def from_dict(cls, traction_metrics: Dict) -> 'TractionMetrics':
+        if not traction_metrics or not isinstance(traction_metrics, dict):
+            return cls()
+        
+        metrics = {}
+        
+        for metric_name in [
+            'popularity_rank', 'web_visits', 'employee_count', 'linkedin_followers',
+            'twitter_followers', 'instagram_followers', 'itunes_reviews', 'googleplay_reviews',
+            'app_downloads', 'g2_reviews', 'trustpilot_reviews', 'chrome_extensions_reviews',
+            'chrome_extensions_users'
+        ]:
+            metric_data = traction_metrics.get(metric_name, {})
+            if metric_data:
+                metrics[metric_name] = TractionMetric.from_dict(metric_data)
+        return cls(**metrics)
 
 @dataclass
 class CompanySummary:
@@ -46,7 +94,7 @@ class CompanySummary:
     logo_url: Optional[str] = None
     last_update: Optional[Any] = None
     new_highlights: Optional[List[str]] = None
-    traction_metrics: Optional[dict] = None
+    traction_metrics: TractionMetrics = None
 
     def __lt__(self, other):
         status_map = {
@@ -98,5 +146,79 @@ class CompanySummary:
             logo_url=get_preview(company['Logo']),
             last_update=last_update,
             new_highlights=company.get('new_highlights'),
-            traction_metrics=company.get('traction_metrics')
+            traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics'))
         )
+
+
+def show_highlights(company_summary: CompanySummary):
+    # Display new highlights badge
+    new_highlights = company_summary.new_highlights
+    if isinstance(new_highlights, list) and len(new_highlights) > 0:
+        text = '⚠️ ' + ', '.join([h.replace('_', ' ').capitalize() for h in new_highlights])
+        st.badge(text, color='green')
+
+
+def show_company_summary(company_summary: CompanySummary):
+    company_id = company_summary.company_id
+    company_name = company_summary.name
+    company_website = company_summary.website
+    company_stage = company_summary.stage
+    initial_fund = company_summary.initial_fund
+    initial_valuation = company_summary.initial_valuation
+    current_valuation = company_summary.current_valuation
+
+    company_last_update = company_summary.last_update
+
+    with st.container(border=True):
+        col1, col2, col3 = st.columns([1, 10, 1], gap='small')
+
+        with col1:
+            if company_summary.logo_url:
+                try:
+                    st.image(company_summary.logo_url, width=64)
+                except Exception:
+                    st.write("📊")
+            else:
+                st.write("📊")
+
+        with col2:
+            header = []
+            c1, c2 = st.columns(2)
+            with c1:
+                if company_website and isinstance(company_website, str):
+                    header.append(f"**[{company_name}]({company_website})**")
+                else:
+                    header.append(f"**{company_name}**")
+                header.append(company_stage)
+                if company_last_update:
+                    now = datetime.now()
+                    if company_last_update < now - datetime.timedelta(days=7):
+                        header.append(f"🕐 This week")
+                    elif company_last_update < now - datetime.timedelta(days=30):
+                        header.append(f"🕐 This month")
+                    else:
+                        header.append(f"🕐 {company_last_update.strftime('%d %b %Y')}")
+                else:
+                    header.append("❌ No updates")
+                st.markdown("&nbsp; | &nbsp;".join(header))
+            with c2:
+                show_highlights(company_summary)
+
+            # All information in one row using 3 smaller columns
+            c1, c2, c3, c4 = st.columns(4)
+            c1.markdown(f"Initial Fund: **{initial_fund}**")
+            c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, 'N/A')}**")
+            c3.markdown(f"Current Val: **{format_as_dollars(current_valuation, 'N/A')}**")
+
+        with col3:
+            def update_company_id(company_id):
+                st.query_params.update({'company_id': company_id})
+
+            # Push the button higher on the row by adding padding
+            st.write("")  # Small spacer to align with company name
+            st.button("View", key=f"open_company_{company_id}", on_click=update_company_id, args=[company_id],
+                      use_container_width=True)
+
+        # # # Thinner divider
+        # st.markdown("<hr style='margin: 0.25em 0.25em; border-width: 0; background-color: #e0e0e0; height: 1px'>",
+        #             unsafe_allow_html=True)
