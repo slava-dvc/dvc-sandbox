@@ -93,34 +93,3 @@ def format_as_dollars(number, default="N/A"):
     # formatted = formatted.replace("$", "$ ")
 
     return formatted
-
-
-def format_metric_badge(percentage_change, period="1mo"):
-    """
-    Format a percentage change for display in a badge with appropriate styling.
-    
-    Args:
-        percentage_change: The percentage change value (can be positive or negative)
-        period: The time period for the change (e.g., "1mo", "90 days")
-        
-    Returns:
-        tuple: (text, color) where text is the formatted badge text and color is 'red' or 'green'
-    """
-    if not is_valid_number(percentage_change):
-        return None, None
-    
-    # Determine if it's a positive or negative change
-    is_positive = percentage_change > 0
-    
-    # Format the percentage with the appropriate sign
-    if is_positive:
-        text = f"+{percentage_change:.0f}%"
-        color = "green"
-    else:
-        text = f"{percentage_change:.0f}%"
-        color = "red"
-        
-    # Add the period in parentheses
-    text = f"{text} ({period})"
-    
-    return text, color

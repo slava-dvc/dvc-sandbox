@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from app.integrations import airtable
 from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
-from app.dashboard.formatting import format_as_dollars, get_preview, format_metric_badge
+from app.dashboard.formatting import format_as_dollars, get_preview
 from app.foundation.primitives import datetime
 from app.dashboard.company_summary import CompanySummary
 from .company_summary import show_company_summary

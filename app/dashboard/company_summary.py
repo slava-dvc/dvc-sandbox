@@ -1,9 +1,9 @@
 import streamlit as st
 from typing import Optional, Union, List, Any, Dict
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from app.foundation.primitives import datetime
-from app.dashboard.formatting import format_as_dollars, get_preview, format_metric_badge
+from app.dashboard.formatting import format_as_dollars, get_preview
 
 
 @dataclass
@@ -16,7 +16,7 @@ class TractionValue:
     def from_dict(cls, traction_value: dict):
         if not traction_value:
             return cls(value=0)
-        
+
         return cls(
             value=traction_value.get('value', 0),
             change=traction_value.get('change'),
@@ -28,22 +28,21 @@ class TractionValue:
 class TractionMetric:
     """Represents traction metrics for a company."""
     latest: str | int | float
-    t1mo: TractionValue
-    t2mo: TractionValue
+    previous: Dict[str, TractionValue] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, traction_metric: dict):
-        if not traction_metric:
+        if not traction_metric or not isinstance(traction_metric, dict):
             return None
-        
-        latest = traction_metric.get('latest', 0)
-        t1mo = TractionValue.from_dict(traction_metric.get('1mo', {}))
-        t2mo = TractionValue.from_dict(traction_metric.get('2mo', {}))
-        
+
+        previous = {}
+        for period in ['1mo', '2mo', '3m', '4m', '5m', '6m', '12m', '24mo']:
+            previous[period] = TractionValue.from_dict(traction_metric.get(period, {}))
+
+
         return cls(
-            latest=latest,
-            t1mo=t1mo,
-            t2mo=t2mo
+            latest=traction_metric.get('latest', None),
+            previous=previous,
         )
 
 @dataclass
@@ -148,7 +147,32 @@ class CompanySummary:
             new_highlights=company.get('new_highlights'),
             traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics'))
         )
+'''
+possible highlights are:
 
+[['headcount_surge'],
+ ['raised_last_month', 'recent_funding'],
+ ['no_recent_funding'],
+ ['web_traffic_surge'],
+ ['headcount_surge', 'strong_web_traffic_growth'],
+ ['app_downloads_surge', 'recent_news'],
+ ['raised_last_month', 'recent_funding'],
+ ['strong_web_traffic_growth'],
+ ['strong_web_traffic_growth', 'web_traffic_surge'],
+ ['app_downloads_surge', 'strong_social_growth'],
+ ['strong_web_traffic_growth', 'web_traffic_surge'],
+ ['recent_news', 'web_traffic_surge'],
+ ['app_downloads_surge', 'strong_app_downloads_growth'],
+ ['web_traffic_surge'],
+ ['recent_news'],
+ ['web_traffic_surge'],
+ ['app_downloads_surge',
+  'strong_app_downloads_growth',
+  'strong_web_traffic_growth'],
+ ['web_traffic_surge'],
+ ['raised_last_month', 'recent_funding']]
+ 
+'''
 
 def show_highlights(company_summary: CompanySummary):
     # Display new highlights badge
