@@ -7,80 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from app.integrations import airtable
 from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
-from app.dashboard.formatting import format_as_dollars, get_preview
+from app.dashboard.formatting import format_as_dollars, get_preview, format_metric_badge
 from app.foundation.primitives import datetime
+from app.dashboard.company_summary import CompanySummary
 
 
 __all__ = ['show_fund_page']
-
-
-@dataclass
-class CompanySummary:
-    """Represents a company with its relevant data."""
-    company_id: str
-    name: str
-    website: Optional[str] = None
-    stage: Optional[str] = None
-    status: Optional[str] = None
-    initial_fund: Optional[str] = None
-    initial_valuation: Optional[Union[str, float, int]] = None
-    current_valuation: Optional[Union[str, float, int]] = None
-    logo_url: Optional[str] = None
-    last_update: Optional[Any] = None
-    new_highlights: Optional[List[str]] = None
-
-    def __lt__(self, other):
-        status_map = {
-            "Invested": 0,
-            "Exit": -2,
-            "Offered To Invest": 2,
-            "Write-off": -1,
-        }
-
-        def get_sorting_tuple(obj):
-            highlights_count = 0 if not isinstance(obj.new_highlights, list) else len(obj.new_highlights)
-            last_update = datetime.now() if not isinstance(obj.last_update, datetime.datetime) else obj.last_update
-            return (
-                highlights_count,
-                last_update,
-                status_map.get(obj.status, 0),
-            )
-        return get_sorting_tuple(self) < get_sorting_tuple(other)
-
-    @classmethod
-    def from_row(cls, company, company_id, last_update=None):
-
-        stage = company['Company Stage']
-        if isinstance(stage, list) and stage:
-            stage = stage[0]
-        else:
-            stage = 'N/A'
-
-        # Handle current valuation - if it's a list, take the first element
-        current_val = company['Last Valuation/cap (from DVC Portfolio 3)']
-        if isinstance(current_val, list) and current_val:
-            current_val = current_val[0]
-        else:
-            current_val = 'N/A'
-        initial_val = company['Entry Valuation /cap (from DVC Portfolio 3)']
-        if isinstance(initial_val, list) and initial_val:
-            initial_val = initial_val[0]
-        else:
-            initial_val = 'N/A'
-
-        return cls(
-            company_id=company_id,
-            name=company['Company'],
-            status=company['Status'],
-            website=company['URL'],
-            stage=stage,
-            initial_fund=company['Initial Fund Invested From'],
-            initial_valuation=initial_val,
-            current_valuation=current_val,
-            logo_url=get_preview(company['Logo']),
-            last_update=last_update,
-            new_highlights=company.get('new_highlights')
-        )
 
 
 def show_fund_selector(investments):
@@ -137,6 +69,9 @@ def show_counted_pie(df: pd.DataFrame, title: str, column):
     st.plotly_chart(fig, use_container_width=True)
 
 
+def show_company_highlights(company: pd.Series):
+    pass
+
 def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
     st.subheader("Portfolio Companies")
     search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')
@@ -155,7 +90,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
             company_id_to_last_update.setdefault(company_id, created)
             company_id_to_last_update[company_id] = max(company_id_to_last_update[company_id], created)
     summaries = [
-        CompanySummary.from_row(company, company_id, company_id_to_last_update.get(company_id))
+        CompanySummary.from_dict(company, company_id, company_id_to_last_update.get(company_id))
         for company_id, company in companies_to_display.iterrows()
     ]
 
@@ -204,10 +139,59 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                         header.append("❌ No updates")
                     st.markdown("&nbsp; | &nbsp;".join(header))
                 with c2:
+                    # Display new highlights badge
                     new_highlights = company_summary.new_highlights
                     if isinstance(new_highlights, list) and len(new_highlights) > 0:
                         text = '⚠️ ' + ', '.join([h.replace('_', ' ').capitalize() for h in new_highlights])
                         st.badge(text, color='green')
+                    
+                    # Display metrics badges if available
+                    if company_summary.spectr_metrics:
+                        metrics = company_summary.spectr_metrics
+                        
+                        # Display metrics in a cleaner way
+                        metrics_to_display = []
+                        
+                        # Check available metrics and format them
+                        if 'employee_count' in metrics and metrics['employee_count']['value'] is not None:
+                            emp_count = metrics['employee_count']['value']
+                            emp_change = metrics['employee_count']['change']
+                            if emp_change is not None:
+                                badge_text, badge_color = format_metric_badge(emp_change, "1mo")
+                                if badge_text:
+                                    metrics_to_display.append(("Employee Count", emp_count, badge_text, badge_color))
+                        
+                        if 'web_visits' in metrics and metrics['web_visits']['value'] is not None:
+                            web_visits = metrics['web_visits']['value']
+                            web_change = metrics['web_visits']['change']
+                            if web_change is not None:
+                                badge_text, badge_color = format_metric_badge(web_change, "1mo")
+                                if badge_text:
+                                    metrics_to_display.append(("Web Visits", web_visits, badge_text, badge_color))
+                        
+                        if 'linkedin_followers' in metrics and metrics['linkedin_followers']['value'] is not None:
+                            li_followers = metrics['linkedin_followers']['value']
+                            li_change = metrics['linkedin_followers']['change']
+                            if li_change is not None:
+                                badge_text, badge_color = format_metric_badge(li_change, "1mo")
+                                if badge_text:
+                                    metrics_to_display.append(("LinkedIn", li_followers, badge_text, badge_color))
+                        
+                        # Display the metrics as badges that match the design
+                        for i, (label, value, badge_text, badge_color) in enumerate(metrics_to_display):
+                            # Format to match the badge.png design
+                            st.markdown(f"""
+                            <div style="margin-bottom: 5px;">
+                                <div style="font-weight: 500;">{label}: {value}</div>
+                                <span style="background-color: {'#ffcdd2' if badge_color == 'red' else '#c8e6c9'}; 
+                                            color: {'#d32f2f' if badge_color == 'red' else '#2e7d32'}; 
+                                            padding: 2px 8px; 
+                                            border-radius: 16px; 
+                                            font-size: 12px;">
+                                    {badge_text}
+                                </span>
+                            </div>
+                            """, unsafe_allow_html=True)
 
                 # All information in one row using 3 smaller columns
                 c1, c2, c3, c4 = st.columns(4)
