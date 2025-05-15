@@ -93,3 +93,35 @@ def format_as_dollars(number, default="N/A"):
     # formatted = formatted.replace("$", "$ ")
 
     return formatted
+
+
+def format_compact_number(number, default="N/A", decimal_places=1):
+    """
+    Formats a number in a compact way (e.g., 1234567 as '1.2m')
+    
+    Args:
+        number: The number to format (int, float, np.float64, or other numpy numeric types)
+        default: The value to return if number is None or np.nan
+        decimal_places: Number of decimal places to display
+    
+    Returns:
+        str: The formatted compact number
+    """
+    if not is_valid_number(number):
+        return default
+    
+    # Convert to float
+    number = float(number)
+    
+    # Define the suffixes
+    suffixes = ['', 'k', 'm', 'b', 't']
+    
+    # Determine the appropriate suffix and magnitude
+    magnitude = 0
+    while abs(number) >= 1000 and magnitude < len(suffixes) - 1:
+        magnitude += 1
+        number /= 1000.0
+    
+    # Format the number with the specified decimal places
+    format_str = "{:." + str(decimal_places) + "f}{}"
+    return format_str.format(number, suffixes[magnitude])

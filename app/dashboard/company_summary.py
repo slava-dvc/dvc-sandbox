@@ -3,7 +3,70 @@ from typing import Optional, Union, List, Any, Dict
 
 from dataclasses import dataclass, field
 from app.foundation.primitives import datetime
-from app.dashboard.formatting import format_as_dollars, get_preview
+from app.dashboard.formatting import format_as_dollars, get_preview, format_compact_number
+
+
+@dataclass
+class Highlight:
+    """Highlight information for a company."""
+    description: str
+    is_positive: bool = True
+    metric: Optional[str] = None
+
+
+# Dictionary mapping highlight IDs to their information
+HIGHLIGHTS_DICT = {
+    "headcount_surge": Highlight(
+        description="Headcount surge",
+        is_positive=True,
+        metric="employee_count"
+    ),
+    "raised_last_month": Highlight(
+        description="Raised funding last month",
+        is_positive=True,
+        metric=None
+    ),
+    "recent_funding": Highlight(
+        description="Recent funding",
+        is_positive=True,
+        metric=None
+    ),
+    "no_recent_funding": Highlight(
+        description="No recent funding",
+        is_positive=False,
+        metric=None
+    ),
+    "web_traffic_surge": Highlight(
+        description="Web traffic surge",
+        is_positive=True,
+        metric="web_visits"
+    ),
+    "strong_web_traffic_growth": Highlight(
+        description="Strong web traffic growth",
+        is_positive=True,
+        metric="web_visits"
+    ),
+    "app_downloads_surge": Highlight(
+        description="App downloads surge",
+        is_positive=True,
+        metric="app_downloads"
+    ),
+    "recent_news": Highlight(
+        description="Recent news coverage",
+        is_positive=True,
+        metric=None
+    ),
+    "strong_social_growth": Highlight(
+        description="Strong social media growth",
+        is_positive=True,
+        metric="linkedin_followers"
+    ),
+    "strong_app_downloads_growth": Highlight(
+        description="Strong app downloads growth",
+        is_positive=True,
+        metric="app_downloads"
+    )
+}
 
 
 @dataclass
@@ -147,39 +210,56 @@ class CompanySummary:
             new_highlights=company.get('new_highlights'),
             traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics'))
         )
-'''
-possible highlights are:
 
-[['headcount_surge'],
- ['raised_last_month', 'recent_funding'],
- ['no_recent_funding'],
- ['web_traffic_surge'],
- ['headcount_surge', 'strong_web_traffic_growth'],
- ['app_downloads_surge', 'recent_news'],
- ['raised_last_month', 'recent_funding'],
- ['strong_web_traffic_growth'],
- ['strong_web_traffic_growth', 'web_traffic_surge'],
- ['app_downloads_surge', 'strong_social_growth'],
- ['strong_web_traffic_growth', 'web_traffic_surge'],
- ['recent_news', 'web_traffic_surge'],
- ['app_downloads_surge', 'strong_app_downloads_growth'],
- ['web_traffic_surge'],
- ['recent_news'],
- ['web_traffic_surge'],
- ['app_downloads_surge',
-  'strong_app_downloads_growth',
-  'strong_web_traffic_growth'],
- ['web_traffic_surge'],
- ['raised_last_month', 'recent_funding']]
- 
-'''
+def show_highlight(highlight: Highlight, metric: TractionMetric = None):
+    badge_color = "green" if highlight.is_positive else "orange"
+    emoji = "🔥" if highlight.is_positive else "⚠️"
+    
+    description = highlight.description
+    if metric and hasattr(metric, "latest") and metric.latest:
+        try:
+            # Try to format as a number if it's numeric
+            value = float(metric.latest)
+            formatted_value = format_compact_number(value)
+            description = f"{description}: {formatted_value}"
+        except (ValueError, TypeError):
+            # If not numeric, use as is
+            description = f"{description}: {metric.latest}"
+        
+    st.badge(f"{emoji} {description}", color=badge_color)
+
 
 def show_highlights(company_summary: CompanySummary):
     # Display new highlights badge
     new_highlights = company_summary.new_highlights
-    if isinstance(new_highlights, list) and len(new_highlights) > 0:
-        text = '⚠️ ' + ', '.join([h.replace('_', ' ').capitalize() for h in new_highlights])
-        st.badge(text, color='green')
+    if not (isinstance(new_highlights, list) and len(new_highlights) > 0):
+        return
+
+    for highlight_id in new_highlights:
+        highlight = HIGHLIGHTS_DICT.get(highlight_id)
+        if not highlight:
+            continue
+        metric = None
+        if highlight.metric:
+            metric = getattr(company_summary.traction_metrics, highlight.metric)
+        show_highlight(highlight, metric)
+
+        # formatted_highlights = []
+        # all_positive = True
+        #
+        # for highlight_id in new_highlights:
+        #     highlight = HIGHLIGHTS_DICT.get(highlight_id)
+        #     if highlight:
+        #         formatted_highlights.append(highlight.description)
+        #         if not highlight.is_positive:
+        #             all_positive = False
+        #     else:
+        #         # Fallback if highlight not found in dictionary
+        #         formatted_highlights.append(highlight_id.replace('_', ' ').capitalize())
+        #
+        # text = '⚠️ ' + ', '.join(formatted_highlights)
+        # badge_color = 'green' if all_positive else 'orange'
+        # st.badge(text, color=badge_color)
 
 
 def show_company_summary(company_summary: CompanySummary):
@@ -194,9 +274,9 @@ def show_company_summary(company_summary: CompanySummary):
     company_last_update = company_summary.last_update
 
     with st.container(border=True):
-        col1, col2, col3 = st.columns([1, 10, 1], gap='small')
+        logo_column, info_column, signals_column, button_column = st.columns([1, 7, 3, 1], gap='small')
 
-        with col1:
+        with logo_column:
             if company_summary.logo_url:
                 try:
                     st.image(company_summary.logo_url, width=64)
@@ -205,36 +285,39 @@ def show_company_summary(company_summary: CompanySummary):
             else:
                 st.write("📊")
 
-        with col2:
+        with info_column:
             header = []
-            c1, c2 = st.columns(2)
-            with c1:
-                if company_website and isinstance(company_website, str):
-                    header.append(f"**[{company_name}]({company_website})**")
+            # c1, c2, c3, c4 = st.columns(4)
+            # with c1:
+            if company_website and isinstance(company_website, str):
+                header.append(f"**[{company_name}]({company_website})**")
+            else:
+                header.append(f"**{company_name}**")
+            header.append(company_stage)
+            if company_last_update:
+                now = datetime.now()
+                if company_last_update < now - datetime.timedelta(days=7):
+                    header.append(f"🕐 This week")
+                elif company_last_update < now - datetime.timedelta(days=30):
+                    header.append(f"🕐 This month")
                 else:
-                    header.append(f"**{company_name}**")
-                header.append(company_stage)
-                if company_last_update:
-                    now = datetime.now()
-                    if company_last_update < now - datetime.timedelta(days=7):
-                        header.append(f"🕐 This week")
-                    elif company_last_update < now - datetime.timedelta(days=30):
-                        header.append(f"🕐 This month")
-                    else:
-                        header.append(f"🕐 {company_last_update.strftime('%d %b %Y')}")
-                else:
-                    header.append("❌ No updates")
-                st.markdown("&nbsp; | &nbsp;".join(header))
-            with c2:
-                show_highlights(company_summary)
+                    header.append(f"🕐 {company_last_update.strftime('%d %b %Y')}")
+            else:
+                header.append("❌ No updates")
+            st.markdown("&nbsp; | &nbsp;".join(header))
+            # with c2:
+            #     show_highlights(company_summary)
 
             # All information in one row using 3 smaller columns
-            c1, c2, c3, c4 = st.columns(4)
+            c1, c2, c3, = st.columns(3)
             c1.markdown(f"Initial Fund: **{initial_fund}**")
             c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, 'N/A')}**")
             c3.markdown(f"Current Val: **{format_as_dollars(current_valuation, 'N/A')}**")
 
-        with col3:
+        with signals_column:
+            show_highlights(company_summary)
+
+        with button_column:
             def update_company_id(company_id):
                 st.query_params.update({'company_id': company_id})
 
