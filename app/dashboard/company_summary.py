@@ -229,13 +229,41 @@ def show_highlight(highlight: Highlight, metric: TractionMetric = None):
     st.badge(f"{emoji} {description}", color=badge_color)
 
 
+def filter_highlights(highlights: List[str]) -> List[str]:
+    """
+    Filter out redundant highlights based on predefined rules.
+    If both weak and strong versions of a highlight exist, only keep the strong one.
+    """
+    if not highlights:
+        return []
+        
+    # Define pairs of highlights where only the stronger one should be shown
+    redundant_pairs = {
+        "web_traffic_surge": "strong_web_traffic_growth",
+        "app_downloads_surge": "strong_app_downloads_growth"
+    }
+    
+    # Check which highlights to skip
+    highlights_to_skip = set()
+    for weak_highlight, strong_highlight in redundant_pairs.items():
+        if weak_highlight in highlights and strong_highlight in highlights:
+            highlights_to_skip.add(weak_highlight)
+    
+    # Return filtered highlights
+    return [h for h in highlights if h not in highlights_to_skip]
+
+
 def show_highlights(company_summary: CompanySummary):
     # Display new highlights badge
     new_highlights = company_summary.new_highlights
     if not (isinstance(new_highlights, list) and len(new_highlights) > 0):
         return
-
-    for highlight_id in new_highlights:
+    
+    # Filter out redundant highlights
+    filtered_highlights = filter_highlights(new_highlights)
+    
+    # Display filtered highlights
+    for highlight_id in filtered_highlights:
         highlight = HIGHLIGHTS_DICT.get(highlight_id)
         if not highlight:
             continue
