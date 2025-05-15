@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 from pymongo.asynchronous import database
-from google.cloud import firestore, pubsub
+from google.cloud import firestore, pubsub, storage
 from functools import cached_property
 from fastapi import FastAPI
 from fastapi.middleware import gzip, trustedhost
@@ -63,6 +63,10 @@ class FastAPIServer(AsyncServer):
     @cached_property
     def mongo_client(self) -> AsyncMongoClient:
         return AsyncMongoClient(str(get_env('MONGODB_URI')))
+
+    @cached_property
+    def storage_client(self) -> Any:
+        return storage.Client()
 
     @cached_property
     def default_database(self) -> database.AsyncDatabase:

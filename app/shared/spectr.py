@@ -1,16 +1,27 @@
 import httpx
-
-from app.foundation import get_env, server
+import gzip
+from google.cloud import storage
+from app.foundation import get_env, server, as_async, map_async
+from app.foundation.primitives import json, datetime
 from typing import Dict, Any, List
+
+
+__all__ = ["SpectrClient"]
 
 
 class SpectrClient(object):
 
-    def __init__(self, logging_client: server.ConsoleLogger, http_client: httpx.AsyncClient):
+    def __init__(
+            self,
+            logging_client: server.ConsoleLogger,
+            http_client: httpx.AsyncClient,
+            dataset_bucket: storage.Bucket = None,
+    ):
         self._api_key = str(get_env("SPECTR_API_KEY")).strip()
         self._http_client = http_client
         self._logging_client = logging_client
         self._base_url = "https://app.tryspecter.com/api/v1"
+        self._dataset_bucket = dataset_bucket
 
     async def request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         url = f"{self._base_url}/{endpoint}"
@@ -42,7 +53,9 @@ class SpectrClient(object):
         )
 
         response.raise_for_status()  # Raises detailed HTTP errors (if any)
-        return response.json()
+        company_data = response.json()
+        await self.persist_company_data(company_data)
+        return company_data
 
     async def get_company_by_id(self, company_id: str) -> Dict[str, Any]:
         """
@@ -55,53 +68,6 @@ class SpectrClient(object):
         Returns:
             A dictionary containing the company information with fields like:
             - id: The Specter ID for the company
-            - organization_name: The main public name for the organization
-            - organization_rank: The Specter rank for this company
-            - primary_role: The primary role of this company
-            - roles: Other roles the company may have
-            - description: A description of what the company does
-            - customer_focus: The type of customers the company deals with
-            - last_updated: Date when the company was last updated
-            - tags: Tags related to the company
-            - industries: List of industries associated with the company
-            - sub_industries: List of sub-industries
-            - operating_status: Status of the company
-            - logo_url: URL to the company logo
-            - highlights: All highlights (growth, funding, news, etc.)
-            - new_highlights: Highlights new to this month
-            - regions: List of regions the company operates in
-            - founded_year: Year the company was founded
-            - founders: Names of the founders
-            - founder_count: Number of founders
-            - employee_count: Number of employees
-            - employee_count_range: Range of employee count
-            - revenue_estimate_usd: Estimated revenue in USD
-            - investors: List of investors
-            - investor_count: Number of investors
-            - patent_count: Number of patents owned
-            - trademark_count: Number of trademarks
-            - website: Website information
-            - hq: HQ location information
-            - contact: Contact information
-            - ipo: List of IPOs
-            - growth_stage: Company's growth stage
-            - funding: Funding information
-            - web: Web metrics
-            - awards: List of awards
-            - award_count: Number of awards
-            - news: News items about the company
-            - reviews: Product reviews
-            - socials: Social media information
-            - organization_name_aliases: Alternative company names
-            - tagline: Company tagline
-            - certifications: Industry certifications
-            - customer_profile: Typical customer profile
-            - traction_highlights: Impact data
-            - reported_clients: List of clients
-            - acquisition: Acquisition information
-            - technologies: Technologies used by the company
-            - it_spend: Annual IT spending
-            - traction_metrics: Growth trends data
     
         Raises:
             HTTPError: For 404 if the company doesn't exist or other HTTP errors.
@@ -151,4 +117,22 @@ class SpectrClient(object):
             raise ValueError("Exactly one parameter must be provided.")
 
         endpoint = "companies"
-        return await self.request(method="POST", endpoint=endpoint, json=json_body)
+        companies = await self.request(method="POST", endpoint=endpoint, json=json_body)
+        await map_async(companies, self.persist_company_data)
+        return companies
+
+    async def persist_company_data(self, company_data: Dict[str, Any]) -> None:
+        last_updated = company_data.get("last_updated")
+        company_id = company_data.get("id")
+        data = json.dumps(company_data)
+        
+        # Compress the data using gzip
+        compressed_data = gzip.compress(data.encode('utf-8'))
+        
+        blob = self._dataset_bucket.blob(f"spectr/{last_updated}/{company_id}.json.gz")
+        # Set content encoding so clients know it's compressed
+        blob.content_encoding = 'gzip'
+        await as_async(blob.upload_from_string,
+            data=compressed_data,
+            content_type='application/json',
+        )

@@ -85,11 +85,12 @@ async def airtable_pull_companies(
 async def spectr_sync_companies(
     mongo_client: MongoClient = Depends(get_mongo_client),
     logger = Depends(get_cloud_logger),
-    spectr_clinet = Depends(dependencies.get_spectr_client),
+    spectr_client = Depends(dependencies.get_spectr_client),
+    limit: int = Query(default=0xFFFFFFF),
 ):
     spectr_sync_action = SpectrSyncAction(
         mongo_client,
-        spectr_clinet,
+        spectr_client,
         logger
     )
-    await spectr_sync_action()
+    await spectr_sync_action(limit=limit)

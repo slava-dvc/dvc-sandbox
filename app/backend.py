@@ -20,7 +20,8 @@ class BackendServer(server.FastAPIServer):
         resources = await super().__aenter__()
         resources["spectr_client"] = SpectrClient(
             logging_client=resources["logging_client"].logger('spectr'),
-            http_client=resources["http_client"]
+            http_client=resources["http_client"],
+            dataset_bucket=self.storage_client.bucket("dvc-dataset-v2")
         )
         return resources
 

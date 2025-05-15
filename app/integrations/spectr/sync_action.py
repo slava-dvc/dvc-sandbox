@@ -1,4 +1,5 @@
 import logging
+from httpx import HTTPStatusError, HTTPError
 from fastapi.encoders import jsonable_encoder
 from urllib.parse import urlparse
 from typing import Dict, Any, Optional
@@ -38,8 +39,8 @@ class SpectrSyncAction:
         self.mongo_client = mongo_client
         self.spectr_client = spectr_client
         self.logging_client = logging_client
-        
-    async def __call__(self) -> int:
+
+    async def __call__(self, limit: int = 0xFFFFFFFF) -> int:
         """
         Process all companies in MongoDB, enriching them with Spectr data.
         
@@ -79,7 +80,9 @@ class SpectrSyncAction:
                     processed = await self._update_existing_company(company, companies_collection)
             
                 processed_count += int(processed)
-            except Exception as e:
+                if processed_count >= limit:
+                    break
+            except HTTPError as e:
                 self.logging_client.log_struct(
                     {
                         'message': f'Error processing company {company_doc.get("name", "unknown")}',
@@ -167,7 +170,7 @@ class SpectrSyncAction:
                 
             return False
             
-        except Exception as e:
+        except HTTPError as e:
             self.logging_client.log_struct(
                 {
                     'severity': 'ERROR',
@@ -233,7 +236,7 @@ class SpectrSyncAction:
                 )
             return False
             
-        except Exception as e:
+        except HTTPError as e:
             self.logging_client.log_struct(
                 {
                     'severity': 'ERROR',
