@@ -7,7 +7,7 @@ from tools.run import create_cloud_run_secret_env, repo_short_sha
 from .secrets import AIRTABLE_API_KEY, MONGODB_URI
 
 
-portfolio = gcp.cloudrunv2.Service(
+portfolio_cloud_run = gcp.cloudrunv2.Service(
     "portfolio-cloud-run-service",  # Unique internal name
     name="portfolio",  # Service name in cloud run
     location=gcp.config.region,

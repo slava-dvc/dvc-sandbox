@@ -8,7 +8,7 @@ from .secrets import ANTHROPIC_KEY, OPENAI_API_KEY, PERPLEXITY_KEY
 
 
 # Cloud Run service
-dealflow = gcp.cloudrunv2.Service(
+dealflow_cloud_run = gcp.cloudrunv2.Service(
     "dealflow-cloud-run-service",  # Unique internal name
     name="dealflow",  # Service name in cloud run
     location=gcp.config.region,

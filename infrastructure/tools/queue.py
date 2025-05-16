@@ -17,7 +17,12 @@ def make_topic(topic_name):
     return topic, debug_subscription
 
 
-def create_subscription_with_push_and_dlq(topic_name: str, subscription_name: str, http_endpoint: str):
+def create_subscription_with_push_and_dlq(
+        topic_name: str,
+        subscription_name: str,
+        http_endpoint: str,
+        service_account: gcp.serviceaccount.Account
+):
     # Create a Dead Letter Queue (DLQ) topic for the subscription
     dlq_topic_name = f"{topic_name}-{subscription_name}-dlq"
     dlq_topic = gcp.pubsub.Topic(
@@ -41,9 +46,9 @@ def create_subscription_with_push_and_dlq(topic_name: str, subscription_name: st
         topic=topic_name,
         push_config=gcp.pubsub.SubscriptionPushConfigArgs(
             push_endpoint=http_endpoint,
-            # oidc_token=gcp.pubsub.SubscriptionPushConfigOidcTokenArgs(
-            #     service_account_email=service_account.email,
-            # ),
+            oidc_token=gcp.pubsub.SubscriptionPushConfigOidcTokenArgs(
+                service_account_email=service_account.email,
+            ),
             no_wrapper=gcp.pubsub.SubscriptionPushConfigNoWrapperArgs(
                 write_metadata=True
             )
@@ -67,7 +72,7 @@ DEFAULT_SUBSCRIPTION_KWARGS = dict(
     message_retention_duration="604800s", # 7 days, value must be in seconds
     retain_acked_messages=True,
     ack_deadline_seconds=600,  # 10 minutes
-    expiration_policy={
-        "ttl": "2592000s"  # 30 days, value must be in seconds
-    }
+    # expiration_policy={
+    #     "ttl": "2592000s"  # 30 days, value must be in seconds
+    # }
 )

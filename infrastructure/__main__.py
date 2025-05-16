@@ -5,6 +5,6 @@ This file imports all the individual modules and resources that make up the infr
 
 # Import all modules
 import services
-import topics
-# import load_balancer
+import queues
+import load_balancer
 import delivery

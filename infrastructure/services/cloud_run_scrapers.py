@@ -2,17 +2,12 @@ import pulumi_gcp as gcp
 
 from service_account import cloud_run_service_account
 from delivery import docker_repository_url
-from tools.run import create_cloud_run_secret_env, repo_short_sha
-
-from .secrets import AIRTABLE_API_KEY, MONGODB_URI, OPENAI_API_KEY, SPECTR_API_KEY
-
-SYNC_DEALS_PATH = "v1/integrations/sync/deal"
+from tools.run import create_cloud_run_secret_env
 
 
-# Cloud Run service for Synapse
-synapse_cloud_run = gcp.cloudrunv2.Service(
-    "synapse-cloud-run-service",  # Unique internal name
-    name="synapse",  # Service name in cloud run
+scrapers_cloud_run = gcp.cloudrunv2.Service(
+    "scrapers-cloud-run-service",  # Unique internal name
+    name="scrapers-v2",  # Service name in cloud run
     location=gcp.config.region,
     ingress="INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
     template=gcp.cloudrunv2.ServiceTemplateArgs(**{
@@ -23,18 +18,20 @@ synapse_cloud_run = gcp.cloudrunv2.Service(
         "service_account": cloud_run_service_account.email,
         "containers": [
             gcp.cloudrunv2.ServiceTemplateContainerArgs(
-                image=f"{docker_repository_url}/synapse:{repo_short_sha()}",
+                image=f"{docker_repository_url}/scrapers:latest",
                 envs=[
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
                         name="CLOUD",
                         value="1",
                     ),
-                    OPENAI_API_KEY, AIRTABLE_API_KEY, MONGODB_URI, SPECTR_API_KEY,
+                ] + [
+                    create_cloud_run_secret_env(secret_id, "scrapers")
+                    for secret_id in ['PERPLEXITY_API_KEY', 'SCRAPIN_API_KEY', 'SERP_API_KEY', 'MAILSLURP_API_KEY']
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
-                        "cpu": "1",
-                        "memory": "512Mi",
+                        "cpu": "2",
+                        "memory": "4096Mi",
                     }
                 ),
             )
