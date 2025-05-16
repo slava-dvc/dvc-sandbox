@@ -37,32 +37,32 @@ HIGHLIGHTS_DICT = {
         metric=None
     ),
     "web_traffic_surge": Highlight(
-        description="Web traffic surge",
+        description="Web traffic",
         is_positive=True,
         metric="web_visits"
     ),
     "strong_web_traffic_growth": Highlight(
-        description="Strong web traffic growth",
+        description="Web traffic",
         is_positive=True,
         metric="web_visits"
     ),
     "app_downloads_surge": Highlight(
-        description="App downloads surge",
+        description="App downloads",
         is_positive=True,
         metric="app_downloads"
     ),
     "recent_news": Highlight(
-        description="Recent news coverage",
+        description="Recent news",
         is_positive=True,
         metric=None
     ),
     "strong_social_growth": Highlight(
-        description="Strong social media growth",
+        description="Social media",
         is_positive=True,
         metric="linkedin_followers"
     ),
     "strong_app_downloads_growth": Highlight(
-        description="Strong app downloads growth",
+        description="App downloads",
         is_positive=True,
         metric="app_downloads"
     )
@@ -99,14 +99,14 @@ class TractionMetric:
             return None
 
         previous = {}
-        for period in ['1mo', '2mo', '3m', '4m', '5m', '6m', '12m', '24mo']:
+        for period in ['1mo', '2mo', '3mo', '4mo', '5mo', '6mo', '12mo', '24mo']:
             previous[period] = TractionValue.from_dict(traction_metric.get(period, {}))
-
 
         return cls(
             latest=traction_metric.get('latest', None),
             previous=previous,
         )
+
 
 @dataclass
 class TractionMetrics:
@@ -211,22 +211,58 @@ class CompanySummary:
             traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics'))
         )
 
+
+period_display_map = {
+    '1mo': 'last 1 month',
+    '2mo': 'last 2 month',
+    '3mo': 'last 3 month',
+    '4mo': 'last 4 month',
+    '5mo': 'last 5 month',
+    '6mo': 'last 6 month',
+    '12mo   ': 'last year',
+    '24mo': 'last 2 years'
+}
+
+
 def show_highlight(highlight: Highlight, metric: TractionMetric = None):
-    badge_color = "green" if highlight.is_positive else "orange"
-    emoji = "🔥" if highlight.is_positive else "⚠️"
-    
+    is_positive = highlight.is_positive
     description = highlight.description
+    change = ''
     if metric and hasattr(metric, "latest") and metric.latest:
-        try:
-            # Try to format as a number if it's numeric
-            value = float(metric.latest)
-            formatted_value = format_compact_number(value)
-            description = f"{description}: {formatted_value}"
-        except (ValueError, TypeError):
-            # If not numeric, use as is
-            description = f"{description}: {metric.latest}"
-        
-    st.badge(f"{emoji} {description}", color=badge_color)
+        # Try to format as a number if it's numeric
+        latest_value = float(metric.latest)
+        formatted_value = format_compact_number(latest_value)
+        description = f"{description}: {formatted_value}"
+
+        largest_change_period = None
+        largest_change_value = None
+
+        for period, prev_metric in metric.previous.items():
+            if prev_metric.value == 0:
+                continue
+            if largest_change_value is None or abs(latest_value - prev_metric.value) > abs(latest_value - largest_change_value):
+                largest_change_period = period
+                largest_change_value = prev_metric.value
+
+        if largest_change_period and largest_change_value:
+            percentage = (latest_value - largest_change_value) /  largest_change_value * 100
+            change_symbol = "+" if percentage > 0 else ""
+
+            # Format the period for display using a dictionary mapping
+            period_display = period_display_map.get(largest_change_period, largest_change_period)
+
+            change = f"{change_symbol}{percentage:.1f}% {period_display}"
+            if percentage < 0:
+                is_positive = False
+    badge_color = "green" if is_positive else "orange"
+    emoji = "🔥" if is_positive else "⚠️"
+    parts = [
+        emoji, description
+    ]
+    if change:
+        parts.append(f"({change})")
+    description = " ".join(parts)
+    st.badge(description, color=badge_color)
 
 
 def filter_highlights(highlights: List[str]) -> List[str]:
@@ -272,23 +308,6 @@ def show_highlights(company_summary: CompanySummary):
             metric = getattr(company_summary.traction_metrics, highlight.metric)
         show_highlight(highlight, metric)
 
-        # formatted_highlights = []
-        # all_positive = True
-        #
-        # for highlight_id in new_highlights:
-        #     highlight = HIGHLIGHTS_DICT.get(highlight_id)
-        #     if highlight:
-        #         formatted_highlights.append(highlight.description)
-        #         if not highlight.is_positive:
-        #             all_positive = False
-        #     else:
-        #         # Fallback if highlight not found in dictionary
-        #         formatted_highlights.append(highlight_id.replace('_', ' ').capitalize())
-        #
-        # text = '⚠️ ' + ', '.join(formatted_highlights)
-        # badge_color = 'green' if all_positive else 'orange'
-        # st.badge(text, color=badge_color)
-
 
 def show_company_summary(company_summary: CompanySummary):
     company_id = company_summary.company_id
@@ -302,7 +321,7 @@ def show_company_summary(company_summary: CompanySummary):
     company_last_update = company_summary.last_update
 
     with st.container(border=True):
-        logo_column, info_column, signals_column, button_column = st.columns([1, 7, 3, 1], gap='small')
+        logo_column, info_column, signals_column, button_column = st.columns([1, 7, 4, 1], gap='small')
 
         with logo_column:
             if company_summary.logo_url:
