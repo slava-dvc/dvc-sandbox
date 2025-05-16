@@ -70,9 +70,6 @@ def show_counted_pie(df: pd.DataFrame, title: str, column):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def show_company_highlights(company: pd.Series):
-    pass
-
 def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
     st.subheader("Portfolio Companies")
     search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')

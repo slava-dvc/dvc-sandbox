@@ -1,9 +1,10 @@
-import streamlit as st
+from dataclasses import dataclass, field
 from typing import Optional, Union, List, Any, Dict
 
-from dataclasses import dataclass, field
-from app.foundation.primitives import datetime
+import streamlit as st
+
 from app.dashboard.formatting import format_as_dollars, get_preview, format_compact_number
+from app.foundation.primitives import datetime
 
 
 @dataclass
@@ -16,57 +17,16 @@ class Highlight:
 
 # Dictionary mapping highlight IDs to their information
 HIGHLIGHTS_DICT = {
-    "headcount_surge": Highlight(
-        description="Headcount surge",
-        is_positive=True,
-        metric="employee_count"
-    ),
-    "raised_last_month": Highlight(
-        description="Raised funding last month",
-        is_positive=True,
-        metric=None
-    ),
-    "recent_funding": Highlight(
-        description="Recent funding",
-        is_positive=True,
-        metric=None
-    ),
-    "no_recent_funding": Highlight(
-        description="No recent funding",
-        is_positive=False,
-        metric=None
-    ),
-    "web_traffic_surge": Highlight(
-        description="Web traffic",
-        is_positive=True,
-        metric="web_visits"
-    ),
-    "strong_web_traffic_growth": Highlight(
-        description="Web traffic",
-        is_positive=True,
-        metric="web_visits"
-    ),
-    "app_downloads_surge": Highlight(
-        description="App downloads",
-        is_positive=True,
-        metric="app_downloads"
-    ),
-    "recent_news": Highlight(
-        description="Recent news",
-        is_positive=True,
-        metric=None
-    ),
-    "strong_social_growth": Highlight(
-        description="Social media",
-        is_positive=True,
-        metric="linkedin_followers"
-    ),
-    "strong_app_downloads_growth": Highlight(
-        description="App downloads",
-        is_positive=True,
-        metric="app_downloads"
-    )
-}
+    "headcount_surge": Highlight(description="Headcount surge", is_positive=True, metric="employee_count"),
+    "raised_last_month": Highlight(description="Raised funding last month", is_positive=True, metric=None),
+    "recent_funding": Highlight(description="Recent funding", is_positive=True, metric=None),
+    "no_recent_funding": Highlight(description="No recent funding", is_positive=False, metric=None),
+    "web_traffic_surge": Highlight(description="Web traffic", is_positive=True, metric="web_visits"),
+    "strong_web_traffic_growth": Highlight(description="Web traffic", is_positive=True, metric="web_visits"),
+    "app_downloads_surge": Highlight(description="App downloads", is_positive=True, metric="app_downloads"),
+    "recent_news": Highlight(description="Recent news", is_positive=True, metric=None),
+    "strong_social_growth": Highlight(description="Social media", is_positive=True, metric="linkedin_followers"),
+    "strong_app_downloads_growth": Highlight(description="App downloads", is_positive=True, metric="app_downloads")}
 
 
 @dataclass
@@ -80,11 +40,8 @@ class TractionValue:
         if not traction_value:
             return cls(value=0)
 
-        return cls(
-            value=traction_value.get('value', 0),
-            change=traction_value.get('change'),
-            percentage=traction_value.get('percentage')
-        )
+        return cls(value=traction_value.get('value', 0), change=traction_value.get('change'),
+            percentage=traction_value.get('percentage'))
 
 
 @dataclass
@@ -102,10 +59,7 @@ class TractionMetric:
         for period in ['1mo', '2mo', '3mo', '4mo', '5mo', '6mo', '12mo', '24mo']:
             previous[period] = TractionValue.from_dict(traction_metric.get(period, {}))
 
-        return cls(
-            latest=traction_metric.get('latest', None),
-            previous=previous,
-        )
+        return cls(latest=traction_metric.get('latest', None), previous=previous, )
 
 
 @dataclass
@@ -128,19 +82,17 @@ class TractionMetrics:
     def from_dict(cls, traction_metrics: Dict) -> 'TractionMetrics':
         if not traction_metrics or not isinstance(traction_metrics, dict):
             return cls()
-        
+
         metrics = {}
-        
-        for metric_name in [
-            'popularity_rank', 'web_visits', 'employee_count', 'linkedin_followers',
-            'twitter_followers', 'instagram_followers', 'itunes_reviews', 'googleplay_reviews',
-            'app_downloads', 'g2_reviews', 'trustpilot_reviews', 'chrome_extensions_reviews',
-            'chrome_extensions_users'
-        ]:
+
+        for metric_name in ['popularity_rank', 'web_visits', 'employee_count', 'linkedin_followers',
+            'twitter_followers', 'instagram_followers', 'itunes_reviews', 'googleplay_reviews', 'app_downloads',
+            'g2_reviews', 'trustpilot_reviews', 'chrome_extensions_reviews', 'chrome_extensions_users']:
             metric_data = traction_metrics.get(metric_name, {})
             if metric_data:
                 metrics[metric_name] = TractionMetric.from_dict(metric_data)
         return cls(**metrics)
+
 
 @dataclass
 class CompanySummary:
@@ -159,21 +111,13 @@ class CompanySummary:
     traction_metrics: TractionMetrics = None
 
     def __lt__(self, other):
-        status_map = {
-            "Invested": 0,
-            "Exit": -2,
-            "Offered To Invest": 2,
-            "Write-off": -1,
-        }
+        status_map = {"Invested": 0, "Exit": -2, "Offered To Invest": 2, "Write-off": -1, }
 
         def get_sorting_tuple(obj):
             highlights_count = 0 if not isinstance(obj.new_highlights, list) else len(obj.new_highlights)
             last_update = datetime.now() if not isinstance(obj.last_update, datetime.datetime) else obj.last_update
-            return (
-                highlights_count,
-                last_update,
-                status_map.get(obj.status, 0),
-            )
+            return (highlights_count, last_update, status_map.get(obj.status, 0),)
+
         return get_sorting_tuple(self) < get_sorting_tuple(other)
 
     @classmethod
@@ -196,56 +140,37 @@ class CompanySummary:
         else:
             initial_val = 'N/A'
 
-        return cls(
-            company_id=company_id,
-            name=company['Company'],
-            status=company['Status'],
-            website=company['URL'],
-            stage=stage,
-            initial_fund=company['Initial Fund Invested From'],
-            initial_valuation=initial_val,
-            current_valuation=current_val,
-            logo_url=get_preview(company['Logo']),
-            last_update=last_update,
+        return cls(company_id=company_id, name=company['Company'], status=company['Status'], website=company['URL'],
+            stage=stage, initial_fund=company['Initial Fund Invested From'], initial_valuation=initial_val,
+            current_valuation=current_val, logo_url=get_preview(company['Logo']), last_update=last_update,
             new_highlights=company.get('new_highlights'),
-            traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics'))
-        )
+            traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')))
 
 
-period_display_map = {
-    '1mo': 'last 1 month',
-    '2mo': 'last 2 month',
-    '3mo': 'last 3 month',
-    '4mo': 'last 4 month',
-    '5mo': 'last 5 month',
-    '6mo': 'last 6 month',
-    '12mo': 'last year',
-    '24mo': 'last 2 years'
-}
+period_display_map = {'1mo': 'last 1 month', '2mo': 'last 2 month', '3mo': 'last 3 month', '4mo': 'last 4 month',
+    '5mo': 'last 5 month', '6mo': 'last 6 month', '12mo': 'last year', '24mo': 'last 2 years'}
 
 
 def show_highlight(highlight: Highlight, metric: TractionMetric = None):
     is_positive = highlight.is_positive
     description = highlight.description
     change = ''
-    if metric and hasattr(metric, "latest") and metric.latest:
-        # Try to format as a number if it's numeric
-        latest_value = float(metric.latest)
-        formatted_value = format_compact_number(latest_value)
-        description = f"{description}: {formatted_value}"
+    latest_value = float(metric.latest) if metric is not None else None
 
+    if latest_value is not None:
         largest_change_period = None
         largest_change_value = None
 
         for period, prev_metric in metric.previous.items():
             if prev_metric.value == 0:
                 continue
-            if largest_change_value is None or abs(latest_value - prev_metric.value) > abs(latest_value - largest_change_value):
+            if largest_change_value is None or abs(latest_value - prev_metric.value) > abs(
+                    latest_value - largest_change_value):
                 largest_change_period = period
                 largest_change_value = prev_metric.value
 
         if largest_change_period and largest_change_value:
-            percentage = (latest_value - largest_change_value) /  largest_change_value * 100
+            percentage = (latest_value - largest_change_value) / largest_change_value * 100
             change_symbol = "+" if percentage > 0 else ""
 
             # Format the period for display using a dictionary mapping
@@ -254,11 +179,13 @@ def show_highlight(highlight: Highlight, metric: TractionMetric = None):
             change = f"{change_symbol}{percentage:.1f}% {period_display}"
             if percentage < 0:
                 is_positive = False
+
     badge_color = "green" if is_positive else "orange"
     emoji = "🔥" if is_positive else "⚠️"
-    parts = [
-        emoji, description
-    ]
+    parts = [emoji, description]
+    if latest_value is not None:
+        parts.append(": ")
+        parts.append(format_compact_number(latest_value))
     if change:
         parts.append(f"({change})")
     description = " ".join(parts)
@@ -272,19 +199,17 @@ def filter_highlights(highlights: List[str]) -> List[str]:
     """
     if not highlights:
         return []
-        
+
     # Define pairs of highlights where only the stronger one should be shown
-    redundant_pairs = {
-        "web_traffic_surge": "strong_web_traffic_growth",
-        "app_downloads_surge": "strong_app_downloads_growth"
-    }
-    
+    redundant_pairs = {"web_traffic_surge": "strong_web_traffic_growth",
+        "app_downloads_surge": "strong_app_downloads_growth"}
+
     # Check which highlights to skip
     highlights_to_skip = set()
     for weak_highlight, strong_highlight in redundant_pairs.items():
         if weak_highlight in highlights and strong_highlight in highlights:
             highlights_to_skip.add(weak_highlight)
-    
+
     # Return filtered highlights
     return [h for h in highlights if h not in highlights_to_skip]
 
@@ -294,10 +219,10 @@ def show_highlights(company_summary: CompanySummary):
     new_highlights = company_summary.new_highlights
     if not (isinstance(new_highlights, list) and len(new_highlights) > 0):
         return
-    
+
     # Filter out redundant highlights
     filtered_highlights = filter_highlights(new_highlights)
-    
+
     # Display filtered highlights
     for highlight_id in filtered_highlights:
         highlight = HIGHLIGHTS_DICT.get(highlight_id)
@@ -371,8 +296,4 @@ def show_company_summary(company_summary: CompanySummary):
             # Push the button higher on the row by adding padding
             st.write("")  # Small spacer to align with company name
             st.button("View", key=f"open_company_{company_id}", on_click=update_company_id, args=[company_id],
-                      use_container_width=True)
-
-        # # # Thinner divider
-        # st.markdown("<hr style='margin: 0.25em 0.25em; border-width: 0; background-color: #e0e0e0; height: 1px'>",
-        #             unsafe_allow_html=True)
+                use_container_width=True)
