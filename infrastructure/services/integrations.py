@@ -2,9 +2,8 @@ import pulumi
 import pulumi_gcp as gcp
 
 from topics import llm_analysis_result_topic, llm_analysis_result_topic_name, DEFAULT_SUBSCRIPTION_KWARGS
-from .defaults import PROJECT_ID
-from .service_account import service_account
-from .synapse_service import synapse
+from service_account import cloud_run_service_account
+from .cloud_run_synapse import synapse
 
 SYNC_DEALS_PATH = "v1/integrations/sync/deal"
 
@@ -14,7 +13,7 @@ llm_analysis_result_subscription_dlq_topic_name = f"{llm_analysis_result_topic_n
 llm_analysis_result_subscription_dlq_topic = gcp.pubsub.Topic(
     llm_analysis_result_subscription_dlq_topic_name,
     name=llm_analysis_result_subscription_dlq_topic_name,
-    project=PROJECT_ID,
+    project=gcp.config.project,
 )
 
 
@@ -35,7 +34,7 @@ llm_analysis_result_subscription = gcp.pubsub.Subscription(
     push_config=gcp.pubsub.SubscriptionPushConfigArgs(
         push_endpoint=synapse.uri.apply(lambda uri: f"{uri}/{SYNC_DEALS_PATH}"),
         oidc_token=gcp.pubsub.SubscriptionPushConfigOidcTokenArgs(
-            service_account_email=service_account.email,
+            service_account_email=cloud_run_service_account.email,
         ),
         no_wrapper=gcp.pubsub.SubscriptionPushConfigNoWrapperArgs(
             write_metadata=True
@@ -47,7 +46,7 @@ llm_analysis_result_subscription = gcp.pubsub.Subscription(
     ),
     dead_letter_policy=gcp.pubsub.SubscriptionDeadLetterPolicyArgs(
         max_delivery_attempts=5,
-        dead_letter_topic=f"projects/{PROJECT_ID}/topics/{llm_analysis_result_subscription_dlq_topic_name}"
+        dead_letter_topic=f"projects/{gcp.config.project}/topics/{llm_analysis_result_subscription_dlq_topic_name}"
     ),
     **DEFAULT_SUBSCRIPTION_KWARGS
 )

@@ -1,8 +1,8 @@
 import pulumi_gcp as gcp
-from .synapse_service import synapse
-from .dealflow_service import dealflow
-from .portfolio_service import portfolio
-from .sync_deal_subscription import *
+from .cloud_run_synapse import synapse
+from .cloud_run_dealflow import dealflow
+from .cloud_run_portfolio import portfolio
+from .integrations import *
 
 __all__ = ['synapse']
 

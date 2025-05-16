@@ -1,12 +1,13 @@
-
+import git
 import pulumi_gcp as gcp
 
 
-def create_cloud_run_secret_env(secret_id):
+def create_cloud_run_secret_env(secret_id, service_name):
     secret = gcp.secretmanager.Secret.get(
-        secret_id,
+        f"{service_name}_secret_{secret_id}",
         secret_id,
     )
+
     secret_env = gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
         name=secret_id,
         value_source=gcp.cloudrunv2.ServiceTemplateContainerEnvValueSourceArgs(
@@ -19,9 +20,12 @@ def create_cloud_run_secret_env(secret_id):
     return secret_env
 
 
-OPENAI_API_KEY = create_cloud_run_secret_env("OPENAI_API_KEY")
-ANTHROPIC_KEY = create_cloud_run_secret_env("ANTHROPIC_KEY")
-PERPLEXITY_KEY = create_cloud_run_secret_env("PERPLEXITY_KEY")
-AIRTABLE_API_KEY = create_cloud_run_secret_env("AIRTABLE_API_KEY")
-MONGODB_URI = create_cloud_run_secret_env("MONGODB_URI")
-SPECTR_API_KEY = create_cloud_run_secret_env("SPECTR_API_KEY")
+def repo_sha():
+    repo = git.Repo('../')  # Initialize the repo object. Replace '.' with your repo path if needed
+    head_commit = repo.head.commit
+    sha = head_commit.hexsha
+    return sha
+
+
+def repo_short_sha():
+    return repo_sha()[:7]

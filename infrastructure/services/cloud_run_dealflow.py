@@ -1,14 +1,16 @@
+import pulumi
 import pulumi_gcp as gcp
 
-from .defaults import PROJECT_ID
-from .service_account import service_account
-from .repo import short_sha
-from .gcp_secrets import create_cloud_run_secret_env, AIRTABLE_API_KEY, MONGODB_URI
+from service_account import cloud_run_service_account
+from delivery import docker_repository_url
+from tools.run import create_cloud_run_secret_env, repo_short_sha
+from .secrets import ANTHROPIC_KEY, OPENAI_API_KEY, PERPLEXITY_KEY
 
 
-portfolio = gcp.cloudrunv2.Service(
-    "portfolio-cloud-run-service",  # Unique internal name
-    name="portfolio",  # Service name in cloud run
+# Cloud Run service
+dealflow = gcp.cloudrunv2.Service(
+    "dealflow-cloud-run-service",  # Unique internal name
+    name="dealflow",  # Service name in cloud run
     location=gcp.config.region,
     ingress="INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
     template=gcp.cloudrunv2.ServiceTemplateArgs(**{
@@ -16,20 +18,20 @@ portfolio = gcp.cloudrunv2.Service(
             "min_instance_count": 0,
             "max_instance_count": 2,
         },
-        "service_account": service_account.email,
+        "service_account": cloud_run_service_account.email,
         "containers": [
             gcp.cloudrunv2.ServiceTemplateContainerArgs(
-                image=f"us.gcr.io/{PROJECT_ID}/docker/synapse:{short_sha}",
-                args=['portfolio'],
+                image=f"{docker_repository_url}/dealflow:latest",
                 envs=[
-                    AIRTABLE_API_KEY, MONGODB_URI,
+                    ANTHROPIC_KEY, OPENAI_API_KEY, PERPLEXITY_KEY,
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
                         name="CLOUD",
                         value="1",
                     ),
-                ] + [
-                    create_cloud_run_secret_env(secret_id = secret_id)
-                    for secret_id in ['COOKIE_SECRET', 'OAUTH_CLIENT_ID', 'OAUTH_SECRET']
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(
+                        name="RECORDING_BUCKET",
+                        value="dvc-rivet-records",
+                    )
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
