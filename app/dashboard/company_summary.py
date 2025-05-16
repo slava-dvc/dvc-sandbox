@@ -219,7 +219,7 @@ period_display_map = {
     '4mo': 'last 4 month',
     '5mo': 'last 5 month',
     '6mo': 'last 6 month',
-    '12mo   ': 'last year',
+    '12mo': 'last year',
     '24mo': 'last 2 years'
 }
 
