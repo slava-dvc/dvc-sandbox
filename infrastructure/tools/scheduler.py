@@ -18,7 +18,10 @@ def make_scheduled_job(
         "headers": {
             "Content-Type": "application/json",
         },
-        "oidc_token": {"service_account_email": scheduler_service_account.email},
+        "oidc_token": {
+            "service_account_email": scheduler_service_account.email,
+            "audience": uri,
+        },
     }
 
     job = gcp.cloudscheduler.Job(
