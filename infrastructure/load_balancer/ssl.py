@@ -6,9 +6,9 @@ ssl_certificate = gcp.compute.ManagedSslCertificate(
     f"dvcagent-ssl-certificate",
     managed=gcp.compute.ManagedSslCertificateManagedArgs(
         domains=[
-            # f"api.{DOMAIN}",
+            f"api.{DOMAIN}",
             f'portfolio.{DOMAIN}',
-            # f'app.{DOMAIN}'
+            f'app.{DOMAIN}'
         ],
     ),
 )

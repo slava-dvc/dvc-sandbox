@@ -53,10 +53,14 @@ api_urlmap_matcher = gcp.compute.URLMapPathMatcherArgs(
             paths=["/docsend2pdf/*", "/perpexity/*", "/linkedin/*"],
             service=scrapers_compute_backend.self_link,
         ),
-        # gcp.compute.URLMapPathMatcherPathRuleArgs(
-        #     paths=["/pitch_decks/*, /media/*"],
-        #     service=django_compute_backend.self_link,
-        # )
+        gcp.compute.URLMapPathMatcherPathRuleArgs(
+            paths=["/v1/*"],
+            service=synapse_compute_backend.self_link,
+        ),
+        gcp.compute.URLMapPathMatcherPathRuleArgs(
+            paths=["/pitch_decks/*", "/media/*"],
+            service=django_compute_backend.self_link,
+        )
     ],
 )
 

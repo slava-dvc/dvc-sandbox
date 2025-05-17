@@ -55,7 +55,7 @@ django_compute_backend = gcp.compute.BackendService(
     timeout_sec=10,
     protocol="HTTPS",
     connection_draining_timeout_sec=10,
-    # load_balancing_scheme="EXTERNAL_MANAGED",
+    load_balancing_scheme="EXTERNAL_MANAGED",
     custom_request_headers=[django_instance_endpoint.fqdn.apply(lambda fqdn: f"host: {fqdn}")],
     backends=[
         gcp.compute.BackendServiceBackendArgs(
