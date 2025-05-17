@@ -19,19 +19,20 @@ create_subscription_with_push_and_dlq(
     cloud_run_service_account
 )
 
-
+PULL_COMPANIES_PATH = "v1/integrations/airtable/pull_companies"
 pull_companies_from_airtable = make_scheduled_job(
     "airtable-pull-companies",
     "Pull Companies from AirTable",
     "5 10 * * 7",
-    API_BASE_URL + '/v1/integrations/airtable/pull_companies',
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{PULL_COMPANIES_PATH}"),
     scheduler_service_account
 )
 
+SYNC_COMPANIES_PATH = "v1/integrations/spectr/sync_companies"
 sync_companies_from_spectr = make_scheduled_job(
     "spectr-pull-companies",
     "Pull Companies from Spectr",
     "13 17 * * 7",
-    API_BASE_URL + '/v1/integrations/spectr/sync_companies',
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{SYNC_COMPANIES_PATH}"),
     cloud_run_service_account
 )
