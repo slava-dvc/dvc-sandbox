@@ -13,12 +13,9 @@ steps:
     secretEnv: ['PULUMI_CONFIG_PASSPHRASE']
     env:
       - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
-      - 'GOOGLE_CLOUD_REGION=$_REGION'
+      - 'GOOGLE_CLOUD_REGION=$PROJECT_REGION'
       - 'PULUMI_STATE_BUCKET=dvc-pulumi'
       - 'SHORT_COMMIT_SHA=$SHORT_SHA'
-
-substitutions:
-  PROJECT_REGION: 'us-central1'
 
 availableSecrets:
   secretManager:
