@@ -6,6 +6,7 @@ from .ip_addresses import external_ipv4_address, external_ipv6_address
 # URLMap for HTTP to HTTPS redirect
 redirect_url_map = gcp.compute.URLMap(
     "url-map-for-redirect",
+    description="Redirect HTTP to HTTPS",
     default_url_redirect=gcp.compute.URLMapDefaultUrlRedirectArgs(
         strip_query=False,
         https_redirect=True,  # Enables HTTPS redirect
