@@ -1,8 +1,29 @@
-# CLAUDE.md
+# DVC Synapse - Dev Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Build & Run Commands
+- Setup: `python3 -m venv .venv && source .venv/bin/activate && pip install -Ur requirements.txt`
+- Run locally: `python3 -m app.backend --port 8000`
+- Run tests: `pytest tests/`
+- Run single test: `pytest tests/test_file.py::test_function -v`
+- Deploy: `make app-deploy` (builds+deploys app) or `make all` (runs tests + infra+app)
 
-## Build/Test Commands
-- Run tests: `python -m pytest tests`
-- Run single test: `python -m pytest tests/test_file.py::test_function`
-- Run backend dev: `python3 -m app.backend --port 8000`
+
+## Project Structure
+Synapse is a FastAPI-powered microservice designed to process PDF files using Large Language Models (LLMs) and extract structured data, with the following structure:
+
+- `app/`: Application code organized by domain
+  - `deals/`: Deal processing module
+  - `integrations/`: CRM and other integrations
+  - `workspaces/`: Workspace management
+  - `users/`: User management
+  - `foundation/`: Shared utilities and configurations
+  - `backend.py`: Entry point for the backend application
+  - `job.py`: Entry point for backend jobs
+- `infrastructure/`: Pulumi deployment code
+  - `services/`: Cloud Run service definitions
+  - `topics/`: Pub/Sub topics configuration
+- `tests/`: Test directory
+- `Dockerfile`: Docker configuration
+- `Makefile`: Single source of truth for all operations
+- `cloudbuild.yaml`: Cloud Build configuration
+- `.github/workflows/`: CI/CD workflows

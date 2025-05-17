@@ -1,4 +1,4 @@
-name: Infra Diff
+name: INFRA
 
 on:
   workflow_dispatch:
@@ -6,37 +6,42 @@ on:
     paths:
       - 'infrastructure/**'
       - '.github/workflows/pulumi-preview.yml'
+  push:
+    branches: [ master ]
 
 permissions:
   pull-requests: write
   contents: read
 
 env:
+  PULUMI_STATE_BUCKET: ${{vars.PULUMI_STATE_BUCKET}}
   SERVICE_ACCOUNT: '${{secrets.SERVICE_ACCOUNT}}'
   PULUMI_CONFIG_PASSPHRASE: '${{secrets.PULUMI_CONFIG_PASSPHRASE}}'
   GOOGLE_CLOUD_PROJECT: '${{vars.GOOGLE_CLOUD_PROJECT}}'
   GOOGLE_CLOUD_REGION: '${{vars.GOOGLE_CLOUD_REGION}}'
 
 jobs:
-  infra_diff_preview:
-    name: Preview
+  infra_preview:
+    name: Preview Changes
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
+      - name: Setup Python
+        uses: ./.github/actions/setup-python
       - name: Cloud SDK Auth
         uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{secrets.SERVICE_ACCOUNT}}'
-
       - name: Set up Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v2'
-
-      - name: Set up Pulumi Binary and Make diff
-        shell: bash
-        run : make install-infra-tool configure-infra-tool infra-diff
-
+      
+      # For Pull Requests - Generate Preview
+      - name: Generate Infrastructure Preview
+        if: github.event_name == 'pull_request'
+        run: make infra-setup infra-diff
+      
+      # Comment on PR with preview results
       - name: Comment PR
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
