@@ -1,6 +1,6 @@
 import pulumi
 import pulumi_gcp as gcp
-
+from globals import DOMAIN
 from services import synapse_cloud_run, dealflow_cloud_run, portfolio_cloud_run, scrapers_cloud_run
 from tools.load_balancer import make_cloud_run_backend
 
@@ -34,4 +34,32 @@ web_app_bucket_backend = gcp.compute.BackendBucket(
     description="Backend bucket for static website content",
     bucket_name="dvc-web-app",
     enable_cdn=False,
+)
+
+
+django_instance_neg = gcp.compute.GlobalNetworkEndpointGroup(
+    "compute-neg-for-django-instance",
+    network_endpoint_type="INTERNET_FQDN_PORT",
+    default_port=443
+)
+
+django_instance_endpoint = gcp.compute.GlobalNetworkEndpoint(
+    "compute-ne-for-django-instance",
+    global_network_endpoint_group=django_instance_neg.id,
+    fqdn=f"backend.{DOMAIN}",
+    port=django_instance_neg.default_port
+)
+
+django_compute_backend = gcp.compute.BackendService(
+    "compute-backend-service-for-django-instance",
+    timeout_sec=10,
+    protocol="HTTPS",
+    connection_draining_timeout_sec=10,
+    # load_balancing_scheme="EXTERNAL_MANAGED",
+    custom_request_headers=[django_instance_endpoint.fqdn.apply(lambda fqdn: f"host: {fqdn}")],
+    backends=[
+        gcp.compute.BackendServiceBackendArgs(
+            group=django_instance_neg.self_link,
+        )
+    ],
 )

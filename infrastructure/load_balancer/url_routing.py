@@ -8,7 +8,9 @@ from .backend_service import (
     synapse_compute_backend,
     dealflow_compute_backend,
     web_app_bucket_backend,
-    portfolio_compute_backend, scrapers_compute_backend
+    portfolio_compute_backend,
+    scrapers_compute_backend,
+    django_compute_backend
 )
 
 default_url_redirect = gcp.compute.URLMapDefaultUrlRedirectArgs(
@@ -50,7 +52,11 @@ api_urlmap_matcher = gcp.compute.URLMapPathMatcherArgs(
         gcp.compute.URLMapPathMatcherPathRuleArgs(
             paths=["/docsend2pdf/*", "/perpexity/*", "/linkedin/*"],
             service=scrapers_compute_backend.self_link,
-        )
+        ),
+        # gcp.compute.URLMapPathMatcherPathRuleArgs(
+        #     paths=["/pitch_decks/*, /media/*"],
+        #     service=django_compute_backend.self_link,
+        # )
     ],
 )
 
@@ -65,11 +71,13 @@ url_map = gcp.compute.URLMap(
     default_url_redirect=default_url_redirect,
     host_rules=[
         portfolio_host_rule,
-        app_web_host_rule
+        app_web_host_rule,
+        api_host_rule
         ],
     path_matchers=[
         portfolio_urlmap_matcher,
-        app_web_urlmap_matcher
+        app_web_urlmap_matcher,
+        api_urlmap_matcher
     ],
 )
 
