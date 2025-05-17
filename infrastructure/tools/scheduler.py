@@ -27,7 +27,7 @@ def make_scheduled_job(
     job = gcp.cloudscheduler.Job(
         f"cloud-scheduler-job-{name}",
         name=name,
-        description="Periodically check if Shopmonkey webhook is enabled.",
+        description=description,
         schedule=schedule,
         time_zone=time_zone,
         http_target=http_target,
