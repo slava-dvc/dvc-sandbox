@@ -5,7 +5,7 @@ import numpy as np
 from app.foundation.primitives import datetime
 from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
-from dashboard.company_summary import CompanySummary, show_highlights
+from app.dashboard.company_summary import CompanySummary, show_highlights
 
 __all__ = ['show_company_page']
 
