@@ -204,7 +204,6 @@ def show_traction_graph(traction_metric: TractionMetric, label=None):
 def show_traction_graph_with_combo(company_summary: CompanySummary, selected=None):
     traction_metrics = company_summary.traction_metrics
     traction_metrics_fields = fields(traction_metrics)
-    
     # Dictionary mapping internal field names to human-readable display names
     metric_display_names = {
         "popularity_rank": "Popularity Ranking",
@@ -235,21 +234,20 @@ def show_traction_graph_with_combo(company_summary: CompanySummary, selected=Non
         for name in available_metrics
     }
     with st.container(border=True):
-        index = None
-        if selected:
-            index = list(available_metrics).index(selected)
+        index = 0
+        if selected and selected in available_metrics:
+            index = available_metrics.index(selected)
         metric_display = st.selectbox(
             label="Select Metric",
             options=list(options.keys()),
             format_func=lambda x: options[x],
             label_visibility='hidden',
             index=index,
-            key=str(uuid.uuid4())
+            key=f"company_combo_{selected}"
         )
 
         if metric_display:
             traction_metric = getattr(traction_metrics, metric_display)
-            # Pass both metric object and its display name to the graph function
             show_traction_graph(traction_metric, label=options[metric_display])
         else:
             st.warning("Please select a metric.")
