@@ -2,10 +2,12 @@ import pandas as pd
 import requests
 import streamlit as st
 import numpy as np
+import uuid
+from dataclasses import fields
 from app.foundation.primitives import datetime
 from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
-from app.dashboard.company_summary import CompanySummary, show_highlights
+from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric, TractionMetrics
 
 __all__ = ['show_company_page']
 
@@ -159,6 +161,100 @@ def show_signals(company_summary: CompanySummary):
     if not highlights_cnt:
         st.info("No signals for this company.")
 
+
+def show_traction_graph(traction_metric: TractionMetric, label=None):
+    now = datetime.now()
+    thirty_days = datetime.timedelta(days=30)
+    first_day = datetime.as_local(datetime.datetime(now.year, now.month, 1))
+    points = [
+        ('latest', first_day),
+        ('1mo', first_day - thirty_days),
+        ('2mo', first_day - 2 * thirty_days),
+        ('3mo', first_day - 3 * thirty_days),
+        ('4mo', first_day - 4 * thirty_days),
+        ('5mo', first_day - 5 * thirty_days),
+        ('6mo', first_day - 6 * thirty_days),
+    ]
+    values = []
+    for key, date in points:
+        if key == 'latest':
+            if isinstance(traction_metric.latest, (float, int)):
+                values.append((date, traction_metric.latest))
+        else:
+            traction_value = traction_metric.previous.get(key)
+            value = traction_value.value
+            if isinstance(value, (float, int)):
+                values.append((date, value))
+    
+    if not values:
+        st.info("No data available for this metric.")
+        return
+
+    values.sort(key=lambda x: x[0])
+    df = pd.DataFrame(values, columns=['date', 'value'])
+
+    st.line_chart(
+        df.set_index('date')['value'],
+        use_container_width=True,
+        y_label = label,
+        x_label = "Date",
+    )
+
+
+def show_traction_graph_with_combo(company_summary: CompanySummary, selected=None):
+    traction_metrics = company_summary.traction_metrics
+    traction_metrics_fields = fields(traction_metrics)
+    
+    # Dictionary mapping internal field names to human-readable display names
+    metric_display_names = {
+        "popularity_rank": "Popularity Ranking",
+        "web_visits": "Website Traffic",
+        "employee_count": "Employee Count",
+        "linkedin_followers": "LinkedIn Followers",
+        "twitter_followers": "Twitter Followers",
+        "instagram_followers": "Instagram Followers",
+        "itunes_reviews": "App Store Reviews",
+        "googleplay_reviews": "Google Play Reviews",
+        "app_downloads": "App Downloads",
+        "g2_reviews": "G2 Reviews",
+        "trustpilot_reviews": "Trustpilot Reviews",
+        "chrome_extensions_reviews": "Chrome Extension Reviews",
+        "chrome_extensions_users": "Chrome Extension Users"
+    }
+    
+    # Get available metrics that have data
+    available_metrics = list(sorted([f.name for f in traction_metrics_fields if getattr(traction_metrics, f.name)]))
+    
+    if not available_metrics:
+        st.info("No traction metrics available for this company.")
+        return
+
+    # Create options for dropdown with human-readable names
+    options = {
+        name: metric_display_names.get(name, name.replace('_', ' ').title())
+        for name in available_metrics
+    }
+    with st.container(border=True):
+        index = None
+        if selected:
+            index = list(available_metrics).index(selected)
+        metric_display = st.selectbox(
+            label="Select Metric",
+            options=list(options.keys()),
+            format_func=lambda x: options[x],
+            label_visibility='hidden',
+            index=index,
+            key=str(uuid.uuid4())
+        )
+
+        if metric_display:
+            traction_metric = getattr(traction_metrics, metric_display)
+            # Pass both metric object and its display name to the graph function
+            show_traction_graph(traction_metric, label=options[metric_display])
+        else:
+            st.warning("Please select a metric.")
+
+
 def show_company_page(investments, companies, updates, company_id):
     with st.spinner("Loading portfolio..."):
         portfolio = get_portfolio()
@@ -191,6 +287,12 @@ def show_company_page(investments, companies, updates, company_id):
         st.divider()
         st.subheader("Asks")
         show_asks(selected_company)
+        st.divider()
+        c1, c2 = st.columns(2)
+        with c1:
+            show_traction_graph_with_combo(company_summary, 'web_visits')
+        with c2:
+            show_traction_graph_with_combo(company_summary, 'employee_count')
         st.divider()
         st.subheader("Signals")
         show_signals(company_summary)
