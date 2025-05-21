@@ -2,6 +2,7 @@ import pandas as pd
 import requests
 import streamlit as st
 import numpy as np
+import uuid
 from dataclasses import fields
 from app.foundation.primitives import datetime
 from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
@@ -188,7 +189,7 @@ def show_traction_graph(traction_metric: TractionMetric, label=None):
     if not values:
         st.info("No data available for this metric.")
         return
-    
+
     values.sort(key=lambda x: x[0])
     df = pd.DataFrame(values, columns=['date', 'value'])
 
@@ -200,16 +201,58 @@ def show_traction_graph(traction_metric: TractionMetric, label=None):
     )
 
 
-def show_traction_graph_with_combo(company_summary: CompanySummary):
+def show_traction_graph_with_combo(company_summary: CompanySummary, selected=None):
     traction_metrics = company_summary.traction_metrics
     traction_metrics_fields = fields(traction_metrics)
-    names = [f.name for f in traction_metrics_fields if getattr(traction_metrics, f.name)]
-    metric_to_show = st.selectbox(label="Metric", options=names)
-    if metric_to_show:
-        traction_metric = getattr(traction_metrics, metric_to_show)
-        show_traction_graph(traction_metric)
-    else:
-        st.warning("Please select a metric.")
+    
+    # Dictionary mapping internal field names to human-readable display names
+    metric_display_names = {
+        "popularity_rank": "Popularity Ranking",
+        "web_visits": "Website Traffic",
+        "employee_count": "Employee Count",
+        "linkedin_followers": "LinkedIn Followers",
+        "twitter_followers": "Twitter Followers",
+        "instagram_followers": "Instagram Followers",
+        "itunes_reviews": "App Store Reviews",
+        "googleplay_reviews": "Google Play Reviews",
+        "app_downloads": "App Downloads",
+        "g2_reviews": "G2 Reviews",
+        "trustpilot_reviews": "Trustpilot Reviews",
+        "chrome_extensions_reviews": "Chrome Extension Reviews",
+        "chrome_extensions_users": "Chrome Extension Users"
+    }
+    
+    # Get available metrics that have data
+    available_metrics = list(sorted([f.name for f in traction_metrics_fields if getattr(traction_metrics, f.name)]))
+    
+    if not available_metrics:
+        st.info("No traction metrics available for this company.")
+        return
+
+    # Create options for dropdown with human-readable names
+    options = {
+        name: metric_display_names.get(name, name.replace('_', ' ').title())
+        for name in available_metrics
+    }
+    with st.container(border=True):
+        index = None
+        if selected:
+            index = list(available_metrics).index(selected)
+        metric_display = st.selectbox(
+            label="Select Metric",
+            options=list(options.keys()),
+            format_func=lambda x: options[x],
+            label_visibility='hidden',
+            index=index,
+            key=str(uuid.uuid4())
+        )
+
+        if metric_display:
+            traction_metric = getattr(traction_metrics, metric_display)
+            # Pass both metric object and its display name to the graph function
+            show_traction_graph(traction_metric, label=options[metric_display])
+        else:
+            st.warning("Please select a metric.")
 
 
 def show_company_page(investments, companies, updates, company_id):
@@ -245,7 +288,11 @@ def show_company_page(investments, companies, updates, company_id):
         st.subheader("Asks")
         show_asks(selected_company)
         st.divider()
-        show_traction_graph_with_combo(company_summary)
+        c1, c2 = st.columns(2)
+        with c1:
+            show_traction_graph_with_combo(company_summary, 'web_visits')
+        with c2:
+            show_traction_graph_with_combo(company_summary, 'employee_count')
         st.divider()
         st.subheader("Signals")
         show_signals(company_summary)
