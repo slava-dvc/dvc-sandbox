@@ -126,7 +126,7 @@ def show_last_updates_and_news(company_summary: CompanySummary, updates):
                 title = row['title']
                 if not isinstance(title, str):
                     title = "N/A"
-                st.markdown(f"**{row['publisher']}**: {title}".format(row=row))
+                st.markdown(f"**{row['publisher']}**: {title.replace('$', '\$')}".format(row=row))
             with date_column:
                 st.write(row['date'].strftime('%d %b %Y'))
             if row['type'] == 'news':
