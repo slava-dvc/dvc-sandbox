@@ -2,20 +2,34 @@ import pandas as pd
 import requests
 import streamlit as st
 import numpy as np
+from app.foundation.primitives import datetime
 from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
-
+from dashboard.company_summary import CompanySummary, show_highlights
 
 __all__ = ['show_company_page']
 
 
-def show_company_basic_details(company: pd.Series):
-    st.header(company['Company'] + f" ({company['Status']})")
-    if company['URL'] and isinstance(company['URL'], str):
-        st.write(company['URL'])
+def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
+    logo_column, name_column = st.columns([1, 8])
+    with logo_column:
+        if company_summary.logo_url:
+            try:
+                st.image(company_summary.logo_url, width=64)
+            except Exception:
+                st.write("📊")
+        else:
+            st.write("📊")
+    with name_column:
+        st.header( f"{company_summary.name} ({company_summary.status})")
+    if company_summary.website and isinstance(company_summary.website, str):
+        st.write(company_summary.website)
     else:
         st.caption("No URL provided.")
-    st.write(company['Blurb'])
+    if isinstance(company_summary.blurb, str):
+        st.write(company_summary.blurb)
+    else:
+        st.caption("No blurb provided.")
 
 
 def show_company_investment_details(company: pd.Series, investments: pd.DataFrame, portfolio: pd.DataFrame):
@@ -75,16 +89,48 @@ def show_asks(company: pd.Series):
         st.dataframe(filtered_asks[columns], hide_index=True, use_container_width=True)
 
 
-def show_last_updates_and_news(company: pd.Series, updates):
-    company_id = company.name
-    filtered_index = updates['Company Name'].apply(lambda x: company_id in x if isinstance(x, list) else False)
-    filtered_updates = updates[filtered_index]
-    if len(filtered_updates) == 0:
-        st.info("No updates for this company.")
-    else:
-        columns = ['Please provide any comments/questions', 'Created']
-        filtered_updates.loc[:, 'Created'] = pd.to_datetime(filtered_updates['Created']).dt.strftime('%d %b %Y')
-        st.dataframe(filtered_updates[columns], hide_index=True, use_container_width=True)
+def show_last_updates_and_news(company_summary: CompanySummary, updates):
+    rows = []
+    relevant_updates = updates['Company Name'].apply(lambda x: company_summary.company_id in x if isinstance(x, list) else False)
+    company_updates = updates[relevant_updates].copy()
+    company_updates.rename(columns={'Please provide any comments/questions': "Comment"}, inplace=True)
+    for company_update in company_updates.itertuples():
+        rows.append({
+            'type': 'update',
+            'publisher': 'Team',
+            'url': None,
+            'date': datetime.any_to_datetime(company_update.Created),
+            'title': company_update.Comment,
+        })
+    news_after = datetime.now() - datetime.timedelta(days=90)
+    for company_news_item in company_summary.news:
+        if company_news_item.date < news_after:
+            continue
+        rows.append({
+            'type': 'news',
+            'url': company_news_item.url,
+            'date': company_news_item.date,
+            'title': company_news_item.title,
+            'publisher': company_news_item.publisher,
+        })
+    rows = sorted(rows, key=lambda x: x['date'], reverse=True)
+    if len(rows) == 0:
+        st.info("No news or updates for this company.")
+
+    for row in rows:
+        with st.container(border=True):
+            text_column, date_column, button_column = st.columns([6, 1, 1], vertical_alignment='center')
+            with text_column:
+                title = row['title']
+                if not isinstance(title, str):
+                    title = "N/A"
+                st.markdown(f"**{row['publisher']}**: {title}".format(row=row))
+            with date_column:
+                st.write(row['date'].strftime('%d %b %Y'))
+            if row['type'] == 'news':
+                with button_column:
+                    st.link_button("Read more", row['url'])
+        pass
 
 
 def show_team(company: pd.Series):
@@ -108,6 +154,11 @@ def show_team(company: pd.Series):
         col3.link_button("Contact", founder.LinkedIn)
 
 
+def show_signals(company_summary: CompanySummary):
+    highlights_cnt = show_highlights(company_summary)
+    if not highlights_cnt:
+        st.info("No signals for this company.")
+
 def show_company_page(investments, companies, updates, company_id):
     with st.spinner("Loading portfolio..."):
         portfolio = get_portfolio()
@@ -115,7 +166,7 @@ def show_company_page(investments, companies, updates, company_id):
     def reset_company_id():
         st.query_params.pop('company_id', None)
 
-    col1, col2 = st.columns([1, 10], vertical_alignment='bottom')
+    col1, col2 = st.columns([1, 8], vertical_alignment='bottom')
     with col1:
         st.button("← To Main ", on_click=reset_company_id)
 
@@ -133,15 +184,19 @@ def show_company_page(investments, companies, updates, company_id):
     if selected_company_id:
         st.query_params.update({'company_id': selected_company_id})
         selected_company = companies_in_portfolio.loc[selected_company_id]
-        show_company_basic_details(selected_company)
+        company_summary = CompanySummary.from_dict(selected_company, selected_company_id)
+        show_company_basic_details(selected_company, company_summary)
         st.divider()
         show_company_investment_details(selected_company, investments, portfolio)
         st.divider()
         st.subheader("Asks")
         show_asks(selected_company)
         st.divider()
+        st.subheader("Signals")
+        show_signals(company_summary)
+        st.divider()
         st.subheader("Last Updates and News")
-        show_last_updates_and_news(selected_company, updates)
+        show_last_updates_and_news(company_summary, updates)
         st.divider()
         st.subheader("Team")
         show_team(selected_company)

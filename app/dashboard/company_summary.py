@@ -30,6 +30,26 @@ HIGHLIGHTS_DICT = {
 
 
 @dataclass
+class NewsItem:
+    """Represents a news item for a company."""
+    title: str
+    url: str
+    date: str
+    publisher: str
+
+    @classmethod
+    def from_dict(cls, news_item: dict):
+        if not news_item:
+            return cls(title="", url="", date="", publisher="")
+        return cls(
+            title=news_item.get('title', ""),
+            url=news_item.get('url', ""),
+            date=datetime.any_to_datetime(news_item.get('date', "")),
+            publisher=news_item.get('publisher', "")
+        )
+
+
+@dataclass
 class TractionValue:
     value: str | int | float
     change: int | float | None = None
@@ -100,6 +120,7 @@ class CompanySummary:
     company_id: str
     name: str
     website: Optional[str] = None
+    blurb: None | str = None
     stage: Optional[str] = None
     status: Optional[str] = None
     initial_fund: Optional[str] = None
@@ -109,6 +130,7 @@ class CompanySummary:
     last_update: Optional[Any] = None
     new_highlights: Optional[List[str]] = None
     traction_metrics: TractionMetrics = None
+    news: List[NewsItem] = field(default_factory=list)
 
     def __lt__(self, other):
         status_map = {"Invested": 0, "Exit": -2, "Offered To Invest": 2, "Write-off": -1, }
@@ -139,16 +161,18 @@ class CompanySummary:
             initial_val = initial_val[0]
         else:
             initial_val = 'N/A'
-
-        return cls(company_id=company_id, name=company['Company'], status=company['Status'], website=company['URL'],
+        news = (company.get('news'))
+        if not isinstance(news, list):
+            news= []
+        return cls(
+            company_id=company_id, name=company['Company'], status=company['Status'], website=company['URL'],
             stage=stage, initial_fund=company['Initial Fund Invested From'], initial_valuation=initial_val,
             current_valuation=current_val, logo_url=get_preview(company['Logo']), last_update=last_update,
             new_highlights=company.get('new_highlights'),
-            traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')))
-
-
-period_display_map = {'1mo': 'last 1 month', '2mo': 'last 2 month', '3mo': 'last 3 month', '4mo': 'last 4 month',
-    '5mo': 'last 5 month', '6mo': 'last 6 month', '12mo': 'last year', '24mo': 'last 2 years'}
+            blurb=company.get('Blurb'),
+            traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')),
+            news=[NewsItem.from_dict(n) for n in news]
+        )
 
 
 def show_highlight(highlight: Highlight, metric: TractionMetric = None):
@@ -158,25 +182,13 @@ def show_highlight(highlight: Highlight, metric: TractionMetric = None):
     latest_value = float(metric.latest) if metric is not None else None
 
     if latest_value is not None:
-        largest_change_period = None
-        largest_change_value = None
+        month_ago_value = metric.previous.get('1mo').value if metric is not None else None
 
-        for period, prev_metric in metric.previous.items():
-            if prev_metric.value == 0:
-                continue
-            if largest_change_value is None or abs(latest_value - prev_metric.value) > abs(
-                    latest_value - largest_change_value):
-                largest_change_period = period
-                largest_change_value = prev_metric.value
-
-        if largest_change_period and largest_change_value:
-            percentage = (latest_value - largest_change_value) / largest_change_value * 100
+        if month_ago_value:
+            percentage = (latest_value - month_ago_value) / month_ago_value * 100
             change_symbol = "+" if percentage > 0 else ""
 
-            # Format the period for display using a dictionary mapping
-            period_display = period_display_map.get(largest_change_period, largest_change_period)
-
-            change = f"{change_symbol}{percentage:.1f}% {period_display}"
+            change = f"{change_symbol}{percentage:.1f}% last month"
             if percentage < 0:
                 is_positive = False
 
@@ -218,7 +230,7 @@ def show_highlights(company_summary: CompanySummary):
     # Display new highlights badge
     new_highlights = company_summary.new_highlights
     if not (isinstance(new_highlights, list) and len(new_highlights) > 0):
-        return
+        return 0
 
     # Filter out redundant highlights
     filtered_highlights = filter_highlights(new_highlights)
@@ -232,6 +244,7 @@ def show_highlights(company_summary: CompanySummary):
         if highlight.metric:
             metric = getattr(company_summary.traction_metrics, highlight.metric)
         show_highlight(highlight, metric)
+    return len(filtered_highlights)
 
 
 def show_company_summary(company_summary: CompanySummary):

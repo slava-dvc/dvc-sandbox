@@ -19,7 +19,7 @@ def pubsub_pull(
 
     """
     credentials, project_id = default()
-    print(f'Pull {n} messages from topic {subscription} to {output_path}')
+    print(f'Pull up to {n} messages from topic {subscription} to {output_path}')
     subscriber = pubsub.SubscriberClient()
     subscription_path = subscriber.subscription_path(project_id, subscription)
     response = subscriber.pull(
@@ -34,6 +34,7 @@ def pubsub_pull(
         return
 
     pwd = Path(output_path)
+    pwd.mkdir(parents=True, exist_ok=True)
 
     def callback(message: pubsub.PubsubMessage):
         filename = f"{message.message_id}.json"
