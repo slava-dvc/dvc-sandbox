@@ -161,7 +161,7 @@ def show_signals(company_summary: CompanySummary):
         st.info("No signals for this company.")
 
 
-def show_traction_graph(traction_metric: TractionMetric):
+def show_traction_graph(traction_metric: TractionMetric, label=None):
     now = datetime.now()
     thirty_days = datetime.timedelta(days=30)
     first_day = datetime.as_local(datetime.datetime(now.year, now.month, 1))
@@ -177,22 +177,33 @@ def show_traction_graph(traction_metric: TractionMetric):
     values = []
     for key, date in points:
         if key == 'latest':
-            values.append(  (date, traction_metric.latest))
+            if isinstance(traction_metric.latest, (float, int)):
+                values.append((date, traction_metric.latest))
         else:
             traction_value = traction_metric.previous.get(key)
-            if isinstance(traction_value, dict):
-                value = traction_value.get('value')
-                if isinstance(traction_value, (float, int)):
-                    values.append((date, value))
+            value = traction_value.value
+            if isinstance(value, (float, int)):
+                values.append((date, value))
+    
+    if not values:
+        st.info("No data available for this metric.")
+        return
+    
+    values.sort(key=lambda x: x[0])
+    df = pd.DataFrame(values, columns=['date', 'value'])
 
-
-    pass
+    st.line_chart(
+        df.set_index('date')['value'],
+        use_container_width=True,
+        y_label = label,
+        x_label = "Date",
+    )
 
 
 def show_traction_graph_with_combo(company_summary: CompanySummary):
     traction_metrics = company_summary.traction_metrics
     traction_metrics_fields = fields(traction_metrics)
-    names = [f.name for f in traction_metrics_fields]
+    names = [f.name for f in traction_metrics_fields if getattr(traction_metrics, f.name)]
     metric_to_show = st.selectbox(label="Metric", options=names)
     if metric_to_show:
         traction_metric = getattr(traction_metrics, metric_to_show)

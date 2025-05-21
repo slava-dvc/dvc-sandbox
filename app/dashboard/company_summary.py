@@ -70,6 +70,9 @@ class TractionMetric:
     latest: str | int | float
     previous: Dict[str, TractionValue] = field(default_factory=dict)
 
+    def __bool__(self):
+        return isinstance(self.latest, (int, float)) and self.latest > 0 and len(self.previous) > 0
+
     @classmethod
     def from_dict(cls, traction_metric: dict):
         if not traction_metric or not isinstance(traction_metric, dict):
