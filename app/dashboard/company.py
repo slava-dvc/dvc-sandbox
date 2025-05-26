@@ -1,7 +1,6 @@
 import pandas as pd
 import requests
 import streamlit as st
-import numpy as np
 import uuid
 from dataclasses import fields
 from app.foundation.primitives import datetime
@@ -42,12 +41,12 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
     company_in_portfolio = None
     if sum(portfolio_index) == 1:
         company_in_portfolio = portfolio[portfolio_index].iloc[0]
-    last_valuation = np.nan
-    initial_ownership = np.nan
-    current_ownership = np.nan
-    total_nav = np.nan
-    moic = np.nan
-    initial_investment = np.nan
+    last_valuation = None
+    initial_ownership = None
+    current_ownership = None
+    total_nav = None
+    moic = None
+    initial_investment = None
     total_investment=company_investments['Amount Invested'].sum()
     if company_in_portfolio is not None:
         last_valuation = company_in_portfolio['Last Valuation/cap']
@@ -55,10 +54,10 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
         entry_valuation = company_in_portfolio['Entry Valuation /cap']
         initial_ownership = initial_investment / entry_valuation
         next_round_size = company_in_portfolio['Next round size?']
-        dilution_estimate = 1 - (0 if np.isnan(next_round_size) else next_round_size) / last_valuation
+        dilution_estimate = 1 - (0 if next_round_size is None else next_round_size) / last_valuation
         follow_on_investment = company_in_portfolio['Follow on size'] or 0
         current_ownership = initial_ownership*dilution_estimate + follow_on_investment / last_valuation
-        if np.isnan(current_ownership):
+        if current_ownership is None:
             current_ownership = initial_ownership
         total_nav = current_ownership * last_valuation
         moic = float(total_nav) / float(total_investment) if is_valid_number(total_investment) and total_investment > 0 else None
@@ -76,7 +75,7 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
 
     with col4:
         st.metric("Initial Reval", "TBD")
-        st.metric("MOIC", f"{moic:0.2f}" if is_valid_number(moic) else "N/A")
+        st.metric("MOIC", f"{moic:0.2f}" if is_valid_number(moic) else "—")
 
 
 def show_asks(company: pd.Series):
@@ -125,7 +124,7 @@ def show_last_updates_and_news(company_summary: CompanySummary, updates):
             with text_column:
                 title = row['title']
                 if not isinstance(title, str):
-                    title = "N/A"
+                    title = "—"
                 st.markdown(f"**{row['publisher']}**: {title.replace('$', '\$')}".format(row=row))
             with date_column:
                 st.write(row['date'].strftime('%d %b %Y'))
@@ -157,9 +156,17 @@ def show_team(company: pd.Series):
 
 
 def show_signals(company_summary: CompanySummary):
-    highlights_cnt = show_highlights(company_summary)
-    if not highlights_cnt:
-        st.info("No signals for this company.")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("Runway", company_summary.runway)
+        st.metric("Revenue", format_as_dollars(company_summary.revenue))
+    with c2:
+        st.metric("Burnrate", company_summary.burnrate)
+        st.metric("Customers Cnt", company_summary.customers_cnt)
+    with c3:
+        highlights_cnt = show_highlights(company_summary)
+        if not highlights_cnt:
+            st.info("No signals for this company.")
 
 
 def show_traction_graph(traction_metric: TractionMetric, label=None):
