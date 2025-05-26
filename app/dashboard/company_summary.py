@@ -133,6 +133,8 @@ class CompanySummary:
     last_update: Optional[Any] = None
     new_highlights: Optional[List[str]] = None
     traction_metrics: TractionMetrics = None
+    runway: int | None = None
+    expected_performance: str | None = None
     news: List[NewsItem] = field(default_factory=list)
 
     def __lt__(self, other):
@@ -152,7 +154,11 @@ class CompanySummary:
             stage = stage[0]
         else:
             stage = 'N/A'
-
+        runway = None
+        try:
+            runway = int(company['Runway'])
+        except ValueError:
+            pass
         # Handle current valuation - if it's a list, take the first element
         current_val = company['Last Valuation/cap (from DVC Portfolio 3)']
         if isinstance(current_val, list) and current_val:
@@ -174,6 +180,8 @@ class CompanySummary:
             new_highlights=company.get('new_highlights'),
             blurb=company.get('Blurb'),
             traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')),
+            runway=runway,
+            expected_performance=company.get('Expected Performance'),
             news=[NewsItem.from_dict(n) for n in news]
         )
 
@@ -262,6 +270,7 @@ def show_company_summary(company_summary: CompanySummary):
     company_last_update = company_summary.last_update
 
     with st.container(border=True):
+        # st.write(f"expected_performance: {company_summary.expected_performance}")
         logo_column, info_column, signals_column, button_column = st.columns([1, 7, 4, 1], gap='small')
 
         with logo_column:
@@ -299,8 +308,10 @@ def show_company_summary(company_summary: CompanySummary):
             # All information in one row using 3 smaller columns
             c1, c2, c3, = st.columns(3)
             c1.markdown(f"Initial Fund: **{initial_fund}**")
+            c1.write(company_summary.expected_performance)
             c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, 'N/A')}**")
-            c3.markdown(f"Current Val: **{format_as_dollars(current_valuation, 'N/A')}**")
+            c2.markdown(f"Current Val: **{format_as_dollars(current_valuation, 'N/A')}**")
+
 
         with signals_column:
             show_highlights(company_summary)

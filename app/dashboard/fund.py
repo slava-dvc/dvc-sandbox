@@ -72,13 +72,13 @@ def show_counted_pie(df: pd.DataFrame, title: str, column):
 
 def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
     st.subheader("Portfolio Companies")
-    search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')
-    if search_query:
-        index = companies['Company'].str.lower().str.contains(search_query, na=False)
-        companies_to_display = companies[index]
-    else:
-        companies_to_display = companies
-
+    
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+    
+    with col1:
+        search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')
+    
+    # Create summaries first
     company_id_to_last_update = {}
     for update_id, update in updates.iterrows():
         company_id = update['Company Name']
@@ -87,15 +87,86 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
             created = datetime.any_to_datetime(update['Created'])
             company_id_to_last_update.setdefault(company_id, created)
             company_id_to_last_update[company_id] = max(company_id_to_last_update[company_id], created)
+    
     summaries = [
         CompanySummary.from_dict(company, company_id, company_id_to_last_update.get(company_id))
-        for company_id, company in companies_to_display.iterrows()
+        for company_id, company in companies.iterrows()
     ]
+    
+    # Get unique values for filters from summaries
+    unique_stages = list(set(s.stage for s in summaries if s.stage and s.stage != 'N/A'))
+    unique_statuses = list(set(s.status for s in summaries if s.status))
+    
+    with col2:
+        # Stage filter
+        selected_stages = st.multiselect("Stage", unique_stages, placeholder="Select stages...")
+    
+    with col3:
+        # Status filter  
+        selected_statuses = st.multiselect("Status", unique_statuses, placeholder="Select statuses...")
+    
+    with col4:
+        # Sort by dropdown
+        sort_options = ["Default", "Current Val (High to Low)", "Current Val (Low to High)", 
+                       "Initial Val (High to Low)", "Initial Val (Low to High)",
+                       "Last Update (Newest First)", "Last Update (Oldest First)"]
+        selected_sort = st.selectbox("Sort by", sort_options, index=0)
+    
+    # Apply filters to summaries
+    filtered_summaries = summaries.copy()
+    
+    if search_query:
+        filtered_summaries = [s for s in filtered_summaries 
+                            if search_query.lower() in s.name.lower()]
+    
+    if selected_stages:
+        filtered_summaries = [s for s in filtered_summaries 
+                            if s.stage in selected_stages]
+    
+    if selected_statuses:
+        filtered_summaries = [s for s in filtered_summaries 
+                            if s.status in selected_statuses]
+    
+    # Apply sorting to summaries
+    if selected_sort != "Default":
+        if "Last Update" in selected_sort:
+            def get_update_date(summary):
+                if isinstance(summary.last_update, datetime.datetime):
+                    return summary.last_update
+                return datetime.as_utc(datetime.datetime.min)
 
-    for company_summary in reversed(sorted(summaries)):
+            key_func = get_update_date
+            reverse = "Newest First" in selected_sort
+        else:
+            def get_numeric_val(summary, val_type):
+                if val_type == "current":
+                    val = summary.current_valuation
+                else:  # initial
+                    val = summary.initial_valuation
+                
+                if val == 'N/A' or val is None:
+                    return 0
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    return 0
+            
+            if "Current Val" in selected_sort:
+                key_func = lambda s: get_numeric_val(s, "current")
+            else:  # Initial Val
+                key_func = lambda s: get_numeric_val(s, "initial")
+            
+            reverse = "High to Low" in selected_sort
+        
+        filtered_summaries.sort(key=key_func, reverse=reverse)
+    else:
+        # Use default sorting (the __lt__ method in CompanySummary)
+        filtered_summaries = list(reversed(sorted(filtered_summaries)))
+
+    for company_summary in filtered_summaries:
         show_company_summary(company_summary)
 
-    st.write(f"Total companies: {len(companies_to_display)}")
+    st.write(f"Total companies: {len(filtered_summaries)}")
 
 
 def show_fund_page(investments, companies, updates):
