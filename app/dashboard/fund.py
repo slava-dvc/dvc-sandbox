@@ -87,7 +87,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
     ]
     
     # Get unique values for filters from summaries
-    unique_stages = list(set(s.stage for s in summaries if s.stage and s.stage != 'N/A'))
+    unique_stages = list(set(s.stage for s in summaries if s.stage))
     unique_statuses = list(set(s.status for s in summaries if s.status))
     unique_expected_performance = list(set(s.expected_performance for s in summaries if s.expected_performance))
     st.subheader("Portfolio Companies")
@@ -152,7 +152,7 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
                 else:  # initial
                     val = summary.initial_valuation
                 
-                if val == 'N/A' or val is None:
+                if val is None:
                     return 0
                 try:
                     return float(val)

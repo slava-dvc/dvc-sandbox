@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, Union, List, Any, Dict
-
+import pandas as pd
 import streamlit as st
 
 from app.dashboard.formatting import format_as_dollars, get_preview, format_compact_number
@@ -150,30 +150,27 @@ class CompanySummary:
 
         return get_sorting_tuple(self) < get_sorting_tuple(other)
 
+    @staticmethod
+    def _extract_value(value):
+        """Extract value from potentially list-containing field."""
+
+        extracted = value[0] if isinstance(value, list) and value else value
+
+        # Handle NaN values by converting them to None
+        return None if pd.isna(extracted) else extracted or None
+
     @classmethod
     def from_dict(cls, company: dict, company_id, last_update=None):
-
-        stage = company['Company Stage']
-        if isinstance(stage, list) and stage:
-            stage = stage[0]
-        else:
-            stage = 'N/A'
+        stage = cls._extract_value(company.get('Company Stage'))
+        
         runway = None
         try:
             runway = int(company['Runway'])
-        except ValueError:
+        except (ValueError, TypeError, KeyError):
             pass
-        # Handle current valuation - if it's a list, take the first element
-        current_val = company['Last Valuation/cap (from DVC Portfolio 3)']
-        if isinstance(current_val, list) and current_val:
-            current_val = current_val[0]
-        else:
-            current_val = 'N/A'
-        initial_val = company['Entry Valuation /cap (from DVC Portfolio 3)']
-        if isinstance(initial_val, list) and initial_val:
-            initial_val = initial_val[0]
-        else:
-            initial_val = 'N/A'
+        
+        current_val = cls._extract_value(company.get('Last Valuation/cap (from DVC Portfolio 3)'))
+        initial_val = cls._extract_value(company.get('Entry Valuation /cap (from DVC Portfolio 3)'))
         news = (company.get('news'))
         if not isinstance(news, list):
             news= []
@@ -185,8 +182,8 @@ class CompanySummary:
             blurb=company.get('Blurb'),
             traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')),
             runway=runway,
-            revenue=company.get('Revenue copy'),
-            burnrate=company.get('Burnrate'),
+            revenue=cls._extract_value(company.get('Revenue copy')),
+            burnrate=cls._extract_value(company.get('Burnrate')),
             customers_cnt=company.get('Number of customers'),
             expected_performance=company.get('Expected Performance'),
             news=[NewsItem.from_dict(n) for n in news]
@@ -297,7 +294,7 @@ def show_company_summary(company_summary: CompanySummary):
                 header.append(f"**[{company_name}]({company_website})**")
             else:
                 header.append(f"**{company_name}**")
-            header.append(company_stage)
+            header.append(company_stage or "—")
             if company_last_update:
                 now = datetime.now()
                 if company_last_update < now - datetime.timedelta(days=7):
@@ -316,8 +313,8 @@ def show_company_summary(company_summary: CompanySummary):
             c1, c2, c3, = st.columns(3)
             c1.markdown(f"Initial Fund: **{initial_fund}**")
             c1.write(company_summary.expected_performance)
-            c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, 'N/A')}**")
-            c2.markdown(f"Current Val: **{format_as_dollars(current_valuation, 'N/A')}**")
+            c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, '—')}**")
+            c2.markdown(f"Current Val: **{format_as_dollars(current_valuation, '—')}**")
 
 
         with signals_column:

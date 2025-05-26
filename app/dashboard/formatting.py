@@ -40,7 +40,7 @@ def is_valid_number(number):
     )
 
 
-def format_as_percent(number, default="N/A", decimal_places=2):
+def format_as_percent(number, default="—", decimal_places=2):
     """
     Formats a number as a percentage where 0.1 becomes "10.0%"
 
@@ -70,7 +70,7 @@ def format_as_percent(number, default="N/A", decimal_places=2):
     return formatted
 
 
-def format_as_dollars(number, default="N/A"):
+def format_as_dollars(number, default="—"):
     """
     Formats a number as a dollar amount with the format "$ X,XXX.XX"
 
@@ -95,7 +95,7 @@ def format_as_dollars(number, default="N/A"):
     return formatted
 
 
-def format_compact_number(number, default="N/A", decimal_places=1):
+def format_compact_number(number, default="—", decimal_places=1):
     """
     Formats a number in a compact way (e.g., 1234567 as '1.2m')
     
