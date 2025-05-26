@@ -157,9 +157,17 @@ def show_team(company: pd.Series):
 
 
 def show_signals(company_summary: CompanySummary):
-    highlights_cnt = show_highlights(company_summary)
-    if not highlights_cnt:
-        st.info("No signals for this company.")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("Runway", company_summary.runway)
+        st.metric("Revenue", format_as_dollars(company_summary.revenue))
+    with c2:
+        st.metric("Burnrate", company_summary.burnrate)
+        st.metric("Customers Cnt", company_summary.customers_cnt)
+    with c3:
+        highlights_cnt = show_highlights(company_summary)
+        if not highlights_cnt:
+            st.info("No signals for this company.")
 
 
 def show_traction_graph(traction_metric: TractionMetric, label=None):

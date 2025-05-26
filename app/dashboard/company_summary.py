@@ -135,6 +135,9 @@ class CompanySummary:
     traction_metrics: TractionMetrics = None
     runway: int | None = None
     expected_performance: str | None = None
+    revenue: int | None = None
+    burnrate: int | None = None
+    customers_cnt: int | None = None
     news: List[NewsItem] = field(default_factory=list)
 
     def __lt__(self, other):
@@ -149,6 +152,7 @@ class CompanySummary:
 
     @classmethod
     def from_dict(cls, company: dict, company_id, last_update=None):
+
         stage = company['Company Stage']
         if isinstance(stage, list) and stage:
             stage = stage[0]
@@ -181,6 +185,9 @@ class CompanySummary:
             blurb=company.get('Blurb'),
             traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')),
             runway=runway,
+            revenue=company.get('Revenue copy'),
+            burnrate=company.get('Burnrate'),
+            customers_cnt=company.get('Number of customers'),
             expected_performance=company.get('Expected Performance'),
             news=[NewsItem.from_dict(n) for n in news]
         )

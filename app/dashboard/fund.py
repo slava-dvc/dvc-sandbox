@@ -71,13 +71,6 @@ def show_counted_pie(df: pd.DataFrame, title: str, column):
 
 
 def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
-    st.subheader("Portfolio Companies")
-    
-    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
-    
-    with col1:
-        search_query = st.text_input("Search Company", "", placeholder='Search company by name...', label_visibility='hidden')
-    
     # Create summaries first
     company_id_to_last_update = {}
     for update_id, update in updates.iterrows():
@@ -96,7 +89,14 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
     # Get unique values for filters from summaries
     unique_stages = list(set(s.stage for s in summaries if s.stage and s.stage != 'N/A'))
     unique_statuses = list(set(s.status for s in summaries if s.status))
-    
+    unique_expected_performance = list(set(s.expected_performance for s in summaries if s.expected_performance))
+    st.subheader("Portfolio Companies")
+
+    col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
+
+    with col1:
+        search_query = st.text_input("Company Name", "", placeholder='Type name...', )
+
     with col2:
         # Stage filter
         selected_stages = st.multiselect("Stage", unique_stages, placeholder="Select stages...")
@@ -106,6 +106,10 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
         selected_statuses = st.multiselect("Status", unique_statuses, placeholder="Select statuses...")
     
     with col4:
+        # Expected Performance filter
+        selected_expected_performance = st.multiselect("Expected Performance", unique_expected_performance, placeholder="Select performance...")
+    
+    with col5:
         # Sort by dropdown
         sort_options = ["Default", "Current Val (High to Low)", "Current Val (Low to High)", 
                        "Initial Val (High to Low)", "Initial Val (Low to High)",
@@ -126,6 +130,10 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
     if selected_statuses:
         filtered_summaries = [s for s in filtered_summaries 
                             if s.status in selected_statuses]
+    
+    if selected_expected_performance:
+        filtered_summaries = [s for s in filtered_summaries 
+                            if s.expected_performance in selected_expected_performance]
     
     # Apply sorting to summaries
     if selected_sort != "Default":

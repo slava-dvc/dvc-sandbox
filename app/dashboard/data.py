@@ -41,7 +41,7 @@ def get_companies(**options):
         'new_highlights', 'highlights', 'Company', 'URL', 'Status', 'Logo', 'Initial Fund Invested From', 'Stage when we invested',
         'Main Industry', 'Company Stage', 'Initial Valuation', 'Last Valuation/cap (from DVC Portfolio 3)',
         'Blurb', 'Status', 'Entry Valuation /cap (from DVC Portfolio 3)', 'traction_metrics', 'news',
-        'Expected Performance', 'Runway'
+        'Expected Performance', 'Runway', 'Revenue copy', 'Burnrate', 'Number of customers'
     }
     for air_row in air_table_rows:
         airtable_id = air_row['id']
