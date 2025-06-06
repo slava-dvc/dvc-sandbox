@@ -1,10 +1,10 @@
-import logging
 from urllib.parse import urlparse
 from functools import cached_property
 from typing import Dict, Any, List
 from pydantic import BaseModel, model_serializer, Field
 from .serializers import field_serializers
 from ...foundation import models
+from ...foundation.server.logger import Logger
 
 
 __all__ = ['AirTable', 'AirField']
@@ -85,7 +85,6 @@ class AirTable(BaseModel):
         for k, v in data.items():
             field = self.fields_by_name.get(k)
             if not field:
-                logging.debug(f"Unknown field '{k}' in data for table '{self.name}'")
                 continue
             field.value = v.get('value') or None
             field.sources = v.get('source') or []
@@ -101,7 +100,6 @@ class AirTable(BaseModel):
         fields = {}
         for field in self.fields:
             if field.is_readonly():
-                logging.debug(f"Skipping serialization of read-only field '{field.name}'")
                 continue
             fields[field.name] = field.model_dump()
         return {

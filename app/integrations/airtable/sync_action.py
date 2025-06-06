@@ -1,4 +1,3 @@
-import logging
 import typing
 from urllib.parse import urlparse
 
@@ -9,6 +8,7 @@ from typing import Dict, List
 
 from .client import AirTableClient, AirTable
 from ...foundation import models
+from ...foundation.server.logger import Logger
 
 
 __all__ = ['AirSyncAction']
@@ -21,12 +21,14 @@ class AirSyncAction(object):
             airtable_client: AirTableClient,
             deal_table_id: str,
             people_table_id: str,
+            logger: Logger,
             field_mapping_file: str = None
     ):
         self.airtable_client = airtable_client
         self.deal_table_id = deal_table_id
         self.people_table_id = people_table_id
         self._tables = {}
+        self.logger = logger
         self._mapping_schema = self._load_field_mapping(field_mapping_file)
 
     async def push(
@@ -106,7 +108,7 @@ class AirSyncAction(object):
     def _make_fields_for_table(self, data, air_table_id, mapping_table_id, sources: List[models.Source]) -> typing.Dict:
         target_table: AirTable | None = self._tables.get(air_table_id) or None
         if target_table is None:
-            logging.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
+            self.logger.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
             return {}
 
         mapped_data = self._apply_mapping(data, mapping_table_id)
@@ -164,7 +166,7 @@ class AirSyncAction(object):
         for key, field_mapping in table_mapping.items():
             airtable_field_name = field_mapping.get('airtable_field')
             if not airtable_field_name:
-                logging.warning(f'No "airtable_field" mapping found for field "{key}" in table "{table}"')
+                self.logger.warning(f'No "airtable_field" mapping found for field "{key}" in table "{table}"')
                 continue
             mapped_value = field_mapping.get('value')
             if mapped_value:
@@ -175,7 +177,7 @@ class AirSyncAction(object):
             # Remove data from the original data to eliminated duplicates with different keys
             data_value = data.pop(key, None) or None
             if data_value is None:
-                logging.debug(f'No value for field "{key}" -> "{airtable_field_name}" in table "{table}"')
+                self.logger.debug(f'No value for field "{key}" -> "{airtable_field_name}" in table "{table}"')
             else:
                 result[airtable_field_name] = data_value
         for key in set(data.keys()) - set(result.keys()):
@@ -187,16 +189,16 @@ class AirSyncAction(object):
             return {}
         mapping_file = Path('resources') / field_mapping_file
         if not mapping_file.exists() or not mapping_file.is_file():
-            logging.debug(f"Field mapping file not found: {mapping_file}")
+            self.logger.debug(f"Field mapping file not found: {mapping_file}")
             return {}
         try:
             with mapping_file.open('r') as file:
                 return yaml.safe_load(file)
         except FileNotFoundError:
-            logging.error(f"Field mapping file not found: {mapping_file}")
+            self.logger.error(f"Field mapping file not found: {mapping_file}")
             return {}
         except yaml.YAMLError as e:
-            logging.error(f"Error parsing YAML file: {e}")
+            self.logger.error(f"Error parsing YAML file: {e}")
             return {}
 
 

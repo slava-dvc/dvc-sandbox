@@ -7,6 +7,7 @@ from .client import *
 from .sync_action import *
 from .pull_companies import pull_companies_from_airtable
 from ...foundation import models
+from ...foundation.server.logger import Logger
 
 
 __all__ = ['AirTableConfig', 'push_deal_to_airtable', 'pull_companies_from_airtable']
@@ -26,7 +27,8 @@ async def push_deal_to_airtable(
         airtable_config: AirTableConfig,
         startup: models.Feature,
         people: List[models.Person],
-        sources: list[models.Source]
+        sources: list[models.Source],
+        logger: Logger
 ) -> bool:
     airtable_client = AirTableClient(
         api_key=airtable_config.api_key,
@@ -37,7 +39,8 @@ async def push_deal_to_airtable(
         airtable_client=airtable_client,
         deal_table_id=airtable_config.deal_table_id,
         people_table_id=airtable_config.people_table_id,
-        field_mapping_file=airtable_config.field_mapping_file,
+        logger=logger,
+        field_mapping_file=airtable_config.field_mapping_file
     )
 
     return await sync_action.push(startup, people, sources)
