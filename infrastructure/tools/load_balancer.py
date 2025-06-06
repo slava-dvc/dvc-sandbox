@@ -15,7 +15,6 @@ def make_cloud_run_backend(name: str, service: gcp.cloudrunv2.Service):
         f"compute-backend-service-for-cloud-run-{name}",
         protocol="HTTPS",
         port_name="http",
-        timeout_sec=1800,
         # health_checks=[health_check.id],  # Reference the health check
         backends=[
             gcp.compute.BackendServiceBackendArgs(
