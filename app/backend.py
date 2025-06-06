@@ -1,5 +1,5 @@
 import sys
-
+from typing import Dict, Any, AnyStr as Str
 from fastapi import FastAPI
 from app.foundation import server
 
@@ -14,8 +14,8 @@ class BackendServer(server.FastAPIServer):
     
 
     async def __aenter__(self) -> Dict[Str, Any]:
-        state = await self.http_client.__aenter__()
-        return state |  {
+        state = await super().__aenter__()
+        return state | {
             "dataset_bucket": self.storage_client.bucket("dvc-dataset-v2"),
         }
 
