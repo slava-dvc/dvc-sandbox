@@ -5,6 +5,12 @@ from google.cloud import firestore, pubsub, logging
 from httpx import AsyncClient
 
 from .config import AppConfig
+from .logger import CloudLogger, LocalLogger, Logger
+
+__all__ = [
+    'get_config', 'get_cloud_logger', 'get_mongo_client', 'get_default_database', 'get_firestore_client',
+    'get_pubsub_client', 'get_http_client', 'get_auth_token', 'get_logger'
+]
 
 
 security = HTTPBearer(auto_error=False)
@@ -15,13 +21,23 @@ def get_config(request: Request) -> AppConfig:
     return request.state.config
 
 
+def get_logger(request: Request) -> Logger:
+    if request.state.config['cloud']:
+        return CloudLogger(
+            logger_client=request.state.logging_client,
+            request=request,
+            project_id=request.state.config['project_id']
+        )
+    return LocalLogger(request=request)
+
+
 # Dependency to get the logger
 def get_cloud_logger(request: Request) -> logging.Logger:
     return request.state.logger
 
 
 # Dependency to get the MongoDB client
-def get_mongo_client(request: Request) -> AsyncMongoClient:
+def get_mongo_client(request: Request) -> MongoClient:
     return request.state.mongo_client
 
 

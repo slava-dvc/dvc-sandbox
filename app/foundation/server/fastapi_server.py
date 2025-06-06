@@ -12,7 +12,7 @@ from pymongo.errors import PyMongoError
 from pymongo.asynchronous import database
 from google.cloud import firestore, pubsub, storage
 from functools import cached_property
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware import gzip, trustedhost
 from starlette.middleware.authentication import AuthenticationMiddleware
 
@@ -20,6 +20,7 @@ from .async_server import AsyncServer
 from .exception_handlers import *
 from ..middleware import RequestTimeoutMiddleware
 from ..env import get_env
+from .dependencies import get_logger
 
 
 __all__ = ['FastAPIServer']
@@ -62,7 +63,7 @@ class FastAPIServer(AsyncServer):
 
     @cached_property
     def mongo_client(self) -> AsyncMongoClient:
-        return AsyncMongoClient(str(get_env('MONGODB_URI')))
+        return AsyncMongoClient(str(get_env('MONGODB_URI')), tz_aware=True)
 
     @cached_property
     def storage_client(self) -> Any:
@@ -121,8 +122,16 @@ class FastAPIServer(AsyncServer):
 
     def setup_routes(self, app: FastAPI):
 
+        @app.get('/ping')
         @app.get('/')
-        async def root():
+        @app.get('/ok')
+        async def root(
+                request: Request,
+                logger = Depends(get_logger),
+        ):
+            logger.info("I'm alive!")
+            if 'exception' in request.query_params:
+                raise RuntimeError("Exception requested")
             return "OK"
 
     def execute(self):

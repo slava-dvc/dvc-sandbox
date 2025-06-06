@@ -98,6 +98,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         parser.add_argument('--cloud', help="Run in cloud mode", default=bool(is_cloud()), action='store_true')
         parser.add_argument('--dry-run', help='Run in dry-run mode', default=bool(is_test()), action='store_true')
         parser.add_argument('--project-id', help='Google Cloud project ID', default=str(get_env('GOOGLE_CLOUD_PROJECT', project_id)))
+        parser.add_argument('--region', help='Google Cloud region', default=str(get_env('GOOGLE_CLOUD_REGION', 'us-central1')))
         self.add_arguments(parser)
         args, _ = parser.parse_known_args()
         return dict(vars(args))
@@ -107,7 +108,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         cfg = AppConfig()
         cfg.load_yml(self.args['config'])
         cfg.load_db(firestore.Client())
-        for a in ['debug', 'cloud']:
+        for a in ['debug', 'cloud', 'project_id', 'region']:
             cfg[a] = self.args[a]
         return cfg
 

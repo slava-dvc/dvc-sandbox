@@ -12,7 +12,7 @@ from httpx import HTTPStatusError, StreamError
 from starlette.requests import ClientDisconnect
 
 from .config import AppConfig
-from .dependencies import get_cloud_logger
+from .dependencies import get_logger
 
 __all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_exception_handler',
            'request_validation_exception_handler']
@@ -73,7 +73,7 @@ def runtime_exception_handler(request: Request, exc: Exception):
 
 
 async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger: cloud_logging.Logger = get_cloud_logger(request)
+    logger = get_logger(request)
 
     try:
         try:
@@ -84,15 +84,10 @@ async def request_validation_exception_handler(request: Request, exc: RequestVal
     except (AttributeError, TypeError, ValueError, ClientDisconnect) as e:
         body = f"Unable to decode body: {e}"
 
-    logger.log_struct({
-        "severity": 'WARNING',
-        "message": "Validation error occurred",
-        "client_host": request.client.host if request.client else "Unknown",
-        "method": request.method,
-        "url": str(request.url),
+    logger.warning("Validation error occurred", labels={
         "body": body,
-        "errors": jsonable_encoder(exc.errors())  # Ensure types are JSON serializable
-        })
+        "errors": jsonable_encoder(exc.errors())
+    })
     return JSONResponse(
         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
         content={"detail": jsonable_encoder(exc.errors())},
