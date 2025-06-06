@@ -16,7 +16,6 @@ from google.cloud import firestore
 from google.cloud import logging as cloud_logging
 
 from .config import AppConfig
-from .console_logger import ConsoleLogger
 from ..env import is_debug, is_test, is_cloud, port, get_env
 
 
@@ -55,11 +54,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         pass
 
     @cached_property
-    def logger(self):
-        return self.logging_client.logger('main')
-
-    @cached_property
-    def logging_client(self) -> Union[cloud_logging.Client, ConsoleLogger]:
+    def logging_client(self) -> Union[cloud_logging.Client, None]:
         if self.config['cloud']:
             local_logging.root.handlers.clear()
             logging_client = cloud_logging.Client()
@@ -76,7 +71,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         local_logging.root.addHandler(ch)
         local_logging.root.setLevel(logging.DEBUG if self.config['debug'] else logging.INFO)
         logging.getLogger("httpx").setLevel(logging.WARNING)
-        return ConsoleLogger()
+        return None
 
     @cached_property
     def loop(self):

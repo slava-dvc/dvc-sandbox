@@ -8,6 +8,11 @@
 - Deploy: `make app-deploy` (builds+deploys app) or `make all` (runs tests + infra+app)
 
 
+## Testing
+
+- After made any change check that server can be started as `bash -c 'source .venv/bin/activate && source .env &&  python3 -m app.backend --dry-run'`
+
+
 ## Project Structure
 Synapse is a FastAPI-powered microservice designed to process PDF files using Large Language Models (LLMs) and extract structured data, with the following structure:
 

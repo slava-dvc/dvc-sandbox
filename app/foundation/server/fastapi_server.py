@@ -80,9 +80,10 @@ class FastAPIServer(AsyncServer):
             "firestore_client": self.firestore_client,
             "pubsub_client": self.pubsub_client,
             "mongo_client": self.mongo_client,
+            "storage_client": self.storage_client,
+            "dataset_bucket": self.storage_client.bucket("dvc-dataset-v2"),
             "config": self.config,
             "args": self.args,
-            "logger": self.logger,
             "logging_client": self.logging_client,
         }
 
