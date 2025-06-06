@@ -16,7 +16,6 @@ from google.cloud import firestore
 from google.cloud import logging as cloud_logging
 
 from .config import AppConfig
-from .console_logger import ConsoleLogger
 from ..env import is_debug, is_test, is_cloud, port, get_env
 
 
@@ -55,11 +54,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         pass
 
     @cached_property
-    def logger(self):
-        return self.logging_client.logger('main')
-
-    @cached_property
-    def logging_client(self) -> Union[cloud_logging.Client, ConsoleLogger]:
+    def logging_client(self) -> Union[cloud_logging.Client, None]:
         if self.config['cloud']:
             local_logging.root.handlers.clear()
             logging_client = cloud_logging.Client()
@@ -76,7 +71,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         local_logging.root.addHandler(ch)
         local_logging.root.setLevel(logging.DEBUG if self.config['debug'] else logging.INFO)
         logging.getLogger("httpx").setLevel(logging.WARNING)
-        return ConsoleLogger()
+        return None
 
     @cached_property
     def loop(self):
@@ -98,6 +93,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         parser.add_argument('--cloud', help="Run in cloud mode", default=bool(is_cloud()), action='store_true')
         parser.add_argument('--dry-run', help='Run in dry-run mode', default=bool(is_test()), action='store_true')
         parser.add_argument('--project-id', help='Google Cloud project ID', default=str(get_env('GOOGLE_CLOUD_PROJECT', project_id)))
+        parser.add_argument('--region', help='Google Cloud region', default=str(get_env('GOOGLE_CLOUD_REGION', 'us-central1')))
         self.add_arguments(parser)
         args, _ = parser.parse_known_args()
         return dict(vars(args))
@@ -107,7 +103,7 @@ class AsyncServer(metaclass=abc.ABCMeta):
         cfg = AppConfig()
         cfg.load_yml(self.args['config'])
         cfg.load_db(firestore.Client())
-        for a in ['debug', 'cloud']:
+        for a in ['debug', 'cloud', 'project_id', 'region']:
             cfg[a] = self.args[a]
         return cfg
 

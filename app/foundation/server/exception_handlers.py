@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from http import HTTPStatus
 from json import JSONDecodeError
 
@@ -7,21 +6,20 @@ from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
-from google.cloud import logging as cloud_logging
 from httpx import HTTPStatusError, StreamError
 from starlette.requests import ClientDisconnect
 
 from .config import AppConfig
-from .dependencies import get_cloud_logger
+from .dependencies import get_logger
 
 __all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_exception_handler',
            'request_validation_exception_handler']
 
 
-logger = logging.getLogger(__name__)
 
 
 def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
+    logger = get_logger(request)
     logger.warning(f"Timeout: {request.client.host} -> {request.method} {request.url}")
     return JSONResponse(
         content={
@@ -36,6 +34,7 @@ def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
 
 def http_exception_handler(request: Request, exc: HTTPStatusError):
     config: AppConfig = request.state.config
+    logger = get_logger(request)
     logger.warning(f"Downstream http code {exc.response.status_code}: {request.client.host} -> {request.method} {request.url}")
     if config.debug:
         try:
@@ -60,6 +59,7 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
 
 def runtime_exception_handler(request: Request, exc: Exception):
     code = HTTPStatus.INTERNAL_SERVER_ERROR
+    logger = get_logger(request)
     logger.error(f"Exception: {request.client.host} -> {request.method} {request.url}: {exc}", exc_info=exc)
     return JSONResponse(
         content={
@@ -73,7 +73,7 @@ def runtime_exception_handler(request: Request, exc: Exception):
 
 
 async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger: cloud_logging.Logger = get_cloud_logger(request)
+    logger = get_logger(request)
 
     try:
         try:
@@ -84,15 +84,10 @@ async def request_validation_exception_handler(request: Request, exc: RequestVal
     except (AttributeError, TypeError, ValueError, ClientDisconnect) as e:
         body = f"Unable to decode body: {e}"
 
-    logger.log_struct({
-        "severity": 'WARNING',
-        "message": "Validation error occurred",
-        "client_host": request.client.host if request.client else "Unknown",
-        "method": request.method,
-        "url": str(request.url),
+    logger.warning("Validation error occurred", labels={
         "body": body,
-        "errors": jsonable_encoder(exc.errors())  # Ensure types are JSON serializable
-        })
+        "errors": jsonable_encoder(exc.errors())
+    })
     return JSONResponse(
         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
         content={"detail": jsonable_encoder(exc.errors())},

@@ -1,7 +1,8 @@
 import httpx
 import gzip
 from google.cloud import storage
-from app.foundation import get_env, server, as_async, map_async
+from app.foundation import get_env, as_async, map_async
+from app.foundation.server.logger import Logger
 from app.foundation.primitives import json, datetime
 from typing import Dict, Any, List
 
@@ -13,13 +14,13 @@ class SpectrClient(object):
 
     def __init__(
             self,
-            logging_client: server.ConsoleLogger,
+            logger: Logger,
             http_client: httpx.AsyncClient,
             dataset_bucket: storage.Bucket = None,
     ):
         self._api_key = str(get_env("SPECTR_API_KEY")).strip()
         self._http_client = http_client
-        self._logging_client = logging_client
+        self._logger = logger
         self._base_url = "https://app.tryspecter.com/api/v1"
         self._dataset_bucket = dataset_bucket
 
@@ -43,14 +44,11 @@ class SpectrClient(object):
             "reset": response.headers.get("X-CreditLimit-Reset")
         }
 
-        self._logging_client.log_struct(
-            {
-                'message': f'Spectr request: {method} {url}',
-                "rate_limit": rate_limit,
-                "credit_limit": credit_limit
-            },
-            severity="INFO"
-        )
+        self._logger.info(f'Spectr request', labels={
+            "spectr_endpoint": endpoint,
+            "rate_limit": rate_limit,
+            "credit_limit": credit_limit
+        })
 
         response.raise_for_status()  # Raises detailed HTTP errors (if any)
         company_data = response.json()

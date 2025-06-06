@@ -1,4 +1,3 @@
-import logging
 from httpx import HTTPStatusError, HTTPError
 from fastapi.encoders import jsonable_encoder
 from urllib.parse import urlparse
@@ -8,7 +7,7 @@ from pymongo.asynchronous.collection import AsyncCollection
 from pymongo.errors import PyMongoError
 
 from app.shared.spectr import SpectrClient
-from app.foundation.server import ConsoleLogger
+from app.foundation.server.logger import Logger
 from app.foundation.primitives import datetime
 from app.integrations.airtable.company_model import Company
 
@@ -26,7 +25,7 @@ class SpectrSyncAction:
         self,
         mongo_client: AsyncMongoClient,
         spectr_client: SpectrClient,
-        logging_client: ConsoleLogger
+        logger: Logger
     ):
         """
         Initialize the Spectr sync action with required dependencies.
@@ -34,11 +33,11 @@ class SpectrSyncAction:
         Args:
             mongo_client: MongoDB client for database operations
             spectr_client: SpectrClient for interacting with Spectr API
-            logging_client: Logging client for structured logging
+            logger: Logger instance for structured logging
         """
         self.mongo_client = mongo_client
         self.spectr_client = spectr_client
-        self.logging_client = logging_client
+        self.logger = logger
 
     async def __call__(self, limit: int = 0xFFFFFFFF) -> int:
         """
@@ -83,13 +82,13 @@ class SpectrSyncAction:
                 if processed_count >= limit:
                     break
             except HTTPError as e:
-                self.logging_client.log_struct(
-                    {
-                        'message': f'Error processing company {company_doc.get("name", "unknown")}',
+                self.logger.error(
+                    f'Error processing company {company_doc.get("name", "unknown")}',
+                    labels={
                         'error': str(e),
                         'company': jsonable_encoder(company.dict()),
-                        'severity': 'ERROR',
                     },
+                    exc_info=e
                 )
         
         return processed_count
@@ -106,17 +105,15 @@ class SpectrSyncAction:
             bool: True if company was successfully enriched
         """
         if not company.website:
-            self.logging_client.log_struct({
-                    'severity': 'WARNING',
-                    'message': f'Cannot enrich company {company.name}: no website provided'
-                })
+            self.logger.warning(
+                f'Cannot enrich company {company.name}: no website provided'
+            )
             return False
         parsed_url = urlparse(company.website)
         if parsed_url.netloc in {'docsend.com'}:
-            self.logging_client.log_struct({
-                'severity': 'WARNING',
-                'message': f'Cannot enrich company {company.name}: {parsed_url.netloc} is not a company website'
-            })
+            self.logger.warning(
+                f'Cannot enrich company {company.name}: {parsed_url.netloc} is not a company website'
+            )
             return False
         try:
             # Call Spectr API to enrich company by website
@@ -124,22 +121,16 @@ class SpectrSyncAction:
             
             # No companies found
             if not enrichment_result or not isinstance(enrichment_result, list):
-                self.logging_client.log_struct(
-                    {
-                        'severity': 'INFO',
-                        'message': f'No Spectr data found for company {company.name} with website {company.website}'
-                    },
+                self.logger.info(
+                    f'No Spectr data found for company {company.name} with website {company.website}'
                 )
                 return False
                 
             # Multiple companies found - ambiguous result
             if len(enrichment_result) > 1:
-                self.logging_client.log_struct(
-                    {
-                        'severity': 'WARNING',
-                        'message': f'Multiple {len(enrichment_result)} Spectr matches found for company {company.name} with website {company.website}',
-                        'match_count': len(enrichment_result)
-                    },
+                self.logger.warning(
+                    f'Multiple {len(enrichment_result)} Spectr matches found for company {company.name} with website {company.website}',
+                    labels={'match_count': len(enrichment_result)}
                 )
                 return False
             
@@ -160,25 +151,21 @@ class SpectrSyncAction:
             )
             
             if result.modified_count:
-                self.logging_client.log_struct(
-                    {
-                        'severity': 'INFO',
-                        'message': f'Enriched company {company.name} with Spectr ID {spectr_company["id"]}'
-                    },
+                self.logger.info(
+                    f'Enriched company {company.name} with Spectr ID {spectr_company["id"]}'
                 )
                 return True
                 
             return False
             
         except HTTPError as e:
-            self.logging_client.log_struct(
-                {
-                    'severity': 'ERROR',
-                    'message': f'Error enriching company {company.name}',
+            self.logger.error(
+                f'Error enriching company {company.name}',
+                labels={
                     'company': jsonable_encoder(company.dict()),
                     'error': str(e)
                 },
-                severity='ERROR'
+                exc_info=e
             )
             return False
     
@@ -199,11 +186,8 @@ class SpectrSyncAction:
             spectr_company = await self.spectr_client.get_company_by_id(company.spectrId)
             
             if not spectr_company:
-                self.logging_client.log_struct(
-                    {
-                        'severity': 'WARNING',
-                        'message': f'No Spectr data found for company {company.name} with ID {company.spectrId}'
-                    }
+                self.logger.warning(
+                    f'No Spectr data found for company {company.name} with ID {company.spectrId}'
                 )
                 return False
             
@@ -220,29 +204,23 @@ class SpectrSyncAction:
             )
             
             if result.modified_count:
-                self.logging_client.log_struct(
-                    {
-                        'severity': 'INFO',
-                        'message': f'Updated company {company.name} with latest Spectr data'
-                    },
+                self.logger.info(
+                    f'Updated company {company.name} with latest Spectr data'
                 )
                 return True
             else:
-                self.logging_client.log_struct(
-                    {
-                        'severity': 'ERROR',
-                        'message': f'Company {company.name} with ID {company.spectrId} does not exist in MongoDB or Data is the same'
-                    },
+                self.logger.error(
+                    f'Company {company.name} with ID {company.spectrId} does not exist in MongoDB or Data is the same'
                 )
             return False
             
         except HTTPError as e:
-            self.logging_client.log_struct(
-                {
-                    'severity': 'ERROR',
-                    'message': f'Error updating company {company.name}',
+            self.logger.error(
+                f'Error updating company {company.name}',
+                labels={
                     'company': jsonable_encoder(company.dict()),
                     'error': str(e)
-                }
+                },
+                exc_info=e
             )
             return False

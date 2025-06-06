@@ -1,4 +1,3 @@
-import logging
 from typing import Dict, Any
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
@@ -6,9 +5,10 @@ import httpx
 
 from .client import AirTableClient
 from .company_model import Company
+from ...foundation.server.logger import Logger
 
 
-async def process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection) -> None:
+async def process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
     """
     Process an individual Airtable record and store it in MongoDB.
 
@@ -23,7 +23,7 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
 
     # Skip records without a name
     if not fields.get("Company") or not fields.get('URL'):
-        logging.warning(f"Skipping record {record['id']} - missing company name")
+        logger.warning(f"Skipping record {record['id']} - missing company name")
         return False
 
     # Extract company data from record
@@ -44,9 +44,9 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
     )
 
     if result.upserted_id:
-        logging.info(f"Inserted new company: {company.name}")
+        logger.info(f"Inserted new company: {company.name}")
     else:
-        logging.info(f"Updated existing company: {company.name}")
+        logger.info(f"Updated existing company: {company.name}")
 
     return True
 
@@ -55,6 +55,7 @@ async def pull_companies_from_airtable(
     airtable_client: AirTableClient,
     mongo_client: AsyncMongoClient,
     table_id: str,
+    logger: Logger,
 ) -> int:
     """
     Pull companies from Airtable and store them in MongoDB.
@@ -81,9 +82,9 @@ async def pull_companies_from_airtable(
         fields = record["fields"]
         initial_fund_invested = fields.get('Initial Fund Invested From')
         if not initial_fund_invested or not isinstance(initial_fund_invested, str):
-            logging.debug(f"Skipping record {record['id']}, {fields.get('Company')} - missing initial fund invested")
+            logger.debug(f"Skipping record {record['id']}, {fields.get('Company')} - missing initial fund invested")
             continue
-        processed = await process_company_record(record, companies_collection)
+        processed = await process_company_record(record, companies_collection, logger)
         processed_count += processed
     
     return processed_count

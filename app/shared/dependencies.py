@@ -1,21 +1,26 @@
 import re
 from fastapi import Depends, Query, Body, Request
 from google.cloud import firestore
-from app.shared.lifespan_objects import *
 from app.shared.spectr import SpectrClient
+from app.foundation.server.dependencies import get_logger, get_http_client, get_firestore_client, get_dataset_bucket
 
 
-__all__ = ['workspace_by_user_email', 'lifespan_objects', 'get_spectr_client']
-
-
-async def get_spectr_client(request: Request) -> SpectrClient:
-    return request.state.spectr_client
+async def get_spectr_client(
+    logger = Depends(get_logger),
+    http_client = Depends(get_http_client),
+    dataset_bucket = Depends(get_dataset_bucket)
+) -> SpectrClient:
+    return SpectrClient(
+        logger=logger,
+        http_client=http_client,
+        dataset_bucket=dataset_bucket
+    )
 
 
 def workspace_collection(
-        lifespan_objects: LifespanObjects = Depends(lifespan_objects)
+        firestore_client = Depends(get_firestore_client)
 ) -> firestore.AsyncCollectionReference:
-    return lifespan_objects.firestore_client.collection("workspaces")
+    return firestore_client.collection("workspaces")
 
 
 async def workspace_by_user_email(

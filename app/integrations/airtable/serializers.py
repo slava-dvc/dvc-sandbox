@@ -1,7 +1,7 @@
-import logging
 import re
 from typing import Dict, Callable
 from urllib.parse import urlparse
+from ...foundation.server.logger import Logger
 
 __all__ = ['field_serializers']
 
@@ -16,7 +16,6 @@ def _boolean_serializer(value):
 def _get_value(value: list | tuple | str | int | float):
     if isinstance(value, (list, tuple)):
         if len(value) > 1:
-            logging.error(f"Invalid value for field, got {value}")
             return None
         value = value[0]
 
@@ -50,10 +49,8 @@ def _url_serializer(value):
             return str(value)
         if _is_valid_domain(value):
             return value
-        logging.warning(f"Invalid URL: {value}")
         return None
     except Exception:
-        logging.warning(f"Invalid URL: {value}")
         return None
 
 
@@ -89,7 +86,6 @@ def _number_serializer(value):
 
         return int(value) * multiplier
     except ValueError:
-        logging.warning(f"{value} is not a number can be converted")
         return None
 
 

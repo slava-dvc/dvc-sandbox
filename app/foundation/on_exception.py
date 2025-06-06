@@ -8,7 +8,8 @@ from .primitives.name import fn_name
 __all__ = ['do_nothing', 'do_nothing_sync', 'on_exception']
 
 
-logger = logging.getLogger(__name__)
+# Default logger for cases where no logger is available
+_default_logger = logging.getLogger(__name__)
 
 
 async def do_nothing(exception: None, *args, **kwargs):
@@ -24,7 +25,8 @@ def on_exception(
         exceptions=Exception,
         skip_traceback_exceptions=(),
         warn_exceptions=(),
-        name=None
+        name=None,
+        logger=None
 ):
     def wrapper(fn: typing.Callable):
         _name = name or fn_name(fn)
@@ -37,18 +39,20 @@ def on_exception(
             try:
                 ret_val = await fn(*args, **kwargs)
             except asyncio.CancelledError:
-                logger.warning(f"Coroutine {_name} was cancelled. Live is different", _name)
+                _logger = logger or _default_logger
+                _logger.warning(f"Coroutine {_name} was cancelled. Live is different", _name)
             except (SystemExit, KeyboardInterrupt, GeneratorExit):
                 raise
             except exceptions as e:
-                logger.info(f'{_name} called with {args}, {kwargs}')
+                _logger = logger or _default_logger
+                _logger.info(f'{_name} called with {args}, {kwargs}')
                 msg = f'{e} while call {_name}'
                 if isinstance(e, warn_exceptions):
-                    logger.warning(msg)
+                    _logger.warning(msg)
                 elif isinstance(e, skip_traceback_exceptions):
-                    logger.error(msg)
+                    _logger.error(msg)
                 else:
-                    logger.exception(msg)
+                    _logger.exception(msg)
 
                 if is_do_async:
                     ret_val = await do(*args, exception=e, **kwargs)

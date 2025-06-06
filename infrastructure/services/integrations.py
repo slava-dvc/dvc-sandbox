@@ -32,7 +32,7 @@ SYNC_COMPANIES_PATH = "v1/integrations/spectr/sync_companies"
 sync_companies_from_spectr = make_scheduled_job(
     "spectr-pull-companies",
     "Pull Companies from Spectr",
-    "13 17 * * 7",
+    "13 17 5 * *",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{SYNC_COMPANIES_PATH}"),
     cloud_run_service_account
 )
