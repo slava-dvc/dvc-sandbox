@@ -44,7 +44,8 @@ class SpectrClient(object):
             "reset": response.headers.get("X-CreditLimit-Reset")
         }
 
-        self._logger.info(f'Spectr request: {method} {url}', labels={
+        self._logger.info(f'Spectr request', labels={
+            "spectr_endpoint": endpoint,
             "rate_limit": rate_limit,
             "credit_limit": credit_limit
         })

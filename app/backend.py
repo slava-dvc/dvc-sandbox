@@ -13,6 +13,11 @@ class BackendServer(server.FastAPIServer):
         app.include_router(integrations.router, prefix='/v1')
     
 
+    async def __aenter__(self) -> Dict[Str, Any]:
+        state = await self.http_client.__aenter__()
+        return state |  {
+            "dataset_bucket": self.storage_client.bucket("dvc-dataset-v2"),
+        }
 
 server = BackendServer()
 app: FastAPI = server.app

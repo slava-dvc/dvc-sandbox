@@ -75,17 +75,17 @@ class FastAPIServer(AsyncServer):
 
     async def __aenter__(self) -> Dict[Str, Any]:
         await self.http_client.__aenter__()
-        return {
+        state = {
             "http_client": self.http_client,
             "firestore_client": self.firestore_client,
             "pubsub_client": self.pubsub_client,
             "mongo_client": self.mongo_client,
             "storage_client": self.storage_client,
-            "dataset_bucket": self.storage_client.bucket("dvc-dataset-v2"),
             "config": self.config,
             "args": self.args,
             "logging_client": self.logging_client,
         }
+        return state
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.http_client.__aexit__(exc_type, exc_val, exc_tb)

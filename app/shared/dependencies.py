@@ -5,9 +5,6 @@ from app.shared.spectr import SpectrClient
 from app.foundation.server.dependencies import get_logger, get_http_client, get_firestore_client, get_dataset_bucket
 
 
-__all__ = ['workspace_by_user_email', 'get_spectr_client']
-
-
 async def get_spectr_client(
     logger = Depends(get_logger),
     http_client = Depends(get_http_client),
