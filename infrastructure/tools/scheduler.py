@@ -31,6 +31,7 @@ def make_scheduled_job(
         schedule=schedule,
         time_zone=time_zone,
         http_target=http_target,
+        attempt_deadline="1800s",
     )
 
     return job

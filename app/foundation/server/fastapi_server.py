@@ -116,7 +116,7 @@ class FastAPIServer(AsyncServer):
             app.add_exception_handler(exception_class, http_exception_handler)
 
     def setup_middleware(self, app: FastAPI):
-        app.add_middleware(RequestTimeoutMiddleware, timeout=60)
+        app.add_middleware(RequestTimeoutMiddleware, timeout=1800)
         app.add_middleware(trustedhost.TrustedHostMiddleware, allowed_hosts=["*"])
         app.add_middleware(gzip.GZipMiddleware)
         # app.add_middleware(AuthenticationMiddleware)

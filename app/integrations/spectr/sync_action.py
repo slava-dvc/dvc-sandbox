@@ -83,8 +83,12 @@ class SpectrSyncAction:
                     break
             except HTTPError as e:
                 self.logger.error(
-                    f'Error processing company {company_doc.get("name", "unknown")}',
+                    'Error processing company',
                     labels={
+                        'companyName': company_doc.get("name", "unknown"),
+                        'airtableId': company_doc.get("airtableId"),
+                        'spectrId': company_doc.get("spectrId"),
+                        'website': company_doc.get("website"),
                         'error': str(e),
                         'company': jsonable_encoder(company.dict()),
                     },
@@ -106,13 +110,25 @@ class SpectrSyncAction:
         """
         if not company.website:
             self.logger.warning(
-                f'Cannot enrich company {company.name}: no website provided'
+                'Cannot enrich company: no website provided',
+                labels={
+                    'companyName': company.name,
+                    'airtableId': company.airtableId,
+                    'spectrId': company.spectrId
+                }
             )
             return False
         parsed_url = urlparse(company.website)
         if parsed_url.netloc in {'docsend.com'}:
             self.logger.warning(
-                f'Cannot enrich company {company.name}: {parsed_url.netloc} is not a company website'
+                'Cannot enrich company: not a company website',
+                labels={
+                    'companyName': company.name,
+                    'airtableId': company.airtableId,
+                    'spectrId': company.spectrId,
+                    'website': company.website,
+                    'netloc': parsed_url.netloc
+                }
             )
             return False
         try:
@@ -122,15 +138,27 @@ class SpectrSyncAction:
             # No companies found
             if not enrichment_result or not isinstance(enrichment_result, list):
                 self.logger.info(
-                    f'No Spectr data found for company {company.name} with website {company.website}'
+                    'No Spectr data found for company',
+                    labels={
+                        'companyName': company.name,
+                        'airtableId': company.airtableId,
+                        'spectrId': company.spectrId,
+                        'website': company.website
+                    }
                 )
                 return False
                 
             # Multiple companies found - ambiguous result
             if len(enrichment_result) > 1:
                 self.logger.warning(
-                    f'Multiple {len(enrichment_result)} Spectr matches found for company {company.name} with website {company.website}',
-                    labels={'match_count': len(enrichment_result)}
+                    'Multiple Spectr matches found for company',
+                    labels={
+                        'companyName': company.name,
+                        'airtableId': company.airtableId,
+                        'spectrId': company.spectrId,
+                        'website': company.website,
+                        'matchCount': len(enrichment_result)
+                    }
                 )
                 return False
             
@@ -152,7 +180,13 @@ class SpectrSyncAction:
             
             if result.modified_count:
                 self.logger.info(
-                    f'Enriched company {company.name} with Spectr ID {spectr_company["id"]}'
+                    'Enriched company with Spectr ID',
+                    labels={
+                        'companyName': company.name,
+                        'airtableId': company.airtableId,
+                        'spectrId': company.spectrId,
+                        'website': company.website
+                    }
                 )
                 return True
                 
@@ -160,8 +194,12 @@ class SpectrSyncAction:
             
         except HTTPError as e:
             self.logger.error(
-                f'Error enriching company {company.name}',
+                'Error enriching company',
                 labels={
+                    'companyName': company.name,
+                    'airtableId': company.airtableId,
+                    'spectrId': company.spectrId,
+                    'website': company.website,
                     'company': jsonable_encoder(company.dict()),
                     'error': str(e)
                 },
@@ -187,7 +225,13 @@ class SpectrSyncAction:
             
             if not spectr_company:
                 self.logger.warning(
-                    f'No Spectr data found for company {company.name} with ID {company.spectrId}'
+                    'No Spectr data found for company',
+                    labels={
+                        'companyName': company.name,
+                        'airtableId': company.airtableId,
+                        'spectrId': company.spectrId,
+                        'website': company.website
+                    }
                 )
                 return False
             
@@ -205,19 +249,35 @@ class SpectrSyncAction:
             
             if result.modified_count:
                 self.logger.info(
-                    f'Updated company {company.name} with latest Spectr data'
+                    'Updated company with latest Spectr data',
+                    labels={
+                        'companyName': company.name,
+                        'airtableId': company.airtableId,
+                        'spectrId': company.spectrId,
+                        'website': company.website
+                    }
                 )
                 return True
             else:
                 self.logger.error(
-                    f'Company {company.name} with ID {company.spectrId} does not exist in MongoDB or Data is the same'
+                    'Company does not exist in MongoDB or data is the same',
+                    labels={
+                        'companyName': company.name,
+                        'airtableId': company.airtableId,
+                        'spectrId': company.spectrId,
+                        'website': company.website
+                    }
                 )
             return False
             
         except HTTPError as e:
             self.logger.error(
-                f'Error updating company {company.name}',
+                'Error updating company',
                 labels={
+                    'companyName': company.name,
+                    'airtableId': company.airtableId,
+                    'spectrId': company.spectrId,
+                    'website': company.website,
                     'company': jsonable_encoder(company.dict()),
                     'error': str(e)
                 },
