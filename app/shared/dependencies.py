@@ -1,10 +1,20 @@
 import re
 from fastapi import Depends, Query, Body, Request
 from google.cloud import firestore
-from app.shared.spectr import SpectrClient
 from app.foundation.server.dependencies import get_logger, get_http_client, get_firestore_client, get_dataset_bucket
 
+from .spectr import SpectrClient
+from .scrapin_client import ScrapinClient
 
+async def get_scrapin_clinet(
+    logger = Depends(get_logger),
+    http_client = Depends(get_http_client),
+) -> ScrapinClient:
+
+    return ScrapinClient(
+        logger=logger,
+        http_client=http_client
+    )
 async def get_spectr_client(
     logger = Depends(get_logger),
     http_client = Depends(get_http_client),
