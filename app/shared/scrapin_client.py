@@ -9,67 +9,6 @@ from app.foundation.server.logger import Logger
 __all__ = ['ScrapinClient']
 
 
-
-class LIAccountPosition(BaseModel):
-    position: str | None = None
-    description: str | None = None
-
-
-class LIAccountEducation(BaseModel):
-    title: str | None = None
-    url: str | None = None
-    degree: str | None = None
-
-
-class LIAccountHonor(BaseModel):
-    title: str | None = None
-    description: str | None = None
-
-
-class LIAccountProject(BaseModel):
-    title: str | None = None
-    url: str | None = None
-    description: str | None = None
-
-
-class LIAccountLicense(BaseModel):
-    title: str | None = None
-    url: str | None = None
-    description: str | None = None
-
-
-class LIAccountExperience(BaseModel):
-    name: str | None = None
-    url: str | None = None
-    position: list[LIAccountPosition] = None
-
-
-class LIAccount(BaseModel):
-    name: str | None = None
-    query: str | None = None
-    tagline: str | None = None
-    description: str | None = None
-    linkedin: str | None = None
-    experience: list[LIAccountExperience] = []
-    education: list[LIAccountEducation] = []
-    licenses: list[LIAccountLicense] = []
-    projects: list[LIAccountProject] = []
-    honors: list[LIAccountHonor] = []
-
-
-class LICompany(BaseModel):
-    name: str | None = None
-    tagline: str | None = None
-    description: str | None = None
-    website: str | None = None
-    employees: list[LIAccount] = []
-    employees_count: int = 0
-    industry: str | None = None
-    headquarters: str | None = None
-    founded_year: int | None = None
-    stage:  str | None = None
-
-
 class ScrapinClient(object):
     BASE_URL = "https://api.scrapin.io"
 
@@ -102,15 +41,15 @@ class ScrapinClient(object):
     async def search_company(self, domain: str) -> Tuple[LICompany, AnyStr]:
         domain = domain.replace('http://', '').replace('https://', '').replace('www.', '')
         data = await self.request("GET", "/enrichment/company/domain", params={"domain": domain})
-        return self._parse_company_data(data.get('company')) if data else (None, None)
+        return data.get('company')
 
     async def extract_company_data(self, linkedin_url: str) -> Tuple[LICompany, AnyStr]:
         data = await self.request("GET", "/enrichment/company", params={"linkedInUrl": linkedin_url})
-        return self._parse_company_data(data.get('company')) if data else (None, None)
+        return data.get('company')
 
     async def extract_person_data(self, linkedin_url: str) -> Tuple[LIAccount, AnyStr]:
         data = await self.request("GET", "/enrichment/profile", params={"linkedInUrl": linkedin_url})
-        return self._parse_person_data(data.get('person')) if data else (None, None)
+        return data.get('person')
 
     async def search_person(self, **kwargs) -> Tuple[LIAccount, AnyStr]:
         valid_params = ['firstName', 'lastName', 'companyDomain', 'email']
@@ -118,63 +57,4 @@ class ScrapinClient(object):
         if params.get('companyDomain'):
             params['companyDomain'] = params['companyDomain'].replace('http://', '').replace('https://', '').replace('www.', '').strip('/')
         data = await self.request("GET", "/enrichment", params=params)
-        return self._parse_person_data(data.get('person')) if data else (None, None)
-
-    def _parse_company_data(self, data: dict) -> Tuple[LICompany, AnyStr]:
-        if not data:
-            return None, None
-        headquarter = data.get('headquarter') or {}
-        founded_on = data.get('foundedOn') or {}
-        hq = None
-        if isinstance(headquarter, dict):
-            parts = [headquarter.get(f) for f in ['city', 'geographicArea', 'country'] if headquarter.get(f)]
-            if parts:
-                hq = ', '.join(parts)
-        elif isinstance(headquarter, str):
-            hq = headquarter
-        else:
-            self._logger.warning(f"Invalid headquarter data: {headquarter} ({type(headquarter)})")
-
-        return LICompany(
-            name=data.get('name'),
-            tagline=data.get('tagline'),
-            description=data.get('description'),
-            website=data.get('websiteUrl'),
-            employees_count=data.get('employeeCount'),
-            industry=data.get('industry'),
-            headquarters=hq if headquarter else None,
-            founded_year=founded_on.get('year') if founded_on else None,
-            stage=None,
-        ), data.get('linkedInUrl')
-
-    def _parse_person_data(self, data: dict) -> Tuple[LIAccount, AnyStr]:
-        if not data:
-            return None, None
-        experience = [
-            LIAccountExperience(
-                name=pos['companyName'],
-                url=pos['linkedInUrl'],
-                position=[LIAccountPosition(position=pos['title'], description=pos['description'])]
-            )
-            for pos in data.get('positions', {}).get('positionHistory', [])
-        ]
-
-        education = [
-            LIAccountEducation(
-                title=edu['schoolName'],
-                url=edu['linkedInUrl'],
-                degree=edu['degreeName']
-            )
-            for edu in data.get('schools', {}).get('educationHistory', [])
-        ]
-
-        return LIAccount(
-            name=f"{data['firstName']} {data['lastName']}",
-            query=data.get('publicIdentifier'),
-            tagline=data.get('headline'),
-            description=data.get('summary'),
-            linkedin=data.get('linkedInUrl'),
-            experience=experience,
-            education=education,
-            # Note: licenses, projects, and honors are not provided in the API response
-        ), data.get('linkedInUrl')
+        return data.get('person')

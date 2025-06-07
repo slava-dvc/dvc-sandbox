@@ -1,8 +1,14 @@
+from typing import Optional, List, Literal, ClassVar, Set
+
 from pydantic import BaseModel
 from app.foundation.primitives import datetime
 
 
 class Company(BaseModel):
+
+    DATA_FIELDS: ClassVar[Set[str]] = {
+        "linkedInData", "spectrData",
+    }
 
     _id: str
     airtableId: str

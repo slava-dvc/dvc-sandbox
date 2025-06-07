@@ -66,29 +66,12 @@ class JobDispatcher(object):
 
     async def get_companies(self, max_items: int = 1000) -> List[Company]:
         companies_collection = self._database["companies"]
-        cursor = companies_collection.find().limit(max_items)
+        projection = {f: 0 for f in Company.DATA_FIELDS}
+        cursor = companies_collection.find(projection=projection).limit(max_items)
         companies = []
         failed_count = 0
         
         async for doc in cursor:
-            try:
-                companies.append(Company.from_dict(doc))
-            except Exception as e:
-                failed_count += 1
-                self._logger.error(f"Failed to parse company from DB", labels={
-                    "company_id": doc.get("_id"),
-                    "error": str(e),
-                    "doc_keys": list(doc.keys()) if doc else None
-                })
-        
-        if failed_count > 0:
-            self._logger.error(f"Failed to parse {failed_count} companies from database", labels={
-                "failed_count": failed_count,
-                "total_processed": len(companies) + failed_count,
-                "success_rate": len(companies) / (len(companies) + failed_count) if (len(companies) + failed_count) > 0 else 0
-            })
-            
-        if not companies:
-            raise ValueError(f"No valid companies found in database. Failed to parse {failed_count} records.")
-            
+            companies.append(Company.from_dict(doc))
+
         return companies
