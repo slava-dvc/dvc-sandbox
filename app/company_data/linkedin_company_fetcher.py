@@ -18,34 +18,52 @@ class LinkedInCompanyFetcher(DataFetcher):
     ):
         self._database = database
         self._companies_collection = database["companies"]
+        self._scrapin_client = scrapin_client
 
     def source_id(self) -> Str:
         return "linkedin_company"
 
     async def remote_id(self, company: Company) -> Str:
-        pass
+        return company.linkedInId or company._id
 
     async def raw(self, company: Company) -> Dict:
-        pass
+        return await self._fetch(company._id, company.linkedInId)
 
     async def db_update_payload(self, company: Company) -> Dict:
-        pass
+        raw_data = await self.raw(company)
+        if not raw_data:
+            return {}
+        
+        from app.foundation.primitives import datetime
+        return {
+            "linkedInData": raw_data,
+            "linkedInUpdatedAt": datetime.now(),
+            "linkedInId": raw_data.get("linkedInUrl", "").split("/company/")[-1].rstrip("/") if raw_data.get("linkedInUrl") else None
+        }
 
-    @lru_cache(maxsize=1024)
     async def _fetch(self, company_id, linkedin_id) -> Dict:
         linkedin_url = None
         if linkedin_id:
             linkedin_url = f"https://www.linkedin.com/company/{linkedin_id}"
-        if not linkedin_id:
-            linkedin_url = await self._companies_collection.find_one({"_id": company_id})
+        else:
+            linkedin_url = await self._get_linkedin_url_from_db(company_id)
+        
         if not linkedin_url:
+            return {}
+        
+        try:
+            company_data, _ = await self._scrapin_client.extract_company_data(linkedin_url)
+            return company_data.model_dump() if company_data else {}
+        except Exception:
             return {}
 
 
-    @lru_cache(maxsize=1024)
     async def _get_linkedin_url_from_db(self, company_id):
         company = await self._companies_collection.find_one({"_id": company_id})
-        spectrData = company.get("spectrData") or {}
-        socials = spectrData.get("socials") or {}
+        if not company:
+            return ""
+        
+        spectr_data = company.get("spectrData") or {}
+        socials = spectr_data.get("socials") or {}
         linkedin = socials.get("linkedin") or {}
         return linkedin.get("url") or ""

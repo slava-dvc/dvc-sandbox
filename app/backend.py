@@ -8,9 +8,10 @@ class BackendServer(server.FastAPIServer):
     def setup_routes(self, app: FastAPI):
         super().setup_routes(app)
 
-        from app import integrations
+        from app import integrations, company_data
 
         app.include_router(integrations.router, prefix='/v1')
+        app.include_router(company_data.router, prefix='/v1')
     
 
     async def __aenter__(self) -> Dict[Str, Any]:

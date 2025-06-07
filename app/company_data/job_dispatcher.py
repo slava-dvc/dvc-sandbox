@@ -29,21 +29,66 @@ class JobDispatcher(object):
     def is_supported(self, source: Str) -> bool:
         return source in self._source_to_topic_mapping
 
-    async def trigger_many(self, max_items: List[Str], sources) -> int:
-        companies = await self.get_companies()
+    async def trigger_many(self, max_items: int, sources: List[Str]) -> int:
+        companies = await self.get_companies(max_items)
+        count = 0
         for company in companies:
             for source in sources:
-                await self.trigger_one(company, source)
+                if self.is_supported(source):
+                    await self.trigger_one(company, source)
+                    count += 1
             self._logger.info("Dispatch company data pull", labels={
                 "company": company.model_dump(),
-                "source": sources,
+                "sources": sources,
             })
+        return count
 
     async def trigger_one(self, company: Company, source: Str):
+        if not self.is_supported(source):
+            self._logger.warning("Unsupported source", labels={
+                "company_id": company._id,
+                "source": source,
+            })
+            return
+        
         topic_path = self._source_to_topic_mapping[source]
-        data = company.model_dump()
-        pass
+        data = company.model_dump_json().encode('utf-8')
+        
+        future = self._publisher_client.publish(topic_path, data)
+        message_id = future.result()
+        
+        self._logger.info("Published company data pull message", labels={
+            "company_id": company._id,
+            "source": source,
+            "message_id": message_id,
+            "topic": topic_path,
+        })
 
-    async def get_companies() -> List[Company]:
+    async def get_companies(self, max_items: int = 1000) -> List[Company]:
         companies_collection = self._database["companies"]
-        pass
+        cursor = companies_collection.find().limit(max_items)
+        companies = []
+        failed_count = 0
+        
+        async for doc in cursor:
+            try:
+                companies.append(Company.from_dict(doc))
+            except Exception as e:
+                failed_count += 1
+                self._logger.error(f"Failed to parse company from DB", labels={
+                    "company_id": doc.get("_id"),
+                    "error": str(e),
+                    "doc_keys": list(doc.keys()) if doc else None
+                })
+        
+        if failed_count > 0:
+            self._logger.error(f"Failed to parse {failed_count} companies from database", labels={
+                "failed_count": failed_count,
+                "total_processed": len(companies) + failed_count,
+                "success_rate": len(companies) / (len(companies) + failed_count) if (len(companies) + failed_count) > 0 else 0
+            })
+            
+        if not companies:
+            raise ValueError(f"No valid companies found in database. Failed to parse {failed_count} records.")
+            
+        return companies

@@ -1,4 +1,2 @@
-class DataSyncer(object):
-    def __init__(
-            self
-    ):
+# Company data synchronization module
+from .routes import router

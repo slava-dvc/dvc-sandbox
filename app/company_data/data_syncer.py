@@ -7,8 +7,8 @@ from pymongo.asynchronous.database import AsyncDatabase
 
 from app.foundation import as_async
 from app.foundation.primitives import datetime, json
-from foundation.server import Logger
-from shared import Company
+from app.foundation.server import Logger
+from app.shared import Company
 
 
 class DataFetcher(metaclass=ABCMeta):

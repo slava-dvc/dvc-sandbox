@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from foundation.primitives import datetime
+from app.foundation.primitives import datetime
 
 
 class Company(BaseModel):
@@ -27,7 +27,8 @@ class Company(BaseModel):
             _id=data['_id'],
             airtableId=data['airtableId'],
             name=data['name'],
-            createdAt=datetime.any_to_datetime(data['updatedAt']),
+            createdAt=datetime.any_to_datetime(data.get('createdAt')),
+            updatedAt=datetime.any_to_datetime(data.get('updatedAt')),
             website=data.get('website'),
             linkedInId=data.get('linkedInId'),
             linkedInData=data.get('linkedInData'),
