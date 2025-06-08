@@ -58,7 +58,7 @@ class FastAPIServer(AsyncServer):
         return firestore.AsyncClient()
 
     @cached_property
-    def pubsub_client(self) -> pubsub.PublisherClient:
+    def publisher_client(self) -> pubsub.PublisherClient:
         return pubsub.PublisherClient()
 
     @cached_property
@@ -78,7 +78,7 @@ class FastAPIServer(AsyncServer):
         state = {
             "http_client": self.http_client,
             "firestore_client": self.firestore_client,
-            "pubsub_client": self.pubsub_client,
+            "publisher_client": self.publisher_client,
             "mongo_client": self.mongo_client,
             "storage_client": self.storage_client,
             "config": self.config,
@@ -91,7 +91,7 @@ class FastAPIServer(AsyncServer):
         await self.http_client.__aexit__(exc_type, exc_val, exc_tb)
         await self.mongo_client.close()
         self.firestore_client.close()
-        self.pubsub_client.transport.close()
+        self.publisher_client.transport.close()
 
     def setup_exception_handlers(self, app: FastAPI):
         for exception_class in [

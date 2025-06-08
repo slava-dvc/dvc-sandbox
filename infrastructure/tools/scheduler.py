@@ -1,5 +1,5 @@
 import pulumi_gcp as gcp
-
+import json
 from service_account import scheduler_service_account
 
 
@@ -8,7 +8,8 @@ def make_scheduled_job(
         description: str,
         schedule: str,
         uri: str,
-        service_account: gcp.serviceaccount.Account
+        service_account: gcp.serviceaccount.Account,
+        body: None = None,
 ):
     time_zone = "America/Los_Angeles"  # PDT timezone
 
@@ -23,6 +24,8 @@ def make_scheduled_job(
             "audience": uri,
         },
     }
+    if isinstance(body, dict):
+        http_target["body"] = json.dumps(body)
 
     job = gcp.cloudscheduler.Job(
         f"cloud-scheduler-job-{name}",

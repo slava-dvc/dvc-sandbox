@@ -48,8 +48,8 @@ def get_firestore_client(request: Request) -> firestore.AsyncClient:
 
 
 # Dependency to get the PubSub client
-def get_pubsub_client(request: Request) -> pubsub.PublisherClient:
-    return request.state.pubsub_client
+def get_publisher_client(request: Request) -> pubsub.PublisherClient:
+    return request.state.publisher_client
 
 
 # Dependency to get the HTTP client

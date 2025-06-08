@@ -4,7 +4,7 @@ from service_account import cloud_run_service_account
 from delivery import docker_repository_url
 from tools.run import create_cloud_run_secret_env, repo_short_sha
 
-from .secrets import AIRTABLE_API_KEY, MONGODB_URI, OPENAI_API_KEY, SPECTR_API_KEY
+from .secrets import AIRTABLE_API_KEY, MONGODB_URI, OPENAI_API_KEY, SPECTR_API_KEY, SCRAPIN_API_KEY
 
 SYNC_DEALS_PATH = "v1/integrations/sync/deal"
 
@@ -29,7 +29,7 @@ synapse_cloud_run = gcp.cloudrunv2.Service(
                         name="CLOUD",
                         value="1",
                     ),
-                    OPENAI_API_KEY, AIRTABLE_API_KEY, MONGODB_URI, SPECTR_API_KEY,
+                    OPENAI_API_KEY, AIRTABLE_API_KEY, MONGODB_URI, SPECTR_API_KEY, SCRAPIN_API_KEY
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={

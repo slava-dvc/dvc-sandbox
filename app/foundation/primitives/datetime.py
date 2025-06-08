@@ -53,7 +53,6 @@ def midnight(d: datetime):
 
 
 def any_to_datetime(v, default=None):
-    default = default or as_local(datetime.now())
     if isinstance(v, datetime):
         return as_local(v)
     if isinstance(v, int):

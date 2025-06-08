@@ -36,3 +36,15 @@ sync_companies_from_spectr = make_scheduled_job(
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{SYNC_COMPANIES_PATH}"),
     cloud_run_service_account
 )
+
+COMPANY_DATA_PULL = "v1/company_data/pull"
+company_data_pull_linkedin = make_scheduled_job(
+    "company-data-pull-linkedin",
+    "Pull Company Data (LinkedIn)",
+    "12 11 * * 7",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL}"),
+    body={
+        "sources": ["linkedin"],
+        "max_items": 5
+    }
+)

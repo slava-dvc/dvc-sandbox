@@ -20,7 +20,7 @@ __all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_excep
 
 def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
     logger = get_logger(request)
-    logger.warning(f"Timeout: {request.client.host} -> {request.method} {request.url}")
+    logger.warning("Request timeout")
     return JSONResponse(
         content={
             "error": {
@@ -35,7 +35,10 @@ def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
 def http_exception_handler(request: Request, exc: HTTPStatusError):
     config: AppConfig = request.state.config
     logger = get_logger(request)
-    logger.warning(f"Downstream http code {exc.response.status_code}: {request.client.host} -> {request.method} {request.url}")
+    logger.warning("Downstream HTTP error", labels={
+        "status_code": exc.response.status_code,
+        "content": exc.response.content
+    })
     if config.debug:
         try:
             return Response(
@@ -60,7 +63,9 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
 def runtime_exception_handler(request: Request, exc: Exception):
     code = HTTPStatus.INTERNAL_SERVER_ERROR
     logger = get_logger(request)
-    logger.error(f"Exception: {request.client.host} -> {request.method} {request.url}: {exc}", exc_info=exc)
+    logger.error("Runtime exception", labels={
+        "exception": str(exc)
+    }, exc_info=exc)
     return JSONResponse(
         content={
             "error": {
