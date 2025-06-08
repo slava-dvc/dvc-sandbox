@@ -13,6 +13,10 @@ from app.shared import Company
 
 class DataFetcher(metaclass=ABCMeta):
 
+    def __init__(self):
+        self.company = None
+        self._raw = {}
+
     @abstractmethod
     def source_id(self) -> Str:
         """
@@ -20,31 +24,44 @@ class DataFetcher(metaclass=ABCMeta):
         """
         pass
 
-    async def updated_at(self, company: Company) -> datetime.datetime:
-        """
-        When this data was last updated at source. If not available, return current time.
-        """
-        return datetime.now()
-
     @abstractmethod
-    async def remote_id(self, company: Company) -> Str:
+    def remote_id(self) -> Str:
         """
         remote_id - object id in source
         """
         pass
 
     @abstractmethod
-    async def raw(self, company: Company) -> Dict:
+    def db_update(self) -> Dict:
         """
-        Return raw response from the source
+        Fields to update in database
         """
         pass
 
     @abstractmethod
-    async def db_update_payload(self, company: Company) -> Dict:
+    async def _fetch(self, company: Company):
+        pass
+
+    def updated_at(self) -> datetime.datetime:
         """
-        Fields to update in database
+        When this data was last updated at source. If not available, return current time.
         """
+        return datetime.now()
+
+    def raw(self) -> Dict:
+        """
+        Return raw response from the source
+        """
+        return self._raw
+
+    def __call__(self, company: Company):
+        self.company = company
+        return self
+
+    async def __aenter__(self):
+        self._raw = await self._fetch(self.company)
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
 
@@ -63,15 +80,21 @@ class DataSyncer:
         self._companies_collection = database["companies"]
 
     async def sync_one(self, company: Company):
-        raw_data = await self._data_fetcher.raw(company)
-        remote_id = await self._data_fetcher.remote_id(company)
-        updated_at = await self._data_fetcher.updated_at(company)
-        db_update_payload = await self._data_fetcher.db_update_payload(company)
-        source_id = self._data_fetcher.source_id()
+        async with self._data_fetcher(company):
+            raw_data = self._data_fetcher.raw()
+            remote_id = self._data_fetcher.remote_id()
+            updated_at = self._data_fetcher.updated_at()
+            db_update_payload = self._data_fetcher.db_update()
+            source_id = self._data_fetcher.source_id()
 
+        bucket_path = '/'.join([
+            source_id,
+            company.website_id(),
+            f"{updated_at:%Y-%m-%d}.json.gz"
+        ])
         data = json.dumps(raw_data)
         compressed_data = gzip.compress(data.encode('utf-8'))
-        blob = self._dataset_bucket.blob(f"{source_id}/{remote_id}/{updated_at}/.json.gz")
+        blob = self._dataset_bucket.blob(bucket_path)
 
         blob.content_encoding = 'gzip'
         await as_async(

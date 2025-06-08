@@ -32,21 +32,40 @@ class JobDispatcher(object):
     async def trigger_many(self, max_items: int, sources: List[Str]) -> int:
         companies = await self.get_companies(max_items)
         count = 0
+        supported_sources = [source for source in sources if self.is_supported(source)]
+        if not supported_sources:
+            self._logger.warning("No supported sources", labels={
+                "sources": sources,
+            })
+            return count
+        if len(supported_sources) != len(sources):
+            self._logger.warning("Some sources are not supported", labels={
+                "sources": sources,
+                "supported_sources": supported_sources,
+            })
+            sources = supported_sources
+
         for company in companies:
-            for source in sources:
-                if self.is_supported(source):
-                    await self.trigger_one(company, source)
-                    count += 1
+            if not company.has_valid_website():
+                self._logger.warning("Company has no valid website", labels={
+                    "company": company.model_dump(),
+                    "sources": sources,
+                })
+                continue
+
+            for source in supported_sources:
+                await self.trigger_one(company, source)
+                count += 1
             self._logger.info("Dispatch company data pull", labels={
                 "company": company.model_dump(),
-                "sources": sources,
+                "sources": supported_sources,
             })
         return count
 
     async def trigger_one(self, company: Company, source: Str):
         if not self.is_supported(source):
             self._logger.warning("Unsupported source", labels={
-                "company_id": company._id,
+                "company": company.model_dump(),
                 "source": source,
             })
             return

@@ -35,17 +35,17 @@ async def trigger_sync(
         project_id=config.project_id,
         logger=logger,
     )
-    sources = [s for s in data.sources if job_dispatcher.is_supported(s)]
     logger.info(f"Starting company data pull", labels={
-        "sources": sources,
+        "sources": data.sources,
         "max_items": data.max_items,
     })
     cnt = await job_dispatcher.trigger_many(max_items=data.max_items, sources=sources)
-    logger.info(f"Finished company data pull", labels={
-        "sources": sources,
-        "count": cnt,
-        "max_items": data.max_items,
-    })
+    if cnt:
+        logger.info(f"Finished company data pull", labels={
+            "sources": sources,
+            "count": cnt,
+            "max_items": data.max_items,
+        })
     return {"dispatched": cnt, "sources": sources}
 
 

@@ -1,7 +1,11 @@
 from typing import Optional, List, Literal, ClassVar, Set
+from urllib.parse import urlparse
 
 from pydantic import BaseModel
 from app.foundation.primitives import datetime
+
+
+BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
 
 
 class Company(BaseModel):
@@ -13,10 +17,10 @@ class Company(BaseModel):
     _id: str
     airtableId: str
     name: str
+    website: str = ""
+
     createdAt: datetime.datetime
     updatedAt: datetime.datetime | None
-
-    website: str | None
 
     linkedInId: str | None = None
     linkedInData: dict | None = None
@@ -26,6 +30,20 @@ class Company(BaseModel):
     spectrUpdatedAt: datetime.datetime | None = None
     spectrData: dict | None = None
 
+    def has_valid_website(self):
+        if not self.website:
+            return False
+        for domain in BLOCKLISTED_DOMAINS:
+            if domain in self.website:
+                return False
+        return True
+
+    def website_id(self):
+        if not self.has_valid_website():
+            return None
+        parsed = urlparse(self.website)
+        domain = '.'.join(parts.netloc.split('.')[-2:])
+        return domain
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -35,7 +53,7 @@ class Company(BaseModel):
             name=data['name'],
             createdAt=datetime.any_to_datetime(data.get('createdAt')),
             updatedAt=datetime.any_to_datetime(data.get('updatedAt')),
-            website=data.get('website'),
+            website=data['website'],
             linkedInId=data.get('linkedInId'),
             linkedInData=data.get('linkedInData'),
             linkedInUpdatedAt=datetime.any_to_datetime(data.get('linkedInUpdatedAt')),
