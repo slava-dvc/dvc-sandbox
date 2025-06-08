@@ -42,7 +42,7 @@ class Company(BaseModel):
         if not self.has_valid_website():
             return None
         parsed = urlparse(self.website)
-        domain = '.'.join(parts.netloc.split('.')[-2:])
+        domain = '.'.join(parsed.netloc.split('.')[-2:])
         return domain
 
     @classmethod

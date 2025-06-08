@@ -1,6 +1,7 @@
 import gzip
 from abc import ABCMeta, abstractmethod
-from typing import AnyStr as Str, Dict
+from dataclasses import dataclass
+from typing import Dict
 
 from google.cloud import storage
 from pymongo.asynchronous.database import AsyncDatabase
@@ -11,57 +12,28 @@ from app.foundation.server import Logger
 from app.shared import Company
 
 
+@dataclass
+class FetchResult:
+    raw_data: Dict
+    remote_id: str
+    db_update_fields: Dict
+    updated_at: datetime.datetime
+
+
 class DataFetcher(metaclass=ABCMeta):
 
-    def __init__(self):
-        self.company = None
-        self._raw = {}
-
     @abstractmethod
-    def source_id(self) -> Str:
+    def source_id(self) -> str:
         """
-        Id of these source, for example linkedin, spectr,
+        Source identifier (e.g., 'linkedin_company')
         """
         pass
 
     @abstractmethod
-    def remote_id(self) -> Str:
+    async def fetch_company_data(self, company: Company) -> FetchResult:
         """
-        remote_id - object id in source
+        Fetch raw data and return transformed result
         """
-        pass
-
-    @abstractmethod
-    def db_update(self) -> Dict:
-        """
-        Fields to update in database
-        """
-        pass
-
-    @abstractmethod
-    async def _fetch(self, company: Company):
-        pass
-
-    def updated_at(self) -> datetime.datetime:
-        """
-        When this data was last updated at source. If not available, return current time.
-        """
-        return datetime.now()
-
-    def raw(self) -> Dict:
-        """
-        Return raw response from the source
-        """
-        return self._raw
-
-    def __call__(self, company: Company):
-        self.company = company
-        return self
-
-    async def __aenter__(self):
-        self._raw = await self._fetch(self.company)
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
 
@@ -80,19 +52,15 @@ class DataSyncer:
         self._companies_collection = database["companies"]
 
     async def sync_one(self, company: Company):
-        async with self._data_fetcher(company):
-            raw_data = self._data_fetcher.raw()
-            remote_id = self._data_fetcher.remote_id()
-            updated_at = self._data_fetcher.updated_at()
-            db_update_payload = self._data_fetcher.db_update()
-            source_id = self._data_fetcher.source_id()
+        result = await self._data_fetcher.fetch_company_data(company)
+        source_id = self._data_fetcher.source_id()
 
         bucket_path = '/'.join([
             source_id,
             company.website_id(),
-            f"{updated_at:%Y-%m-%d}.json.gz"
+            f"{result.updated_at:%Y-%m-%d}.json.gz"
         ])
-        data = json.dumps(raw_data)
+        data = json.dumps(result.raw_data)
         compressed_data = gzip.compress(data.encode('utf-8'))
         blob = self._dataset_bucket.blob(bucket_path)
 
@@ -108,14 +76,14 @@ class DataSyncer:
                 '_id': company._id
             },
             {
-                "$set": db_update_payload
+                "$set": result.db_update_fields
             },
         )
 
         self._logger.info(f"Synced company data", labels={
             "company": company.model_dump(),
             "source": source_id,
-            "remote_id": remote_id,
-            "updated_at": updated_at,
+            "remote_id": result.remote_id,
+            "updated_at": result.updated_at,
             "db_update_result": update_result.raw_result,
         })

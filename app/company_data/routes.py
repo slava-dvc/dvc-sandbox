@@ -60,6 +60,7 @@ async def sync_company_linkedin(
     fetcher = LinkedInCompanyFetcher(
         database=database,
         scrapin_client=scrapin_client,
+        logger=logger,
     )
     
     data_syncer = DataSyncer(

@@ -1,14 +1,13 @@
 from typing import AnyStr as Str, Dict
 from functools import cache
 from httpx import HTTPError
-from pandas.io.formats.format import return_docstring
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.shared import Company, ScrapinClient
 from app.foundation.primitives import datetime
 
 from app.foundation.server import Logger
-from .data_syncer import DataFetcher
+from .data_syncer import DataFetcher, FetchResult
 
 
 __all__ = ["LinkedInCompanyFetcher"]
@@ -21,31 +20,32 @@ class LinkedInCompanyFetcher(DataFetcher):
             scrapin_client: ScrapinClient,
             logger: Logger
     ):
-        super().__init__()
         self._database = database
         self._companies_collection = database["companies"]
         self._scrapin_client = scrapin_client
         self._logger = logger
 
-    def source_id(self) -> Str:
+    def source_id(self) -> str:
         return "linkedin_company"
 
-    async def remote_id(self) -> Str:
-        return self._raw.get("linkedInId")
+    async def fetch_company_data(self, company: Company) -> FetchResult:
+        raw_data = await self._fetch_raw_data(company)
 
-    async def db_update(self) -> Dict:
-        if not self._raw:
-            return {}
-        return {
-            "linkedInData": self._raw,
-            "linkedInUpdatedAt": datetime.now(),
-            "linkedInId": self._raw.get("linkedInId")
-        }
+        return FetchResult(
+            raw_data=raw_data,
+            remote_id=raw_data.get("linkedInId") if raw_data else None,
+            db_update_fields={
+                "linkedInData": raw_data,
+                "linkedInUpdatedAt": datetime.now(),
+                "linkedInId": raw_data.get("linkedInId")
+            } if raw_data else {},
+            updated_at=datetime.now()
+        )
 
-    async def _fetch(self, company: Company) -> Dict:
+    async def _fetch_raw_data(self, company: Company) -> Dict:
         linkedin_url = None
         if company.linkedInId:
-            linkedin_url = f"https://www.linkedin.com/company/{linkedin_id}"
+            linkedin_url = f"https://www.linkedin.com/company/{company.linkedInId}"
         else:
             linkedin_url = await self._linkedin_url_from_db(company._id)
 
@@ -59,8 +59,8 @@ class LinkedInCompanyFetcher(DataFetcher):
             self._logger.warning(
                 "Fetch company data from scrapin failed",
                 labels={
-                    "company_id": company_id,
-                    "linkedin_id": linkedin_id,
+                    "company_id": company._id,
+                    "linkedin_id": company.linkedInId,
                     "exception": str(exc)
                 }
             )
