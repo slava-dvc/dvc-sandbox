@@ -11,6 +11,11 @@ __all__ = ["Logger", "CloudLogger", "LocalLogger"]
 
 
 class Logger:
+    BLOCKLISTED_HEADERS = [
+        "authorization",
+        "cookie",
+        "x-api-key",
+    ]
     def __init__(self, request: Request):
         path_parts = [p for p in request.url.path.split('/') if p ]
         self._name = "root" if not path_parts else '_'.join(path_parts)
@@ -26,11 +31,11 @@ class Logger:
             self._span_id = None
         
         labels = {
-            "headers": request.headers,
-            "client": str(request.client),
-            "query_params": request.query_params,
-            "url": str(request.url),
-            "method": request.method,
+            "request_headers": {k:v for k,v in request.headers.items() if k.lower() not in self.BLOCKLISTED_HEADERS},
+            "request_client": str(request.client),
+            "request_query_params": request.query_params,
+            "request_url": str(request.url),
+            "request_method": request.method,
             "handler": self._name,
         }
         self._labels = jsonable_encoder(labels)
@@ -108,7 +113,7 @@ class LocalLogger(Logger):
         
         return '\n'.join([
             msg,
-            json.dumps(labels, indent=2)
+            json.dumps(labels)
         ])
 
     def debug(self, msg: str, labels: dict = None):

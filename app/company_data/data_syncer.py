@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import Dict
 
+from bson import ObjectId
 from google.cloud import storage
 from pymongo.asynchronous.database import AsyncDatabase
 
@@ -55,17 +56,22 @@ class DataSyncer:
         self._companies_collection = database["companies"]
 
     async def sync_one(self, company: Company):
+        source_id = self._data_fetcher.source_id()
         if not self._data_fetcher.should_update(company):
+            self._logger.info(f"Company is up-to-date", labels={
+                "company": company.model_dump(),
+                "source": source_id,
+            })
             return
 
         result = await self._data_fetcher.fetch_company_data(company)
-        source_id = self._data_fetcher.source_id()
 
         bucket_path = '/'.join([
             source_id,
             company.website_id(),
             f"{result.updated_at:%Y-%m-%d}.json.gz"
         ])
+        result.raw_data['fetchedAt'] = datetime.now()
         data = json.dumps(result.raw_data)
         compressed_data = gzip.compress(data.encode('utf-8'))
         blob = self._dataset_bucket.blob(bucket_path)
@@ -79,7 +85,7 @@ class DataSyncer:
 
         update_result = await self._companies_collection.update_one(
             {
-                '_id': company._id
+                '_id': ObjectId(company.id)
             },
             {
                 "$set": result.db_update_fields
@@ -89,7 +95,5 @@ class DataSyncer:
         self._logger.info(f"Synced company data", labels={
             "company": company.model_dump(),
             "source": source_id,
-            "remote_id": result.remote_id,
             "updated_at": result.updated_at,
-            "db_update_result": update_result.raw_result,
         })

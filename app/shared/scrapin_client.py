@@ -1,6 +1,6 @@
 import httpx
 from pydantic import BaseModel
-from typing import Optional, Tuple, AnyStr
+from typing import Dict
 
 from app.foundation import get_env
 from app.foundation.server.logger import Logger
@@ -38,20 +38,20 @@ class ScrapinClient(object):
         response.raise_for_status()
         return response.json()
 
-    async def search_company(self, domain: str) -> Tuple[LICompany, AnyStr]:
+    async def search_company(self, domain: str) -> Dict:
         domain = domain.replace('http://', '').replace('https://', '').replace('www.', '')
         data = await self.request("GET", "/enrichment/company/domain", params={"domain": domain})
         return data.get('company')
 
-    async def extract_company_data(self, linkedin_url: str) -> Tuple[LICompany, AnyStr]:
+    async def extract_company_data(self, linkedin_url: str) -> Dict:
         data = await self.request("GET", "/enrichment/company", params={"linkedInUrl": linkedin_url})
         return data.get('company')
 
-    async def extract_person_data(self, linkedin_url: str) -> Tuple[LIAccount, AnyStr]:
+    async def extract_person_data(self, linkedin_url: str) -> Dict:
         data = await self.request("GET", "/enrichment/profile", params={"linkedInUrl": linkedin_url})
         return data.get('person')
 
-    async def search_person(self, **kwargs) -> Tuple[LIAccount, AnyStr]:
+    async def search_person(self, **kwargs) -> Dict:
         valid_params = ['firstName', 'lastName', 'companyDomain', 'email']
         params = {k: v for k, v in kwargs.items() if k in valid_params and v is not None}
         if params.get('companyDomain'):

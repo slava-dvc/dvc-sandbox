@@ -73,13 +73,13 @@ class JobDispatcher(object):
         topic_path = self._source_to_topic_mapping[source]
         data = company.model_dump_json().encode('utf-8')
         
-        future = self._publisher_client.publish(topic_path, data)
-        message_id = future.result()
+        # future = self._publisher_client.publish(topic_path, data)
+        # message_id = future.result()
         
         self._logger.info("Published company data pull message", labels={
-            "company_id": company._id,
+            "company": company.model_dump(),
             "source": source,
-            "message_id": message_id,
+            # "message_id": message_id,
             "topic": topic_path,
         })
 

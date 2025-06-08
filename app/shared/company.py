@@ -1,7 +1,7 @@
 from typing import Optional, List, Literal, ClassVar, Set
 from urllib.parse import urlparse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.foundation.primitives import datetime
 
 
@@ -14,19 +14,19 @@ class Company(BaseModel):
         "linkedInData", "spectrData",
     }
 
-    _id: str
+    id: str
     airtableId: str
     name: str
     website: str = ""
 
-    createdAt: datetime.datetime
-    updatedAt: datetime.datetime | None
+    createdAt: datetime.datetime | None = None
+    updatedAt: datetime.datetime | None = None
 
     linkedInId: str | None = None
     linkedInData: dict | None = None
     linkedInUpdatedAt: datetime.datetime | None = None
 
-    spectrId: str | None
+    spectrId: str | None = None
     spectrUpdatedAt: datetime.datetime | None = None
     spectrData: dict | None = None
 
@@ -48,7 +48,7 @@ class Company(BaseModel):
     @classmethod
     def from_dict(cls, data: dict):
         return cls(
-            _id=data['_id'],
+            id=str(data['_id']),
             airtableId=data['airtableId'],
             name=data['name'],
             createdAt=datetime.any_to_datetime(data.get('createdAt')),

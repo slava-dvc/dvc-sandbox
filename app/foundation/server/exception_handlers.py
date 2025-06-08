@@ -36,7 +36,8 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
     config: AppConfig = request.state.config
     logger = get_logger(request)
     logger.warning("Downstream HTTP error", labels={
-        "status_code": exc.response.status_code
+        "status_code": exc.response.status_code,
+        "content": exc.response.content
     })
     if config.debug:
         try:

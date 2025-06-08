@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, Body, Depends
 from google.cloud import pubsub, storage
 from pydantic import BaseModel
@@ -21,7 +23,7 @@ class SyncRequest(BaseModel):
     max_items: int = 100000
 
 
-@router.post('/pull')
+@router.post('/pull', status_code=HTTPStatus.ACCEPTED)
 async def trigger_sync(
         data: SyncRequest = Body(),
         database: AsyncDatabase = Depends(dependencies.get_default_database),
@@ -39,17 +41,17 @@ async def trigger_sync(
         "sources": data.sources,
         "max_items": data.max_items,
     })
-    cnt = await job_dispatcher.trigger_many(max_items=data.max_items, sources=sources)
+    cnt = await job_dispatcher.trigger_many(max_items=data.max_items, sources=data.sources)
     if cnt:
         logger.info(f"Finished company data pull", labels={
-            "sources": sources,
+            "sources": data.sources,
             "count": cnt,
             "max_items": data.max_items,
         })
-    return {"dispatched": cnt, "sources": sources}
+    return
 
 
-@router.post('/pull/linkedin')
+@router.post('/pull/linkedin', status_code=HTTPStatus.ACCEPTED)
 async def sync_company_linkedin(
         data: Company = Body(),
         database: AsyncDatabase = Depends(dependencies.get_default_database),
@@ -71,4 +73,4 @@ async def sync_company_linkedin(
     )
     
     await data_syncer.sync_one(company=data)
-    return {"status": "completed", "company_id": data._id}
+    return
