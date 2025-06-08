@@ -3,7 +3,7 @@ import pulumi_gcp as gcp
 
 from globals import API_BASE_URL
 
-from queues import llm_analysis_result_topic, llm_analysis_result_topic_name
+from queues import llm_analysis_result, company_data
 from tools.queue import create_subscription_with_push_and_dlq
 from tools.scheduler import make_scheduled_job
 from service_account import cloud_run_service_account, scheduler_service_account
@@ -13,8 +13,8 @@ from .cloud_run_synapse import synapse_cloud_run
 # Push LLM result from backend to AirTable through Synapse.
 SYNC_DEALS_PATH = "v1/integrations/sync/deal"
 create_subscription_with_push_and_dlq(
-    llm_analysis_result_topic_name,
-    "subscription-sync-deal",
+    llm_analysis_result.llm_analysis_result_topic_name,
+    "consume",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{SYNC_DEALS_PATH}"),
     cloud_run_service_account
 )
@@ -43,8 +43,18 @@ company_data_pull_linkedin = make_scheduled_job(
     "Pull Company Data (LinkedIn)",
     "12 11 * * 7",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL}"),
-    body={
+    cloud_run_service_account,
+    {
         "sources": ["linkedin"],
         "max_items": 5
     }
 )
+
+COMPANY_DATA_PULL_LINKEDIN = "v1/company_data/pull_linkedin"
+create_subscription_with_push_and_dlq(
+    company_data.linkedin_topic_name,
+    "consume",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_LINKEDIN}"),
+    cloud_run_service_account
+)
+

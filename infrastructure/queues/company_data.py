@@ -1,7 +1,7 @@
 
-linkedin_topic_name = "company_data_pull_linkedin"
-spectr_topic_name = "company_data_pull_spectr"
-airtable_topic_name = "company_data_pull_airtable"
+linkedin_topic_name = "company-data-pull-linkedin"
+spectr_topic_name = "company-data-pull-spectr"
+airtable_topic_name = "company-data-pull-airtable"
 
 
 try:

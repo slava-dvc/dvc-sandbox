@@ -1,5 +1,6 @@
 import pulumi_gcp as gcp
 import json
+import base64
 from service_account import scheduler_service_account
 
 
@@ -25,7 +26,8 @@ def make_scheduled_job(
         },
     }
     if isinstance(body, dict):
-        http_target["body"] = json.dumps(body)
+        json_string = json.dumps(body).strip()
+        http_target["body"] = base64.b64encode(json_string.encode('utf-8')).decode('utf-8')
 
     job = gcp.cloudscheduler.Job(
         f"cloud-scheduler-job-{name}",
