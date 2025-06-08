@@ -12,10 +12,10 @@ from app.foundation.server import Logger
 from .data_syncer import DataFetcher, FetchResult
 
 
-__all__ = ["LinkedInCompanyFetcher"]
+__all__ = ["LinkedInFetcher"]
 
 
-class LinkedInCompanyFetcher(DataFetcher):
+class LinkedInFetcher(DataFetcher):
     def __init__(
             self,
             database: AsyncDatabase,
@@ -28,7 +28,7 @@ class LinkedInCompanyFetcher(DataFetcher):
         self._logger = logger
 
     def source_id(self) -> str:
-        return "linkedin_company"
+        return "linkedin"
 
     def should_update(self, company: Company):
         return company.linkedInUpdatedAt is None or company.linkedInUpdatedAt < datetime.now() - datetime.timedelta(days=1)

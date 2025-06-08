@@ -44,6 +44,7 @@ company_data_pull_linkedin = make_scheduled_job(
     "12 11 * * 7",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL}"),
     body={
-        "sources": ["linkedin"]
+        "sources": ["linkedin"],
+        "max_items": 5
     }
 )

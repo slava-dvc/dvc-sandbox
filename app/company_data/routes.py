@@ -11,7 +11,7 @@ from app.shared import Company
 from app.shared.dependencies import get_scrapin_clinet
 from .job_dispatcher import JobDispatcher
 from .data_syncer import DataSyncer
-from .linkedin_company_fetcher import LinkedInCompanyFetcher
+from .linkedin_fetcher import LinkedInFetcher
 
 router = APIRouter(
     prefix="/company_data",
@@ -59,7 +59,7 @@ async def sync_company_linkedin(
         scrapin_client = Depends(get_scrapin_clinet),
         logger: Logger = Depends(dependencies.get_logger),
 ):
-    fetcher = LinkedInCompanyFetcher(
+    fetcher = LinkedInFetcher(
         database=database,
         scrapin_client=scrapin_client,
         logger=logger,
