@@ -46,11 +46,11 @@ company_data_pull_linkedin = make_scheduled_job(
     cloud_run_service_account,
     {
         "sources": ["linkedin"],
-        "max_items": 5
+        "max_items": 50000
     }
 )
 
-COMPANY_DATA_PULL_LINKEDIN = "v1/company_data/pull_linkedin"
+COMPANY_DATA_PULL_LINKEDIN = "v1/company_data/pull/linkedin"
 create_subscription_with_push_and_dlq(
     company_data.linkedin_topic_name,
     "consume",
