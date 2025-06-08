@@ -50,21 +50,12 @@ class LinkedInCompanyFetcher(DataFetcher):
             linkedin_url = await self._linkedin_url_from_db(company._id)
 
         if not linkedin_url:
-            return {}
-        
-        try:
-            data = await self._scrapin_client.extract_company_data(linkedin_url)
-            return data if data else {}
-        except HTTPError as exc:
-            self._logger.warning(
-                "Fetch company data from scrapin failed",
-                labels={
-                    "company_id": company._id,
-                    "linkedin_id": company.linkedInId,
-                    "exception": str(exc)
-                }
-            )
-            return {}
+            self._logger.error("Company has no linkedInId or linkedInUrl", labels={
+                "company": company.model_dump(),
+            })
+            raise RuntimeError("Company has no linkedInId or linkedInUrl")
+
+        return await self._scrapin_client.extract_company_data(linkedin_url)
 
     async def _linkedin_url_from_db(self, company_id):
         company = await self._companies_collection.find_one({"_id": company_id})

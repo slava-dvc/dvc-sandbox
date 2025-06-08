@@ -29,6 +29,9 @@ class DataFetcher(metaclass=ABCMeta):
         """
         pass
 
+    def should_update(self, company: Company):
+        return True
+
     @abstractmethod
     async def fetch_company_data(self, company: Company) -> FetchResult:
         """
@@ -52,6 +55,9 @@ class DataSyncer:
         self._companies_collection = database["companies"]
 
     async def sync_one(self, company: Company):
+        if not self._data_fetcher.should_update(company):
+            return
+
         result = await self._data_fetcher.fetch_company_data(company)
         source_id = self._data_fetcher.source_id()
 
