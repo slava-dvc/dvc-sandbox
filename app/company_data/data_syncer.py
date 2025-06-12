@@ -66,22 +66,24 @@ class DataSyncer:
 
         result = await self._data_fetcher.fetch_company_data(company)
 
-        bucket_path = '/'.join([
-            source_id,
-            company.website_id(),
-            f"{result.updated_at:%Y-%m-%d}.json.gz"
-        ])
-        result.raw_data['fetchedAt'] = datetime.now()
-        data = json.dumps(result.raw_data)
-        compressed_data = gzip.compress(data.encode('utf-8'))
-        blob = self._dataset_bucket.blob(bucket_path)
+        # Only store in bucket if there's meaningful data
+        if result.raw_data:
+            bucket_path = '/'.join([
+                source_id,
+                company.website_id(),
+                f"{result.updated_at:%Y-%m-%d}.json.gz"
+            ])
+            result.raw_data['fetchedAt'] = datetime.now()
+            data = json.dumps(result.raw_data)
+            compressed_data = gzip.compress(data.encode('utf-8'))
+            blob = self._dataset_bucket.blob(bucket_path)
 
-        blob.content_encoding = 'gzip'
-        await as_async(
-            blob.upload_from_string,
-            data=compressed_data,
-            content_type='application/json',
-        )
+            blob.content_encoding = 'gzip'
+            await as_async(
+                blob.upload_from_string,
+                data=compressed_data,
+                content_type='application/json',
+            )
 
         update_result = await self._companies_collection.update_one(
             {

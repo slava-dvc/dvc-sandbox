@@ -29,39 +29,41 @@ class GooglePlayFetcher(DataFetcher):
         return "googleplay"
 
     def should_update(self, company: Company):
-        return company.googlePlayUpdatedAt is None or company.googlePlayUpdatedAt < datetime.now() - datetime.timedelta(days=7)
+        # Only check for updates if company has Google Play data or hasn't been checked yet
+        return company.googlePlayUpdatedAt is None or (
+            company.googlePlayData is not None and 
+            company.googlePlayUpdatedAt < datetime.now() - datetime.timedelta(days=7)
+        )
 
     async def fetch_company_data(self, company: Company) -> FetchResult:
-        raw_data = await self._fetch_raw_data(company)
-
+        developer_id = await self._get_developer_id_from_db(company.id)
+        
+        raw_data = {}
         app_highlight = None
         google_play_id = None
         
-        if raw_data and 'app_highlight' in raw_data:
-            app_highlight = raw_data['app_highlight']
-            google_play_id = app_highlight.get('product_id') if app_highlight else None
+        if developer_id:
+            raw_data = await self._serpapi_client.search_google_play(developer_id)
+            if raw_data and 'app_highlight' in raw_data:
+                app_highlight = raw_data['app_highlight']
+                google_play_id = app_highlight.get('product_id') if app_highlight else None
+        else:
+            self._logger.info("Company has no Google Play presence", labels={
+                "company_id": company.id,
+                "company_name": company.name,
+            })
 
         return FetchResult(
             raw_data=raw_data,
             remote_id=google_play_id,
             db_update_fields={
                 "googlePlayData": app_highlight,
-                "googlePlayUpdatedAt": datetime.now(),
-                "googlePlayId": google_play_id
-            } if app_highlight else {},
+                "googlePlayId": google_play_id,
+                "googlePlayUpdatedAt": datetime.now()
+            },
             updated_at=datetime.now()
         )
 
-    async def _fetch_raw_data(self, company: Company) -> Dict:
-        developer_id = await self._get_developer_id_from_db(company.id)
-        
-        if not developer_id:
-            self._logger.error("Company has no Google Play developer ID", labels={
-                "company": company.model_dump(),
-            })
-            raise RuntimeError("Company has no Google Play developer ID")
-
-        return await self._serpapi_client.search_google_play(developer_id)
 
     async def _get_developer_id_from_db(self, company_id: str) -> str:
         company = await self._companies_collection.find_one({"_id": ObjectId(company_id)})
