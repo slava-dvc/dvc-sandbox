@@ -26,7 +26,7 @@ class DataFetcher(metaclass=ABCMeta):
     @abstractmethod
     def source_id(self) -> str:
         """
-        Source identifier (e.g., 'linkedin_company')
+        Source identifier (e.g., 'linkedin', 'googleplay')
         """
         pass
 

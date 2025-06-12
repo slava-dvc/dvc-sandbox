@@ -11,7 +11,7 @@ BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
 class Company(BaseModel):
 
     DATA_FIELDS: ClassVar[Set[str]] = {
-        "linkedInData", "spectrData",
+        "linkedInData", "spectrData", "googlePlayData",
     }
 
     id: str
@@ -29,6 +29,10 @@ class Company(BaseModel):
     spectrId: str | None = None
     spectrUpdatedAt: datetime.datetime | None = None
     spectrData: dict | None = None
+
+    googlePlayId: str | None = None
+    googlePlayData: dict | None = None
+    googlePlayUpdatedAt: datetime.datetime | None = None
 
     def has_valid_website(self):
         if not self.website:
@@ -60,4 +64,7 @@ class Company(BaseModel):
             spectrId=data.get('spectrId'),
             spectrUpdatedAt=datetime.any_to_datetime(data.get('spectrUpdatedAt')),
             spectrData=data.get('spectrData'),
+            googlePlayId=data.get('googlePlayId'),
+            googlePlayData=data.get('googlePlayData'),
+            googlePlayUpdatedAt=datetime.any_to_datetime(data.get('googlePlayUpdatedAt')),
         )
