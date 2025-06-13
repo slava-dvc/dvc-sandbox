@@ -8,10 +8,11 @@ from pymongo.asynchronous.database import AsyncDatabase
 from app.foundation.server import dependencies, Logger
 from app.foundation.server.config import AppConfig
 from app.shared import Company
-from app.shared.dependencies import get_scrapin_clinet
+from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client
 from .job_dispatcher import JobDispatcher
 from .data_syncer import DataSyncer
 from .linkedin_fetcher import LinkedInFetcher
+from .googleplay_fetcher import GooglePlayFetcher
 
 router = APIRouter(
     prefix="/company_data",
@@ -62,6 +63,31 @@ async def sync_company_linkedin(
     fetcher = LinkedInFetcher(
         database=database,
         scrapin_client=scrapin_client,
+        logger=logger,
+    )
+    
+    data_syncer = DataSyncer(
+        dataset_bucket=dataset_bucket,
+        database=database,
+        data_fetcher=fetcher,
+        logger=logger,
+    )
+    
+    await data_syncer.sync_one(company=data)
+    return
+
+
+@router.post('/pull/googleplay', status_code=HTTPStatus.ACCEPTED)
+async def sync_company_googleplay(
+        data: Company = Body(),
+        database: AsyncDatabase = Depends(dependencies.get_default_database),
+        dataset_bucket: storage.Bucket = Depends(dependencies.get_dataset_bucket),
+        serpapi_client = Depends(get_serpapi_client),
+        logger: Logger = Depends(dependencies.get_logger),
+):
+    fetcher = GooglePlayFetcher(
+        database=database,
+        serpapi_client=serpapi_client,
         logger=logger,
     )
     

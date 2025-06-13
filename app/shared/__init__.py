@@ -1,4 +1,5 @@
 from . import dependencies
-from .spectr import SpectrClient
+from .spectr_client import SpectrClient
 from .company import Company
 from .scrapin_client import ScrapinClient
+from .serpapi_client import SerpApiClient

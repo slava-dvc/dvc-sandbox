@@ -46,15 +46,35 @@ company_data_pull_linkedin = make_scheduled_job(
     cloud_run_service_account,
     {
         "sources": ["linkedin"],
-        "max_items": 5
+        "max_items": 50000
     }
 )
 
-COMPANY_DATA_PULL_LINKEDIN = "v1/company_data/pull_linkedin"
+company_data_pull_googleplay = make_scheduled_job(
+    "company-data-pull-googleplay",
+    "Pull Company Data (Google Play)",
+    "45 14 * * 7",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL}"),
+    cloud_run_service_account,
+    {
+        "sources": ["googleplay"],
+        "max_items": 50000
+    }
+)
+
+COMPANY_DATA_PULL_LINKEDIN = "v1/company_data/pull/linkedin"
 create_subscription_with_push_and_dlq(
     company_data.linkedin_topic_name,
     "consume",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_LINKEDIN}"),
+    cloud_run_service_account
+)
+
+COMPANY_DATA_PULL_GOOGLEPLAY = "v1/company_data/pull/googleplay"
+create_subscription_with_push_and_dlq(
+    company_data.googleplay_topic_name,
+    "consume",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_GOOGLEPLAY}"),
     cloud_run_service_account
 )
 
