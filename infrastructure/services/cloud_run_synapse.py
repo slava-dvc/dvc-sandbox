@@ -32,7 +32,7 @@ synapse_cloud_run = gcp.cloudrunv2.Service(
                     OPENAI_API_KEY, AIRTABLE_API_KEY, MONGODB_URI, SPECTR_API_KEY, SCRAPIN_API_KEY
                 ] + [
                     create_cloud_run_secret_env(secret_id, "synapce")
-                    for secret_id in ['SERP_API_KEY']
+                    for secret_id in ['SERPAPI_API_KEY']
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={

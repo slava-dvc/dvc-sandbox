@@ -45,7 +45,10 @@ class Company(BaseModel):
     def website_id(self):
         if not self.has_valid_website():
             return None
-        parsed = urlparse(self.website)
+        website = self.website.lower()
+        if not website.startswith('http'):
+            website = 'http://' + website
+        parsed = urlparse(website)
         domain = '.'.join(parsed.netloc.split('.')[-2:])
         return domain
 

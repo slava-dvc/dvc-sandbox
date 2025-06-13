@@ -5,6 +5,7 @@ from app.foundation.server.dependencies import get_logger, get_http_client, get_
 
 from .spectr_client import SpectrClient
 from .scrapin_client import ScrapinClient
+from .serpapi_client import SerpApiClient
 
 
 async def get_scrapin_clinet(
@@ -27,6 +28,16 @@ async def get_spectr_client(
         logger=logger,
         http_client=http_client,
         dataset_bucket=dataset_bucket
+    )
+
+
+async def get_serpapi_client(
+    logger = Depends(get_logger),
+    http_client = Depends(get_http_client),
+) -> SerpApiClient:
+    return SerpApiClient(
+        logger=logger,
+        http_client=http_client
     )
 
 
