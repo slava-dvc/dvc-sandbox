@@ -39,11 +39,16 @@ class AppleAppStoreFetcher(DataFetcher):
         
         raw_data = {}
         app_data = None
+        updated_at = datetime.now()
         
         if product_id:
             raw_data = await self._serpapi_client.get_apple_product(product_id)
             if raw_data:
                 app_data = self._extract_app_data(raw_data)
+                # Use the actual API response timestamp
+                processed_at = raw_data.get("search_metadata", {}).get("processed_at")
+                if processed_at:
+                    updated_at = datetime.any_to_datetime(processed_at)
         else:
             self._logger.info("Company has no App Store presence", labels={
                 "company_id": company.id,
@@ -56,9 +61,9 @@ class AppleAppStoreFetcher(DataFetcher):
             db_update_fields={
                 "appStoreData": app_data,
                 "appStoreId": product_id,
-                "appStoreUpdatedAt": datetime.now()
+                "appStoreUpdatedAt": updated_at
             },
-            updated_at=datetime.now()
+            updated_at=updated_at
         )
 
     async def _get_app_store_product_id(self, company_id: str) -> str:
@@ -83,11 +88,11 @@ class AppleAppStoreFetcher(DataFetcher):
         )
         
         if search_results and 'organic_results' in search_results:
-            target_developer_id = int(developer_id)
+            target_developer_id = str(developer_id)
             
             # Find the app that matches our developer ID
             for app in search_results['organic_results']:
-                app_developer_id = app.get("developer", {}).get("id")
+                app_developer_id = str(app.get("developer", {}).get("id", ""))
                 if app_developer_id == target_developer_id:
                     product_id = str(app.get("id"))
                     
@@ -122,12 +127,7 @@ class AppleAppStoreFetcher(DataFetcher):
         latest_version = {}
         version_history = raw_data.get("version_history", [])
         if version_history:
-            latest = version_history[0]  # First item is latest
-            latest_version = {
-                "release_version": latest.get("release_version"),
-                "release_notes": latest.get("release_notes"),
-                "release_date": latest.get("release_date")
-            }
+            latest_version = version_history[0] # First item is latest
         
         return {
             # Core app info
