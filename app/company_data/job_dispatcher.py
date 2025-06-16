@@ -25,6 +25,7 @@ class JobDispatcher(object):
             "linkedin": publisher_client.topic_path(project_id, company_data.linkedin_topic_name),
             "spectr": publisher_client.topic_path(project_id, company_data.spectr_topic_name),
             "googleplay": publisher_client.topic_path(project_id, company_data.googleplay_topic_name),
+            "appstore": publisher_client.topic_path(project_id, company_data.appstore_topic_name),
         }
 
     def is_supported(self, source: Str) -> bool:

@@ -45,3 +45,26 @@ class SerpApiClient(object):
             "hl": "en"
         })
         return data
+
+    async def search_apple_app_store(self, term: str, **kwargs) -> Dict:
+        params = {
+            "term": term,
+            "country": "us",
+            "device": "mobile",
+            "num": "10"
+        }
+        params.update(kwargs)
+        
+        data = await self.request("GET", "apple_app_store", params=params)
+        return data
+
+    async def get_apple_product(self, product_id: str, **kwargs) -> Dict:
+        params = {
+            "product_id": product_id,
+            "country": "us",
+            "type": "app"
+        }
+        params.update(kwargs)
+        
+        data = await self.request("GET", "apple_product", params=params)
+        return data
