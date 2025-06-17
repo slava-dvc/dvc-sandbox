@@ -76,7 +76,8 @@ infra-refresh:
 docker: docker-build docker-push
 
 .PHONY: infra-deploy
-infra-deploy: infra-setup docker-push
+infra-deploy: docker-push
+	$(MAKE) infra-setup
 	$(MAKE) infra-apply
 
 .PHONY: cd
