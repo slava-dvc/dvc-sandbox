@@ -13,6 +13,7 @@ from .job_dispatcher import JobDispatcher
 from .data_syncer import DataSyncer
 from .linkedin_fetcher import LinkedInFetcher
 from .googleplay_fetcher import GooglePlayFetcher
+from .apple_appstore_fetcher import AppleAppStoreFetcher
 
 router = APIRouter(
     prefix="/company_data",
@@ -86,6 +87,31 @@ async def sync_company_googleplay(
         logger: Logger = Depends(dependencies.get_logger),
 ):
     fetcher = GooglePlayFetcher(
+        database=database,
+        serpapi_client=serpapi_client,
+        logger=logger,
+    )
+    
+    data_syncer = DataSyncer(
+        dataset_bucket=dataset_bucket,
+        database=database,
+        data_fetcher=fetcher,
+        logger=logger,
+    )
+    
+    await data_syncer.sync_one(company=data)
+    return
+
+
+@router.post('/pull/appstore', status_code=HTTPStatus.ACCEPTED)
+async def sync_company_appstore(
+        data: Company = Body(),
+        database: AsyncDatabase = Depends(dependencies.get_default_database),
+        dataset_bucket: storage.Bucket = Depends(dependencies.get_dataset_bucket),
+        serpapi_client = Depends(get_serpapi_client),
+        logger: Logger = Depends(dependencies.get_logger),
+):
+    fetcher = AppleAppStoreFetcher(
         database=database,
         serpapi_client=serpapi_client,
         logger=logger,

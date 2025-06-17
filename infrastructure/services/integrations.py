@@ -62,6 +62,18 @@ company_data_pull_googleplay = make_scheduled_job(
     }
 )
 
+company_data_pull_appstore = make_scheduled_job(
+    "company-data-pull-appstore",
+    "Pull Company Data (Apple App Store)",
+    "15 16 * * 7",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL}"),
+    cloud_run_service_account,
+    {
+        "sources": ["appstore"],
+        "max_items": 50000
+    }
+)
+
 COMPANY_DATA_PULL_LINKEDIN = "v1/company_data/pull/linkedin"
 create_subscription_with_push_and_dlq(
     company_data.linkedin_topic_name,
@@ -75,6 +87,14 @@ create_subscription_with_push_and_dlq(
     company_data.googleplay_topic_name,
     "consume",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_GOOGLEPLAY}"),
+    cloud_run_service_account
+)
+
+COMPANY_DATA_PULL_APPSTORE = "v1/company_data/pull/appstore"
+create_subscription_with_push_and_dlq(
+    company_data.appstore_topic_name,
+    "consume",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_APPSTORE}"),
     cloud_run_service_account
 )
 
