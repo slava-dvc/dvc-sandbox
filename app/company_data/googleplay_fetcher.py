@@ -31,8 +31,7 @@ class GooglePlayFetcher(DataFetcher):
     def should_update(self, company: Company):
         # Only check for updates if company has Google Play data or hasn't been checked yet
         return company.googlePlayUpdatedAt is None or (
-            company.googlePlayData is not None and 
-            company.googlePlayUpdatedAt < datetime.now() - datetime.timedelta(days=7)
+            company.googlePlayUpdatedAt < datetime.now() - datetime.timedelta(days=3)
         )
 
     async def fetch_company_data(self, company: Company) -> FetchResult:

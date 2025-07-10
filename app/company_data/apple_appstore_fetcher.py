@@ -30,8 +30,7 @@ class AppleAppStoreFetcher(DataFetcher):
 
     def should_update(self, company: Company):
         return company.appStoreUpdatedAt is None or (
-            company.appStoreData is not None and 
-            company.appStoreUpdatedAt < datetime.now() - datetime.timedelta(days=7)
+            company.appStoreUpdatedAt < datetime.now() - datetime.timedelta(days=3)
         )
 
     async def fetch_company_data(self, company: Company) -> FetchResult:

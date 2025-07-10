@@ -72,7 +72,7 @@ DEFAULT_SUBSCRIPTION_KWARGS = dict(
     message_retention_duration="604800s", # 7 days, value must be in seconds
     retain_acked_messages=True,
     ack_deadline_seconds=600,  # 10 minutes
-    # expiration_policy={
-    #     "ttl": "2592000s"  # 30 days, value must be in seconds
-    # }
+    expiration_policy={
+        "ttl": ""  # Empty means never
+    }
 )

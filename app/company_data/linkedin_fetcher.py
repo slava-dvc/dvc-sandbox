@@ -31,19 +31,24 @@ class LinkedInFetcher(DataFetcher):
         return "linkedin"
 
     def should_update(self, company: Company):
-        return company.linkedInUpdatedAt is None or company.linkedInUpdatedAt < datetime.now() - datetime.timedelta(days=1)
+        return company.linkedInUpdatedAt is None or (
+                company.linkedInUpdatedAt < datetime.now() - datetime.timedelta(days=1)
+        )
 
     async def fetch_company_data(self, company: Company) -> FetchResult:
+        linkedin_id = None
         raw_data = await self._fetch_raw_data(company)
+        if raw_data:
+            linkedin_id = raw_data.get("linkedInId")
 
         return FetchResult(
             raw_data=raw_data,
-            remote_id=raw_data.get("linkedInId") if raw_data else None,
+            remote_id=linkedin_id,
             db_update_fields={
                 "linkedInData": raw_data,
+                "linkedInId": linkedin_id,
                 "linkedInUpdatedAt": datetime.now(),
-                "linkedInId": raw_data.get("linkedInId")
-            } if raw_data else {},
+            },
             updated_at=datetime.now()
         )
 
@@ -55,10 +60,11 @@ class LinkedInFetcher(DataFetcher):
             linkedin_url = await self._linkedin_url_from_db(company.id)
 
         if not linkedin_url:
-            self._logger.error("Company has no linkedInId or linkedInUrl", labels={
-                "company": company.model_dump(),
+            self._logger.info("Company has no LinkedIn presence", labels={
+                "company_id": company.id,
+                "company_name": company.name,
             })
-            raise RuntimeError("Company has no linkedInId or linkedInUrl")
+            return {}
 
         return await self._scrapin_client.extract_company_data(linkedin_url)
 
@@ -73,7 +79,7 @@ class LinkedInFetcher(DataFetcher):
         spectr_data = company.get("spectrData") or {}
         socials = spectr_data.get("socials") or {}
         linkedin = socials.get("linkedin") or {}
-        linkedin_url = linkedin.get("url")
+        linkedin_url = linkedin.get("url") or ""
         parts = linkedin_url.split("/")
         if len(parts) < 2:
             return None

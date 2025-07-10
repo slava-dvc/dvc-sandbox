@@ -60,11 +60,17 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
     )
 
 
-def runtime_exception_handler(request: Request, exc: Exception):
+async def runtime_exception_handler(request: Request, exc: Exception):
     code = HTTPStatus.INTERNAL_SERVER_ERROR
     logger = get_logger(request)
+    body = None
+    try:
+        body = await request.json()
+    except ValueError:
+        pass
     logger.error("Runtime exception", labels={
-        "exception": str(exc)
+        "exception": str(exc),
+        "body": body
     }, exc_info=exc)
     return JSONResponse(
         content={

@@ -85,17 +85,19 @@ class DataSyncer:
                 content_type='application/json',
             )
 
-        update_result = await self._companies_collection.update_one(
-            {
-                '_id': ObjectId(company.id)
-            },
-            {
-                "$set": result.db_update_fields
-            },
-        )
+        if result.db_update_fields:
+            update_result = await self._companies_collection.update_one(
+                {
+                    '_id': ObjectId(company.id)
+                },
+                {
+                    "$set": result.db_update_fields
+                },
+            )
 
-        self._logger.info(f"Synced company data", labels={
-            "company": company.model_dump(),
-            "source": source_id,
-            "updated_at": result.updated_at,
-        })
+        if result.raw_data or result.db_update_fields:
+            self._logger.info(f"Synced company data", labels={
+                "company": company.model_dump(),
+                "source": source_id,
+                "updated_at": result.updated_at,
+            })
