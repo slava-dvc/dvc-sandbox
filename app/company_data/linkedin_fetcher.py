@@ -48,7 +48,7 @@ class LinkedInFetcher(DataFetcher):
                 "linkedInData": raw_data,
                 "linkedInId": linkedin_id,
                 "linkedInUpdatedAt": datetime.now(),
-            },
+            } if raw_data else {},
             updated_at=datetime.now()
         )
 

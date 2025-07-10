@@ -61,7 +61,7 @@ class AppleAppStoreFetcher(DataFetcher):
                 "appStoreData": app_data,
                 "appStoreId": product_id,
                 "appStoreUpdatedAt": updated_at
-            },
+            } if product_id else {},
             updated_at=updated_at
         )
 

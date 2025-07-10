@@ -59,7 +59,7 @@ class GooglePlayFetcher(DataFetcher):
                 "googlePlayData": app_highlight,
                 "googlePlayId": google_play_id,
                 "googlePlayUpdatedAt": datetime.now()
-            },
+            } if developer_id else {},
             updated_at=datetime.now()
         )
 
