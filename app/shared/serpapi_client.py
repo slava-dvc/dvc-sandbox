@@ -69,8 +69,29 @@ class SerpApiClient(object):
         data = await self.request("GET", "apple_product", params=params)
         return data
 
-    async def search_google_jobs(self, q: str) -> Dict:
-        data = await self.request("GET", "google_jobs", params={
+    async def search_google_jobs(self, q: str, amount=None, **kwargs) -> Dict:
+        if amount is None:
+            amount = float('inf')
+
+        params = {
             "q": q
-        })
+        }
+        params.update(kwargs)
+
+        # Get first page
+        data = await self.request("GET", "google_jobs", params=params)
+        last_response = data
+        # Fetch additional pages if needed
+        while len(data.get("jobs_results", [])) < amount:
+            serpapi_pagination = last_response.get("serpapi_pagination") or {}
+            next_page_token = serpapi_pagination.get("next_page_token")
+            if not next_page_token:
+                break
+
+            params["next_page_token"] = next_page_token
+            last_response = await self.request("GET", "google_jobs", params=params)
+
+            if "jobs_results" in last_response:
+                data["jobs_results"].extend(last_response["jobs_results"])
+
         return data

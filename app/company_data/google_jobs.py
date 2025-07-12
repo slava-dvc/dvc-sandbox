@@ -25,6 +25,34 @@ class GoogleJobsDataSyncer(DataSyncer):
                 }
             },
         )
+        googleJobsData = result.db_update_fields.get("googleJobsData") or []
+        jobs_collection = self._database["jobs"]
+        for job in googleJobsData:
+            result = await jobs_collection.update_one(
+                filter={
+                    'companyId': company.id,
+                    'title': job.get('title'),
+                    'location': job.get('location')
+                },
+                update={
+                    '$set': {
+                        'updatedAt': datetime.now(),
+                        'applyOptions': job.get('apply_options'),
+                        'companyId': company.id,
+                        'companyName': job.get('company_name'),
+                        'description': job.get('description'),
+                        'extensions': job.get('extensions'),
+                        'jobHighlights': job.get('job_highlights'),
+                        'location': job.get('location'),
+                        'title': job.get('title'),
+                        'via': job.get('via'),
+                    },
+                    '$setOnInsert': {
+                        'createdAt': datetime.now(),
+                    }
+                },
+                upsert=True,
+            )
 
 
 class GoogleJobsFetcher(DataFetcher):

@@ -81,6 +81,7 @@ class DataSyncer:
             })
 
     async def store_raw_data(self, company: Company, result: FetchResult):
+        source_id = self._data_fetcher.source_id()
         bucket_path = '/'.join([
             source_id,
             company.website_id(),
