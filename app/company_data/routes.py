@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Query
 from google.cloud import pubsub, storage
 from pydantic import BaseModel
 from pymongo.asynchronous.database import AsyncDatabase
@@ -14,6 +14,7 @@ from .data_syncer import DataSyncer
 from .linkedin_fetcher import LinkedInFetcher
 from .googleplay_fetcher import GooglePlayFetcher
 from .apple_appstore_fetcher import AppleAppStoreFetcher
+from .google_jobs import GoogleJobsFetcher, GoogleJobsDataSyncer
 
 router = APIRouter(
     prefix="/company_data",
@@ -124,5 +125,30 @@ async def sync_company_appstore(
         logger=logger,
     )
     
+    await data_syncer.sync_one(company=data)
+    return
+
+
+@router.post('/pull/google_jobs', status_code=HTTPStatus.ACCEPTED)
+async def sync_company_google_jobs(
+        data: Company = Body(),
+        database: AsyncDatabase = Depends(dependencies.get_default_database),
+        dataset_bucket: storage.Bucket = Depends(dependencies.get_dataset_bucket),
+        serpapi_client=Depends(get_serpapi_client),
+        logger: Logger = Depends(dependencies.get_logger),
+):
+    fetcher = GoogleJobsFetcher(
+        database=database,
+        serpapi_client=serpapi_client,
+        logger=logger,
+    )
+
+    data_syncer = GoogleJobsDataSyncer(
+        dataset_bucket=dataset_bucket,
+        database=database,
+        data_fetcher=fetcher,
+        logger=logger,
+    )
+
     await data_syncer.sync_one(company=data)
     return

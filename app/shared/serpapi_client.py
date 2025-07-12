@@ -68,3 +68,9 @@ class SerpApiClient(object):
         
         data = await self.request("GET", "apple_product", params=params)
         return data
+
+    async def search_google_jobs(self, q: str) -> Dict:
+        data = await self.request("GET", "google_jobs", params={
+            "q": q
+        })
+        return data

@@ -68,32 +68,10 @@ class DataSyncer:
 
         # Only store in bucket if there's meaningful data
         if result.raw_data:
-            bucket_path = '/'.join([
-                source_id,
-                company.website_id(),
-                f"{result.updated_at:%Y-%m-%d}.json.gz"
-            ])
-            result.raw_data['fetchedAt'] = datetime.now()
-            data = json.dumps(result.raw_data)
-            compressed_data = gzip.compress(data.encode('utf-8'))
-            blob = self._dataset_bucket.blob(bucket_path)
-
-            blob.content_encoding = 'gzip'
-            await as_async(
-                blob.upload_from_string,
-                data=compressed_data,
-                content_type='application/json',
-            )
+            await self.store_raw_data(company, result)
 
         if result.db_update_fields:
-            update_result = await self._companies_collection.update_one(
-                {
-                    '_id': ObjectId(company.id)
-                },
-                {
-                    "$set": result.db_update_fields
-                },
-            )
+            await self.store_db_data(company, result)
 
         if result.raw_data or result.db_update_fields:
             self._logger.info(f"Synced company data", labels={
@@ -101,3 +79,31 @@ class DataSyncer:
                 "source": source_id,
                 "updated_at": result.updated_at,
             })
+
+    async def store_raw_data(self, company: Company, result: FetchResult):
+        bucket_path = '/'.join([
+            source_id,
+            company.website_id(),
+            f"{result.updated_at:%Y-%m-%d}.json.gz"
+        ])
+        result.raw_data['fetchedAt'] = datetime.now()
+        data = json.dumps(result.raw_data)
+        compressed_data = gzip.compress(data.encode('utf-8'))
+        blob = self._dataset_bucket.blob(bucket_path)
+
+        blob.content_encoding = 'gzip'
+        await as_async(
+            blob.upload_from_string,
+            data=compressed_data,
+            content_type='application/json',
+        )
+
+    async def store_db_data(self, company: Company, result: FetchResult):
+        update_result = await self._companies_collection.update_one(
+            {
+                '_id': ObjectId(company.id)
+            },
+            {
+                "$set": result.db_update_fields
+            },
+        )

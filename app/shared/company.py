@@ -38,6 +38,8 @@ class Company(BaseModel):
     appStoreData: dict | None = None
     appStoreUpdatedAt: datetime.datetime | None = None
 
+    googleJobsUpdatedAt: datetime.datetime | None = None
+
     def has_valid_website(self):
         if not self.website:
             return False
