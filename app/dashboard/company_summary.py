@@ -18,6 +18,7 @@ class Highlight:
 # Dictionary mapping highlight IDs to their information
 HIGHLIGHTS_DICT = {
     "headcount_surge": Highlight(description="Headcount surge", is_positive=True, metric="employee_count"),
+    "headcount_3mo_surge": Highlight(description="Headcount surge", is_positive=True, metric="employee_count"),
     "raised_last_month": Highlight(description="Raised funding last month", is_positive=True, metric=None),
     "recent_funding": Highlight(description="Recent funding", is_positive=True, metric=None),
     "no_recent_funding": Highlight(description="No recent funding", is_positive=False, metric=None),
@@ -26,7 +27,28 @@ HIGHLIGHTS_DICT = {
     "app_downloads_surge": Highlight(description="App downloads", is_positive=True, metric="app_downloads"),
     "recent_news": Highlight(description="Recent news", is_positive=True, metric=None),
     "strong_social_growth": Highlight(description="Social media", is_positive=True, metric="linkedin_followers"),
-    "strong_app_downloads_growth": Highlight(description="App downloads", is_positive=True, metric="app_downloads")}
+    "strong_app_downloads_growth": Highlight(description="App downloads", is_positive=True, metric="app_downloads"),
+    "social_followers_3mo_surge": Highlight(description="Social media", is_positive=True, metric="linkedin_followers"),
+    "web_traffic_3mo_surge": Highlight(description="Web traffic", is_positive=True, metric="web_visits"),
+    "web_traffic_3mo_dip": Highlight(description="Web traffic decline", is_positive=False, metric="web_visits"),
+    "headcount_3mo_dip": Highlight(description="Headcount decline", is_positive=False, metric="employee_count"),
+    "app_downloads_3mo_surge": Highlight(description="App downloads", is_positive=True, metric="app_downloads"),
+    "app_downloads_3mo_dip": Highlight(description="App downloads decline", is_positive=False, metric="app_downloads"),
+    "product_reviews_3mo_surge": Highlight(description="Product reviews", is_positive=True, metric="g2_reviews"),
+    "social_followers_6mo_momentum": Highlight(description="Social media", is_positive=True, metric="linkedin_followers"),
+    "web_traffic_6mo_momentum": Highlight(description="Web traffic", is_positive=True, metric="web_visits"),
+    "web_traffic_6mo_decline": Highlight(description="Web traffic decline", is_positive=False, metric="web_visits"),
+    "headcount_6mo_momentum": Highlight(description="Headcount growth", is_positive=True, metric="employee_count"),
+    "headcount_6mo_decline": Highlight(description="Headcount decline", is_positive=False, metric="employee_count"),
+    "app_downloads_6mo_momentum": Highlight(description="App downloads", is_positive=True, metric="app_downloads"),
+    "product_reviews_6mo_momentum": Highlight(description="Product reviews", is_positive=True, metric="g2_reviews"),
+    "web_traffic_12mo_scale_up": Highlight(description="Web traffic", is_positive=True, metric="web_visits"),
+    "web_traffic_12mo_downturn": Highlight(description="Web traffic decline", is_positive=False, metric="web_visits"),
+    "headcount_12mo_scale_up": Highlight(description="Headcount growth", is_positive=True, metric="employee_count"),
+    "headcount_12mo_downturn": Highlight(description="Headcount decline", is_positive=False, metric="employee_count"),
+    "app_downloads_12mo_scale_up": Highlight(description="App downloads", is_positive=True, metric="app_downloads"),
+    "social_followers_12mo_scale_up": Highlight(description="Social media", is_positive=True, metric="linkedin_followers")
+}
 
 
 @dataclass
@@ -223,19 +245,47 @@ def filter_highlights(highlights: List[str]) -> List[str]:
     """
     Filter out redundant highlights based on predefined rules.
     If both weak and strong versions of a highlight exist, only keep the strong one.
+    If multiple time period highlights exist for the same metric, keep the longer period one.
     """
     if not highlights:
         return []
 
     # Define pairs of highlights where only the stronger one should be shown
-    redundant_pairs = {"web_traffic_surge": "strong_web_traffic_growth",
-        "app_downloads_surge": "strong_app_downloads_growth"}
+    redundant_pairs = {
+        "web_traffic_surge": "strong_web_traffic_growth",
+        "app_downloads_surge": "strong_app_downloads_growth"
+    }
+    
+    # Define time period priorities (longer periods take precedence)
+    time_period_groups = {
+        # Web traffic - prefer longer periods
+        "web_traffic_3mo_surge": "web_traffic_6mo_momentum",
+        "web_traffic_6mo_momentum": "web_traffic_12mo_scale_up",
+        # Headcount - prefer longer periods
+        "headcount_3mo_surge": "headcount_6mo_momentum",
+        "headcount_6mo_momentum": "headcount_12mo_scale_up",
+        # App downloads - prefer longer periods
+        "app_downloads_3mo_surge": "app_downloads_6mo_momentum",
+        "app_downloads_6mo_momentum": "app_downloads_12mo_scale_up",
+        # Social followers - prefer longer periods
+        "social_followers_3mo_surge": "social_followers_6mo_momentum",
+        "social_followers_6mo_momentum": "social_followers_12mo_scale_up",
+        # Product reviews - prefer longer periods
+        "product_reviews_3mo_surge": "product_reviews_6mo_momentum"
+    }
 
     # Check which highlights to skip
     highlights_to_skip = set()
+    
+    # Filter based on strength
     for weak_highlight, strong_highlight in redundant_pairs.items():
         if weak_highlight in highlights and strong_highlight in highlights:
             highlights_to_skip.add(weak_highlight)
+    
+    # Filter based on time periods (prefer longer periods for positive highlights)
+    for short_period, long_period in time_period_groups.items():
+        if short_period in highlights and long_period in highlights:
+            highlights_to_skip.add(short_period)
 
     # Return filtered highlights
     return [h for h in highlights if h not in highlights_to_skip]
