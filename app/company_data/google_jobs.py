@@ -12,6 +12,7 @@ from .data_syncer import DataFetcher, FetchResult, DataSyncer
 
 __all__ = ["GoogleJobsDataSyncer", "GoogleJobsFetcher"]
 
+STOP_WORDS = {'company', 'the', 'llc', 'inc', 'ai', 'health', 'to', 'go', 'com', 'a', 'n', 'in', 'tech', 'of', 'and', '&'}
 
 class GoogleJobsDataSyncer(DataSyncer):
     async def store_db_data(self, company: Company, result: FetchResult):
@@ -81,6 +82,21 @@ class GoogleJobsFetcher(DataFetcher):
         raw_data = await self._serpapi_client.search_google_jobs(domain)
         search_metadata = raw_data.get('search_metadata') or {}
         jobs_results = raw_data.get('jobs_results') or []
+
+        company_name_set = set(company.name.lower().replace('.', ' ').replace(',', ' ').split()) - STOP_WORDS
+        def _is_job_valid(job: Dict):
+            job_company_name_set = set(job.get('company_name').lower().replace('.', ' ').replace(',', ' ').split()) - STOP_WORDS
+            is_valid = len(company_name_set.intersection(job_company_name_set)) > 0
+            if not is_valid:
+                self._logger.info(
+                    "Job does not contain company name",
+                    labels={
+                        "company": company.model_dump(),
+                        "job": {k: v for k,v in job.items() if k in {'title', 'location', 'company_name'}}
+                    }
+                )
+            return is_valid
+        jobs_results = list(filter(_is_job_valid, jobs_results))
 
         return FetchResult(
             raw_data=raw_data,

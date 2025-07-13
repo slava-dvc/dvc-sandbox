@@ -32,7 +32,6 @@ class Logger:
         
         labels = {
             "request_headers": {k:v for k,v in request.headers.items() if k.lower() not in self.BLOCKLISTED_HEADERS},
-            "request_client": str(request.client),
             "request_query_params": request.query_params,
             "request_url": str(request.url),
             "request_method": request.method,
