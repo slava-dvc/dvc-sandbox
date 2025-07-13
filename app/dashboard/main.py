@@ -7,8 +7,10 @@ from app.dashboard.data import get_investments, get_companies, get_investments_c
     replace_ids_with_values, get_portfolio, get_updates
 from app.dashboard.formatting import format_as_dollars, get_preview
 
-from app.dashboard.fund import show_fund_page
-from app.dashboard.company import show_company_page
+from app.dashboard.fund import fund_page
+from app.dashboard.company import company_page
+from app.dashboard.jobs import jobs_page
+from app.dashboard.navigation import show_navigation
 
 st.set_page_config(
     page_title="DVC Portfolio Dashboard", page_icon=":bar_chart:",
@@ -45,20 +47,23 @@ if not st.user.is_logged_in:
 elif not is_email_allowed():
     handle_not_authorized()
 else:
-
-    with st.spinner("Loading investments..."):
-        investments = get_investments()
-    with st.spinner("Loading companies..."):
-        companies = get_companies()
-        companies = companies[companies['Initial Fund Invested From'].notna()]
-    with st.spinner("Loading updates..."):
-        updates = get_updates()
-    with st.spinner("Load dependencies..."):
-        companies = replace_ids_with_values(get_companies_config(), companies)
-
-    company_id = st.query_params.get('company_id')
-
-    if company_id:
-        show_company_page(investments, companies,updates, company_id)
-    else:
-        show_fund_page(investments, companies, updates)
+    show_navigation()
+#     with st.spinner("Loading investments..."):
+#         investments = get_investments()
+#     with st.spinner("Loading companies..."):
+#         companies = get_companies()
+#         companies = companies[companies['Initial Fund Invested From'].notna()]
+#
+#     with st.spinner("Load dependencies..."):
+#         companies = replace_ids_with_values(get_companies_config(), companies)
+#     with st.spinner("Loading updates..."):
+#        updates = get_updates()
+#     company_id = st.query_params.get('company_id')
+#     page = st.query_params.get('page', 'fund')
+#
+#     if company_id:
+#         show_company_page(investments, companies, updates, company_id)
+#     elif page == 'jobs':
+#         show_jobs_page()
+#     else:
+#         show_fund_page(investments, companies, updates)

@@ -85,6 +85,25 @@ def get_portfolio(**options):
     return fetch_table_as_df('tblxeUBhlLFnoG6QC', **options)
 
 
+@st.cache_data(show_spinner=False)
+def get_jobs(**options):
+    """Fetch jobs from MongoDB jobs collection"""
+    from app.foundation.primitives import datetime
+    
+    client = mongodb_client()
+    db = client.get_default_database('fund')
+    jobs_collection = db.get_collection('jobs')
+    
+    # Filter jobs updated in the last 2 weeks
+    two_weeks_ago = datetime.now() - datetime.timedelta(weeks=2)
+    query = {
+        'updatedAt': {'$gte': two_weeks_ago}
+    }
+    
+    jobs = list(jobs_collection.find(query).sort('updatedAt', -1))
+    return jobs
+
+
 def get_companies_config():
     return get_table_config('tblJL5aEsZFa0x6zY')
 

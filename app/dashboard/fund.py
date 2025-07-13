@@ -11,9 +11,10 @@ from app.dashboard.formatting import format_as_dollars, get_preview
 from app.foundation.primitives import datetime
 from app.dashboard.company_summary import CompanySummary
 from .company_summary import show_company_summary
+from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, \
+    replace_ids_with_values, get_portfolio, get_updates
 
-
-__all__ = ['show_fund_page']
+__all__ = ['fund_page']
 
 
 def show_fund_selector(investments):
@@ -177,7 +178,20 @@ def show_companies(companies: pd.DataFrame, updates: pd.DataFrame):
     st.write(f"Total companies: {len(filtered_summaries)}")
 
 
-def show_fund_page(investments, companies, updates):
+def fund_page():
+    with st.spinner("Loading investments..."):
+        investments = get_investments()
+    with st.spinner("Loading companies..."):
+        companies = get_companies()
+        companies = companies[companies['Initial Fund Invested From'].notna()]
+
+    with st.spinner("Load dependencies..."):
+        companies = replace_ids_with_values(get_companies_config(), companies)
+    with st.spinner("Loading updates..."):
+        updates = get_updates()
+    #     company_id = st.query_params.get('company_id')
+    #     page = st.query_params.get('page', 'fund')
+    #
     selected_funds = show_fund_selector(investments)
     st.markdown("---")
     

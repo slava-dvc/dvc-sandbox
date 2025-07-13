@@ -7,8 +7,10 @@ from app.foundation.primitives import datetime
 from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
 from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric, TractionMetrics
+from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, \
+    replace_ids_with_values, get_portfolio, get_updates
 
-__all__ = ['show_company_page']
+__all__ = ['company_page']
 
 
 def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
@@ -260,27 +262,34 @@ def show_traction_graph_with_combo(company_summary: CompanySummary, selected=Non
             st.warning("Please select a metric.")
 
 
-def show_company_page(investments, companies, updates, company_id):
+def company_page():
+    with st.spinner("Loading investments..."):
+        investments = get_investments()
+    with st.spinner("Loading companies..."):
+        companies = get_companies()
+        companies = companies[companies['Initial Fund Invested From'].notna()]
+
+    with st.spinner("Load dependencies..."):
+        companies = replace_ids_with_values(get_companies_config(), companies)
+    with st.spinner("Loading updates..."):
+        updates = get_updates()
+
     with st.spinner("Loading portfolio..."):
         portfolio = get_portfolio()
 
     def reset_company_id():
         st.query_params.pop('company_id', None)
 
-    col1, col2 = st.columns([1, 8], vertical_alignment='bottom')
-    with col1:
-        st.button("← To Main ", on_click=reset_company_id)
-
+    company_id =st.query_params.get('company_id', None)
     companies_in_portfolio = companies.sort_values(by='Company')
-    with col2:
-        selected_company_id = st.selectbox(
-            "Pick the company",
-            options=companies_in_portfolio.index,
-            index=companies_in_portfolio.index.get_loc(company_id) if company_id in companies_in_portfolio.index else None,
-            placeholder="Select company...",
-            format_func=lambda x: companies_in_portfolio.loc[x]['Company'],
-            label_visibility='hidden'
-        )
+    selected_company_id = st.selectbox(
+        "Pick the company",
+        options=companies_in_portfolio.index,
+        index=companies_in_portfolio.index.get_loc(company_id) if company_id in companies_in_portfolio.index else None,
+        placeholder="Select company...",
+        format_func=lambda x: companies_in_portfolio.loc[x]['Company'],
+        label_visibility='hidden'
+    )
 
     if selected_company_id:
         st.query_params.update({'company_id': selected_company_id})

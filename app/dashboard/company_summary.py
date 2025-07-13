@@ -326,5 +326,6 @@ def show_company_summary(company_summary: CompanySummary):
 
             # Push the button higher on the row by adding padding
             st.write("")  # Small spacer to align with company name
-            st.button("View", key=f"open_company_{company_id}", on_click=update_company_id, args=[company_id],
-                use_container_width=True)
+            st.link_button("View", url=f'/company_page?company_id={company_id}')
+            # st.button("View", key=f"open_company_{company_id}", on_click=update_company_id, args=[company_id],
+            #     use_container_width=True)
