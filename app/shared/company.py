@@ -18,6 +18,7 @@ class Company(BaseModel):
     airtableId: str
     name: str
     website: str = ""
+    blurb: str = Field(None, description="Company blurb")
 
     createdAt: datetime.datetime | None = None
     updatedAt: datetime.datetime | None = None

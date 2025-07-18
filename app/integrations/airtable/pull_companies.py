@@ -30,7 +30,8 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
     company_data = {
         "name": (fields.get("Company") or "").strip(),
         "website": fields.get("URL"),
-        "airtableId": record["id"]
+        "airtableId": record["id"],
+        "blurb": fields.get("Blurb"),
     }
 
     # Create Company model
