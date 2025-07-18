@@ -51,7 +51,7 @@ class JobDispatcher(object):
         for company in companies:
             if not company.has_valid_website():
                 self._logger.warning("Company has no valid website", labels={
-                    "company": company.model_dump(),
+                    "company": company.model_dump(exclude_none=True),
                     "sources": sources,
                 })
                 continue
@@ -64,7 +64,7 @@ class JobDispatcher(object):
     async def trigger_one(self, company: Company, source: Str):
         if not self.is_supported(source):
             self._logger.warning("Unsupported source", labels={
-                "company": company.model_dump(),
+                "company": company.model_dump(exclude_none=True),
                 "source": source,
             })
             return
@@ -76,7 +76,7 @@ class JobDispatcher(object):
         message_id = future.result()
         
         self._logger.info("Dispatch company data pull", labels={
-            "company": company.model_dump(),
+            "company": company.model_dump(exclude_none=True),
             "source": source,
             "message_id": message_id,
             "topic": topic_path,

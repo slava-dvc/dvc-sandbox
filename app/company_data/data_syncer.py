@@ -59,7 +59,7 @@ class DataSyncer:
         source_id = self._data_fetcher.source_id()
         if not self._data_fetcher.should_update(company):
             self._logger.info(f"Company is up-to-date", labels={
-                "company": company.model_dump(),
+                "company": company.model_dump(exclude_none=True),
                 "source": source_id,
             })
             return
@@ -75,7 +75,7 @@ class DataSyncer:
 
         if result.raw_data or result.db_update_fields:
             self._logger.info(f"Synced company data", labels={
-                "company": company.model_dump(),
+                "company": company.model_dump(exclude_none=True),
                 "source": source_id,
                 "updated_at": result.updated_at,
             })

@@ -8,7 +8,7 @@ from pymongo.asynchronous.database import AsyncDatabase
 from app.foundation.server import dependencies, Logger
 from app.foundation.server.config import AppConfig
 from app.shared import Company
-from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client
+from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client, get_genai_client
 from .job_dispatcher import JobDispatcher
 from .data_syncer import DataSyncer
 from .linkedin_fetcher import LinkedInFetcher
@@ -135,12 +135,14 @@ async def sync_company_google_jobs(
         database: AsyncDatabase = Depends(dependencies.get_default_database),
         dataset_bucket: storage.Bucket = Depends(dependencies.get_dataset_bucket),
         serpapi_client=Depends(get_serpapi_client),
+        genai_client=Depends(get_genai_client),
         logger: Logger = Depends(dependencies.get_logger),
 ):
     fetcher = GoogleJobsFetcher(
         database=database,
         serpapi_client=serpapi_client,
         logger=logger,
+        genai_client=genai_client,
     )
 
     data_syncer = GoogleJobsDataSyncer(

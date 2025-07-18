@@ -41,6 +41,10 @@ async def get_serpapi_client(
     )
 
 
+def get_genai_client(request: Request):
+    return request.state.genai_client
+
+
 def workspace_collection(
         firestore_client = Depends(get_firestore_client)
 ) -> firestore.AsyncCollectionReference:
