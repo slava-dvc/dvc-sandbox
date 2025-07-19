@@ -100,9 +100,6 @@ class GoogleJobsFetcher(DataFetcher):
         )
 
     async def is_description_matches(self, company: Company, job: Dict) -> bool:
-        if not self._genai_client or not company.blurb:
-            return True
-            
         company_blurb = company.blurb
         job_description = job.get('description', '')
         job_company_name = job.get('company_name', '')
@@ -158,7 +155,14 @@ class GoogleJobsFetcher(DataFetcher):
                     }
                 )
                 return False
-                
+            if not company.blurb:
+                self._logger.info(
+                    "Job filtered since company has no blurb",
+                    labels={
+                        "company": company.model_dump(exclude_none=True),
+                    }
+                )
+                return False
             llm_validation = await self.is_description_matches(company, job)
             if not llm_validation:
                 self._logger.info(
