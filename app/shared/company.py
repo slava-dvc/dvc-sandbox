@@ -65,6 +65,7 @@ class Company(BaseModel):
             id=str(data['_id']),
             airtableId=data['airtableId'],
             name=data['name'],
+            blurb=data.get('blurb'),
             createdAt=datetime.any_to_datetime(data.get('createdAt')),
             updatedAt=datetime.any_to_datetime(data.get('updatedAt')),
             website=data['website'],
