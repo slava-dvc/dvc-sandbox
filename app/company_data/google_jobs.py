@@ -1,21 +1,17 @@
 import json
-
 from typing import Dict
 from urllib.parse import urlparse
 
 from bson import ObjectId
-from pymongo.asynchronous.database import AsyncDatabase
-
-from app.shared import Company, SerpApiClient
-from app.foundation.primitives import datetime
-from app.foundation.server import Logger
 from google import genai
 from google.genai import types as genai_types
+from pymongo.asynchronous.database import AsyncDatabase
 
-from foundation import as_async
+from app.foundation import as_async
+from app.foundation.primitives import datetime
+from app.foundation.server import Logger
+from app.shared import Company, SerpApiClient
 from .data_syncer import DataFetcher, FetchResult, DataSyncer
-
-
 
 __all__ = ["GoogleJobsDataSyncer", "GoogleJobsFetcher"]
 
