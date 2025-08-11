@@ -84,11 +84,26 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
         upsert=True
     )
 
-    # if result.upserted_id:
-    #     logger.info(f"Inserted new company: {company.name}")
-    # else:
-    #     logger.info(f"Updated existing company: {company.name}")
-
+    if result.upserted_id:
+        logger.info(
+            "Company inserted",
+            labels={
+                "company": company.model_dump(exclude_none=True, exclude=['ourData']),
+                "operation": "insert",
+                "airtableId": company.airtableId
+            }
+        )
+    else:
+        logger.info(
+            "Company updated", 
+            labels={
+                "company": company.model_dump(exclude_none=True,  exclude=['ourData']),
+                "operation": "update",
+                "airtableId": company.airtableId,
+                "matched_count": result.matched_count,
+                "modified_count": result.modified_count
+            }
+        )
     return True
 
 
@@ -113,13 +128,24 @@ async def pull_companies_from_airtable(
     """
 
     # Get records from Airtable
+    logger.info(
+        "Starting Airtable companies sync",
+        labels={"table_id": table_id}
+    )
     records = await airtable_client.list_records(table_id=table_id, resolve=True)
+    logger.info(
+        "Fetched records from Airtable",
+        labels={"table_id": table_id, "total_records": len(records)}
+    )
+    
     default_database = mongo_client.get_default_database()
     companies_collection = default_database['companies']
 
     # Process each record
     processed_count = 0
-    for record in records:
+    skipped_count = 0
+    
+    for i, record in enumerate(records, 1):
         fields = record["fields"]
         status = fields.get("Status")
         name = fields.get("Company")
@@ -127,38 +153,54 @@ async def pull_companies_from_airtable(
 
         if status not in _STATUS_MAP:
             logger.info(
-                msg="Skipping record",
+                "Skipping record - invalid status",
                 labels={
-                    "id": record["id"],
-                    "reason": "Invalid status",
-                    "status": status,
+                    "record_id": record["id"],
                     "company": name,
+                    "status": status,
+                    "valid_statuses": list(_STATUS_MAP.keys())
                 }
             )
+            skipped_count += 1
             continue
+
         if not name:
             logger.info(
-                msg="Skipping record",
+                "Skipping record - missing company name",
                 labels={
-                    "id": record["id"],
-                    "company": name,
-                    "reason": "Missing company name",
-
+                    "record_id": record["id"],
+                    "status": status
                 }
             )
+            skipped_count += 1
             continue
+
         if not url:
             logger.info(
-                msg="Skipping record",
+                "Skipping record - missing URL",
                 labels={
-                    "id": record["id"],
+                    "record_id": record["id"],
                     "company": name,
-                    "reason": "Missing URL",
+                    "status": status
                 }
             )
+            skipped_count += 1
             continue
-        processed = await _process_company_record(record, companies_collection, logger)
-        processed_count += processed
+
+        await _process_company_record(record, companies_collection, logger)
+        processed_count += 1
+
+    # Summary logging
+    logger.info(
+        "Airtable companies sync completed",
+        labels={
+            "table_id": table_id,
+            "total_records": len(records),
+            "processed_count": processed_count,
+            "skipped_count": skipped_count,
+            "success_rate": round((processed_count / len(records)) * 100, 1) if records else 0
+        }
+    )
     
     return processed_count
 
