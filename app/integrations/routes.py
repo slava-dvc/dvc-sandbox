@@ -49,7 +49,7 @@ async def push_deal(
     return Response(status_code=HTTPStatus.CREATED)
 
 
-@router.post('/airtable/pull_companies')
+@router.post('/airtable/pull_companies', status_code=HTTPStatus.NO_CONTENT)
 async def airtable_pull_companies(
         http_client = Depends(get_http_client),
         mongo_client: MongoClient = Depends(get_mongo_client),
@@ -57,34 +57,23 @@ async def airtable_pull_companies(
 ):
     """
     Pull companies from Airtable and store them to MongoDB.
-    
-    Query Parameters:
-        table_id: The Airtable table ID containing company data
     """
 
-    records_processed = 0
     airtable_client = AirTableClient(
         api_key=get_env('AIRTABLE_API_KEY'),
         base_id='appRfyOgGDu7UKmeD',
         http_client=http_client
     )
 
-    records_processed = await pull_companies_from_airtable(
+    await pull_companies_from_airtable(
         airtable_client=airtable_client,
         mongo_client=mongo_client,
         table_id='tblJL5aEsZFa0x6zY',
         logger=logger
     )
-    
-    logger.info(f"Pulled {records_processed} companies from Airtable to MongoDB")
-    
-    if records_processed == 0:
-        return {"status": "warning", "message": "No records processed"}
-    
-    return {"status": "success", "records_processed": records_processed}
 
 
-@router.post('/spectr/sync_companies')
+@router.post('/spectr/sync_companies', status_code=HTTPStatus.NO_CONTENT)
 async def spectr_sync_companies(
     mongo_client: MongoClient = Depends(get_mongo_client),
     logger = Depends(get_logger),

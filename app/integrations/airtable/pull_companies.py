@@ -25,6 +25,12 @@ _STATUS_MAP = {
 }
 
 
+def _unwrap_single_item(value):
+    if isinstance(value, list) and len(value) == 1:
+        return value[0]
+    return value
+
+
 async def _process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
     """
     Process an individual Airtable record and store it in MongoDB.
@@ -46,7 +52,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
         "blurb": fields.get("Blurb"),
         "status": _STATUS_MAP[status],
         "ourData": {
-            "businessModel": fields.get("Business Model"),
+            "businessModelType": fields.get("Business Model"),
             "category": fields.get("Category"),
             "companyHQ": fields.get("Company HQ"),
             "distributionModelType": fields.get("Distribution Strategy"),
@@ -54,12 +60,12 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             "logo": fields.get("Logo"),
             "mainIndustry": fields.get("Main Industry"),
             "problem": fields.get("Problem"),
-            "productStructure": fields.get("Product Structure"),
+            "productStructureType": fields.get("Product Structure"),
             "revenueModelType": fields.get("Revenue Model Type"),
             "targetMarket": fields.get("Target Market"),
             'burnRate': fields.get('Burnrate'),
-            'currentStage': fields.get('Company Stage'),
-            'entryStage': fields.get('Stage when we invested'),
+            'currentStage': _unwrap_single_item(fields.get('Company Stage')),
+            'entryStage': _unwrap_single_item(fields.get('Stage when we invested')),
             'entryValuation': fields.get('Initial Valuation'),
             'investingFund': fields.get('Initial Fund Invested From'),
             'latestValuation': fields.get('Last Valuation/cap (from DVC Portfolio 3)'),
