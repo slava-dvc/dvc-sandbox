@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from ..foundation import models
+from app.shared import models
 
 
 class SyncDealRequest(BaseModel):

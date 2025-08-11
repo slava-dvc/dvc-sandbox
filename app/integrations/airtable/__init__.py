@@ -2,12 +2,10 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 import httpx
-
-from .client import *
+from app.foundation.server import Logger
+from app.shared import AirTableClient, models
 from .sync_action import *
 from .pull_companies import pull_companies_from_airtable
-from ...foundation import models
-from ...foundation.server.logger import Logger
 
 
 __all__ = ['AirTableConfig', 'push_deal_to_airtable', 'pull_companies_from_airtable']

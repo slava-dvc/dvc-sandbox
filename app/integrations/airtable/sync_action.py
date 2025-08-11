@@ -6,9 +6,8 @@ import yaml
 from pathlib import Path
 from typing import Dict, List
 
-from .client import AirTableClient, AirTable
-from ...foundation import models
-from ...foundation.server.logger import Logger
+from app.shared import AirTable, AirTableClient, models
+from app.foundation.server import Logger
 
 
 __all__ = ['AirSyncAction']

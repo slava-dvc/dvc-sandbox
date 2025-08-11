@@ -14,10 +14,10 @@ class Company(BaseModel):
         "linkedInData", "spectrData", "googlePlayData", "appStoreData",
     }
 
-    id: str
     airtableId: str
     name: str
     website: str = ""
+    id: str | None = None
     blurb: str | None = Field(None, description="Company blurb")
 
     createdAt: datetime.datetime | None = None

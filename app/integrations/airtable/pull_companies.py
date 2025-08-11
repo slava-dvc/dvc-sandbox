@@ -1,11 +1,9 @@
 from typing import Dict, Any
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
-import httpx
 
-from .client import AirTableClient
-from .company_model import Company
-from ...foundation.server.logger import Logger
+from app.shared import Company, AirTableClient
+from app.foundation.server import Logger
 
 
 async def process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:

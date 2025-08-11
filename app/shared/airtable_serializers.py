@@ -1,7 +1,6 @@
 import re
 from typing import Dict, Callable
 from urllib.parse import urlparse
-from ...foundation.server.logger import Logger
 
 __all__ = ['field_serializers']
 

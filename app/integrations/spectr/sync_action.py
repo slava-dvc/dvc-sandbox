@@ -1,15 +1,12 @@
-from httpx import HTTPStatusError, HTTPError
+from httpx import HTTPError
 from fastapi.encoders import jsonable_encoder
 from urllib.parse import urlparse
-from typing import Dict, Any, Optional
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
-from pymongo.errors import PyMongoError
 
-from app.shared.spectr_client import SpectrClient
-from app.foundation.server.logger import Logger
+from app.shared import SpectrClient, Company
+from app.foundation.server import Logger
 from app.foundation.primitives import datetime
-from app.integrations.airtable.company_model import Company
 
 
 class SpectrSyncAction:
