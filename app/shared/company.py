@@ -1,4 +1,4 @@
-from typing import Optional, List, Literal, ClassVar, Set
+from typing import Optional, List, Literal, ClassVar, Set, Any
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field
@@ -11,13 +11,15 @@ BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
 class Company(BaseModel):
 
     DATA_FIELDS: ClassVar[Set[str]] = {
-        "linkedInData", "spectrData", "googlePlayData", "appStoreData",
+        "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData"
     }
 
     airtableId: str
     name: str
     website: str = ""
+    status: str | None = None
     id: str | None = None
+    ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")
     blurb: str | None = Field(None, description="Company blurb")
 
     createdAt: datetime.datetime | None = None

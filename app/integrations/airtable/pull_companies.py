@@ -6,6 +6,24 @@ from app.shared import Company, AirTableClient
 from app.foundation.server import Logger
 
 
+_STATUS_MAP = {
+    "Invested":"Invested",
+    "Exit": "Exit",
+    "Write-off": "Write-off",
+    "Docs Sent": "Docs Sent",
+    "Offered to Invest": "Offered to Invest",
+    "New Company": "New Company",
+    "w8 Lead": "Diligence",
+    "Diligence": "Diligence",
+    "Contacted": "In Progress",
+    "Checkin": "In Progress",
+    "Second Meeting": "In Progress",
+    "DD/HomeWork": "In Progress",
+    "Fast Track": "In Progress",
+    "Going to Pass": "Going to Pass",
+}
+
+
 async def process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
     """
     Process an individual Airtable record and store it in MongoDB.
@@ -25,11 +43,23 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
         return False
 
     # Extract company data from record
+    # status
+    # source
+    # mainIndustry
+    # problem
+    # solution
+    # targetMarket
+    # linkToDeck
+    # revenueModelType
+    # distributionModelType
     company_data = {
         "name": (fields.get("Company") or "").strip(),
         "website": fields.get("URL"),
         "airtableId": record["id"],
         "blurb": fields.get("Blurb"),
+        "data": {
+
+        }
     }
 
     # Create Company model
@@ -89,3 +119,4 @@ async def pull_companies_from_airtable(
         processed_count += processed
     
     return processed_count
+
