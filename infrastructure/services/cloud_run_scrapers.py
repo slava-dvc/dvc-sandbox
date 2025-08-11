@@ -38,3 +38,11 @@ scrapers_cloud_run = gcp.cloudrunv2.Service(
         ]
     }),
 )
+
+allow_unauthenticated = gcp.cloudrun.IamMember(
+    "allow-unauthenticated-scrapers-v2-cloud-run-service",
+    service=scrapers_cloud_run.name,
+    location=scrapers_cloud_run.location,
+    role="roles/run.invoker",
+    member="allUsers"
+)
