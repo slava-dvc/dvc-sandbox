@@ -4,6 +4,7 @@ from pymongo.asynchronous.collection import AsyncCollection
 
 from app.shared import Company, AirTableClient
 from app.foundation.server import Logger
+from app.foundation.primitives import datetime
 
 
 _STATUS_MAP = {
@@ -24,7 +25,7 @@ _STATUS_MAP = {
 }
 
 
-async def process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
+async def _process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
     """
     Process an individual Airtable record and store it in MongoDB.
 
@@ -36,29 +37,35 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
         None: This function performs database operations but does not return a value.
     """
     fields = record["fields"]
+    status = fields.get("Status")
 
-    # Skip records without a name
-    if not fields.get("Company") or not fields.get('URL'):
-        logger.warning(f"Skipping record {record['id']} - missing company name")
-        return False
-
-    # Extract company data from record
-    # status
-    # source
-    # mainIndustry
-    # problem
-    # solution
-    # targetMarket
-    # linkToDeck
-    # revenueModelType
-    # distributionModelType
     company_data = {
         "name": (fields.get("Company") or "").strip(),
         "website": fields.get("URL"),
         "airtableId": record["id"],
         "blurb": fields.get("Blurb"),
-        "data": {
-
+        "status": _STATUS_MAP[status],
+        "ourData": {
+            "businessModel": fields.get("Business Model"),
+            "category": fields.get("Category"),
+            "companyHQ": fields.get("Company HQ"),
+            "distributionModelType": fields.get("Distribution Strategy"),
+            "linkToDeck": fields.get("Linktothepitchdeck"),
+            "logo": fields.get("Logo"),
+            "mainIndustry": fields.get("Main Industry"),
+            "problem": fields.get("Problem"),
+            "productStructure": fields.get("Product Structure"),
+            "revenueModelType": fields.get("Revenue Model Type"),
+            "targetMarket": fields.get("Target Market"),
+            'burnRate': fields.get('Burnrate'),
+            'currentStage': fields.get('Company Stage'),
+            'entryStage': fields.get('Stage when we invested'),
+            'entryValuation': fields.get('Initial Valuation'),
+            'investingFund': fields.get('Initial Fund Invested From'),
+            'latestValuation': fields.get('Last Valuation/cap (from DVC Portfolio 3)'),
+            'performanceOutlook': fields.get('Expected Performance'),
+            'revenue': fields.get('Revenue copy'),
+            'runway': fields.get('Runway'),
         }
     }
 
@@ -69,15 +76,18 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
     result = await companies_collection.update_one(
         {"airtableId": company.airtableId},
         {
-            "$set": company.model_dump(exclude_none=True)
+            "$set": company.model_dump(exclude_none=True),
+            "$setOnInsert": {
+                "createdAt": datetime.now(),
+            }
         },
         upsert=True
     )
 
-    if result.upserted_id:
-        logger.info(f"Inserted new company: {company.name}")
-    else:
-        logger.info(f"Updated existing company: {company.name}")
+    # if result.upserted_id:
+    #     logger.info(f"Inserted new company: {company.name}")
+    # else:
+    #     logger.info(f"Updated existing company: {company.name}")
 
     return True
 
@@ -103,7 +113,7 @@ async def pull_companies_from_airtable(
     """
 
     # Get records from Airtable
-    records = await airtable_client.list_records(table_id)
+    records = await airtable_client.list_records(table_id=table_id, resolve=True)
     default_database = mongo_client.get_default_database()
     companies_collection = default_database['companies']
 
@@ -111,11 +121,43 @@ async def pull_companies_from_airtable(
     processed_count = 0
     for record in records:
         fields = record["fields"]
-        initial_fund_invested = fields.get('Initial Fund Invested From')
-        if not initial_fund_invested or not isinstance(initial_fund_invested, str):
-            logger.debug(f"Skipping record {record['id']}, {fields.get('Company')} - missing initial fund invested")
+        status = fields.get("Status")
+        name = fields.get("Company")
+        url = fields.get('URL')
+
+        if status not in _STATUS_MAP:
+            logger.info(
+                msg="Skipping record",
+                labels={
+                    "id": record["id"],
+                    "reason": "Invalid status",
+                    "status": status,
+                    "company": name,
+                }
+            )
             continue
-        processed = await process_company_record(record, companies_collection, logger)
+        if not name:
+            logger.info(
+                msg="Skipping record",
+                labels={
+                    "id": record["id"],
+                    "company": name,
+                    "reason": "Missing company name",
+
+                }
+            )
+            continue
+        if not url:
+            logger.info(
+                msg="Skipping record",
+                labels={
+                    "id": record["id"],
+                    "company": name,
+                    "reason": "Missing URL",
+                }
+            )
+            continue
+        processed = await _process_company_record(record, companies_collection, logger)
         processed_count += processed
     
     return processed_count
