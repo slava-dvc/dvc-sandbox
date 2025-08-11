@@ -4,9 +4,34 @@ from pymongo.asynchronous.collection import AsyncCollection
 
 from app.shared import Company, AirTableClient
 from app.foundation.server import Logger
+from app.foundation.primitives import datetime
 
 
-async def process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
+_STATUS_MAP = {
+    "Invested":"Invested",
+    "Exit": "Exit",
+    "Write-off": "Write-off",
+    "Docs Sent": "Docs Sent",
+    "Offered to Invest": "Offered to Invest",
+    "New Company": "New Company",
+    "w8 Lead": "Diligence",
+    "Diligence": "Diligence",
+    "Contacted": "In Progress",
+    "Checkin": "In Progress",
+    "Second Meeting": "In Progress",
+    "DD/HomeWork": "In Progress",
+    "Fast Track": "In Progress",
+    "Going to Pass": "Going to Pass",
+}
+
+
+def _unwrap_single_item(value):
+    if isinstance(value, list) and len(value) == 1:
+        return value[0]
+    return value
+
+
+async def _process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
     """
     Process an individual Airtable record and store it in MongoDB.
 
@@ -18,18 +43,36 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
         None: This function performs database operations but does not return a value.
     """
     fields = record["fields"]
+    status = fields.get("Status")
 
-    # Skip records without a name
-    if not fields.get("Company") or not fields.get('URL'):
-        logger.warning(f"Skipping record {record['id']} - missing company name")
-        return False
-
-    # Extract company data from record
     company_data = {
         "name": (fields.get("Company") or "").strip(),
         "website": fields.get("URL"),
         "airtableId": record["id"],
         "blurb": fields.get("Blurb"),
+        "status": _STATUS_MAP[status],
+        "ourData": {
+            "businessModelType": fields.get("Business Model"),
+            "category": fields.get("Category"),
+            "companyHQ": fields.get("Company HQ"),
+            "distributionModelType": fields.get("Distribution Strategy"),
+            "linkToDeck": fields.get("Linktothepitchdeck"),
+            "logo": fields.get("Logo"),
+            "mainIndustry": fields.get("Main Industry"),
+            "problem": fields.get("Problem"),
+            "productStructureType": fields.get("Product Structure"),
+            "revenueModelType": fields.get("Revenue Model Type"),
+            "targetMarket": fields.get("Target Market"),
+            'burnRate': fields.get('Burnrate'),
+            'currentStage': _unwrap_single_item(fields.get('Company Stage')),
+            'entryStage': _unwrap_single_item(fields.get('Stage when we invested')),
+            'entryValuation': fields.get('Initial Valuation'),
+            'investingFund': fields.get('Initial Fund Invested From'),
+            'latestValuation': fields.get('Last Valuation/cap (from DVC Portfolio 3)'),
+            'performanceOutlook': fields.get('Expected Performance'),
+            'revenue': fields.get('Revenue copy'),
+            'runway': fields.get('Runway'),
+        }
     }
 
     # Create Company model
@@ -39,16 +82,34 @@ async def process_company_record(record: Dict[str, Any], companies_collection: A
     result = await companies_collection.update_one(
         {"airtableId": company.airtableId},
         {
-            "$set": company.model_dump(exclude_none=True)
+            "$set": company.model_dump(exclude_none=True),
+            "$setOnInsert": {
+                "createdAt": datetime.now(),
+            }
         },
         upsert=True
     )
 
     if result.upserted_id:
-        logger.info(f"Inserted new company: {company.name}")
+        logger.info(
+            "Company inserted",
+            labels={
+                "company": company.model_dump(exclude_none=True, exclude=['ourData']),
+                "operation": "insert",
+                "airtableId": company.airtableId
+            }
+        )
     else:
-        logger.info(f"Updated existing company: {company.name}")
-
+        logger.info(
+            "Company updated", 
+            labels={
+                "company": company.model_dump(exclude_none=True,  exclude=['ourData']),
+                "operation": "update",
+                "airtableId": company.airtableId,
+                "matched_count": result.matched_count,
+                "modified_count": result.modified_count
+            }
+        )
     return True
 
 
@@ -73,19 +134,79 @@ async def pull_companies_from_airtable(
     """
 
     # Get records from Airtable
-    records = await airtable_client.list_records(table_id)
+    logger.info(
+        "Starting Airtable companies sync",
+        labels={"table_id": table_id}
+    )
+    records = await airtable_client.list_records(table_id=table_id, resolve=True)
+    logger.info(
+        "Fetched records from Airtable",
+        labels={"table_id": table_id, "total_records": len(records)}
+    )
+    
     default_database = mongo_client.get_default_database()
     companies_collection = default_database['companies']
 
     # Process each record
     processed_count = 0
-    for record in records:
+    skipped_count = 0
+    
+    for i, record in enumerate(records, 1):
         fields = record["fields"]
-        initial_fund_invested = fields.get('Initial Fund Invested From')
-        if not initial_fund_invested or not isinstance(initial_fund_invested, str):
-            logger.debug(f"Skipping record {record['id']}, {fields.get('Company')} - missing initial fund invested")
+        status = fields.get("Status")
+        name = fields.get("Company")
+        url = fields.get('URL')
+
+        if status not in _STATUS_MAP:
+            logger.info(
+                "Skipping record - invalid status",
+                labels={
+                    "record_id": record["id"],
+                    "company": name,
+                    "status": status,
+                    "valid_statuses": list(_STATUS_MAP.keys())
+                }
+            )
+            skipped_count += 1
             continue
-        processed = await process_company_record(record, companies_collection, logger)
-        processed_count += processed
+
+        if not name:
+            logger.info(
+                "Skipping record - missing company name",
+                labels={
+                    "record_id": record["id"],
+                    "status": status
+                }
+            )
+            skipped_count += 1
+            continue
+
+        if not url:
+            logger.info(
+                "Skipping record - missing URL",
+                labels={
+                    "record_id": record["id"],
+                    "company": name,
+                    "status": status
+                }
+            )
+            skipped_count += 1
+            continue
+
+        await _process_company_record(record, companies_collection, logger)
+        processed_count += 1
+
+    # Summary logging
+    logger.info(
+        "Airtable companies sync completed",
+        labels={
+            "table_id": table_id,
+            "total_records": len(records),
+            "processed_count": processed_count,
+            "skipped_count": skipped_count,
+            "success_rate": round((processed_count / len(records)) * 100, 1) if records else 0
+        }
+    )
     
     return processed_count
+

@@ -57,6 +57,7 @@ class SpectrSyncAction:
         # Get all companies
         cursor = companies_collection.find(
             filter={
+                'status': 'Invested',
                 '$or': [
                     {'spectrUpdatedAt': {'$lte': three_days_ago}},
                     {'spectrUpdatedAt': None}
