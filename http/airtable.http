@@ -9,7 +9,7 @@ POST {{host}}/v1/integrations/sync/deal
 Content-Type: application/json
 
 {
-  "user_email": "vladimir@ingainer.pro",
+  "user_email": "vladimir@dvc.ai",
   "startup": {
     "name": "Careerflow",
     "website": "https://careerflow.ai",
