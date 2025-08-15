@@ -183,31 +183,31 @@ class CompanySummary:
 
     @classmethod
     def from_dict(cls, company: dict, company_id, last_update=None):
-        stage = cls._extract_value(company.get('Company Stage'))
+        stage = cls._extract_value(company.get('currentStage'))
         
         runway = None
         try:
-            runway = int(company['Runway'])
+            runway = int(company['runway'])
         except (ValueError, TypeError, KeyError):
             pass
         
-        current_val = cls._extract_value(company.get('Last Valuation/cap (from DVC Portfolio 3)'))
-        initial_val = cls._extract_value(company.get('Entry Valuation /cap (from DVC Portfolio 3)'))
+        current_val = cls._extract_value(company.get('latestValuation'))
+        initial_val = cls._extract_value(company.get('entryValuation'))
         news = (company.get('news'))
         if not isinstance(news, list):
             news= []
         return cls(
-            company_id=company_id, name=company['Company'], status=company['Status'], website=company['URL'],
-            stage=stage, initial_fund=company['Initial Fund Invested From'], initial_valuation=initial_val,
-            current_valuation=current_val, logo_url=get_preview(company['Logo']), last_update=last_update,
+            company_id=company_id, name=company['name'], status=company['status'], website=company['website'],
+            stage=stage, initial_fund=company['investingFund'], initial_valuation=initial_val,
+            current_valuation=current_val, logo_url=get_preview(company['logo']), last_update=last_update,
             new_highlights=company.get('new_highlights'),
-            blurb=company.get('Blurb'),
+            blurb=company.get('blurb'),
             traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')),
             runway=runway,
-            revenue=cls._extract_value(company.get('Revenue copy')),
-            burnrate=cls._extract_value(company.get('Burnrate')),
-            customers_cnt=company.get('Number of customers'),
-            expected_performance=company.get('Expected Performance'),
+            revenue=cls._extract_value(company.get('revenue')),
+            burnrate=cls._extract_value(company.get('burnRate')),
+            customers_cnt=company.get('customerCount'),
+            expected_performance=company.get('performanceOutlook'),
             news=[NewsItem.from_dict(n) for n in news]
         )
 

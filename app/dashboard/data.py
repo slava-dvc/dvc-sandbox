@@ -17,32 +17,49 @@ def airtable_api_client() -> Api:
 def mongodb_client():
     return MongoClient(os.environ['MONGODB_URI'])
 
+@st.cache_resource()
+def mongo_database():
+    return mongodb_client().get_default_database('fund')
+
 @st.cache_data(show_spinner=False)
-def fetch_table_as_rows(table_name: str, **options) -> typing.List[dict]:
+def fetch_airtable_as_rows(table_name: str, **options) -> typing.List[dict]:
     api = airtable_api_client()
     return api.table( AIRTABLE_BASE_ID, table_name).all(**options)
 
 
-def fetch_table_as_df(table_name: str, **options) -> pd.DataFrame:
-    rows = fetch_table_as_rows(table_name, **options)
+def fetch_airtable_as_df(table_name: str, **options) -> pd.DataFrame:
+    rows = fetch_airtable_as_rows(table_name, **options)
     return pd.DataFrame([r['fields'] | {'id': r.get('id')} for r in rows]).set_index('id')
 
 
 def get_investments(**options):
-    return fetch_table_as_df('tblrsrZTHW8famwpw', **options)
+    return fetch_airtable_as_df('tblrsrZTHW8famwpw', **options)
 
 
 def get_companies(**options):
-    air_table_rows = fetch_table_as_rows('tblJL5aEsZFa0x6zY', **options)
-    mongo_rows = list(mongodb_client().get_default_database('fund').get_collection('companies').find())
-    mongo_index = {item['airtableId']: item for item in mongo_rows}
-    rows = []
-    all_fields = {
-        'new_highlights', 'highlights', 'Company', 'URL', 'Status', 'Logo', 'Initial Fund Invested From', 'Stage when we invested',
-        'Main Industry', 'Company Stage', 'Initial Valuation', 'Last Valuation/cap (from DVC Portfolio 3)',
-        'Blurb', 'Status', 'Entry Valuation /cap (from DVC Portfolio 3)', 'traction_metrics', 'news',
-        'Expected Performance', 'Runway', 'Revenue copy', 'Burnrate', 'Number of customers'
-    }
+    def transform_company(company):
+        data = {'id': company['airtableId']}
+        data |= {
+            k: v for k, v in company.items()
+            if k in {'spectrId', 'spectrUpdatedAt', 'name', 'website', 'blurb', 'status'}
+        }
+        data |= company.get('ourData')
+        spectrData = company.get('spectrData')
+        if spectrData:
+            data = data | {
+                k: v for k, v in spectrData.items()
+                if k in {'new_highlights', 'highlights', 'traction_metrics', 'news'}
+            }
+        return data
+
+    db = mongo_database()
+    companies_collection = db.get_collection('companies')
+    rows = [
+        transform_company(company)
+        for company in companies_collection.find()
+    ]
+    return pd.DataFrame(rows).set_index('id')
+
     for air_row in air_table_rows:
         airtable_id = air_row['id']
         airfields = air_row['fields']
@@ -70,19 +87,19 @@ def get_companies(**options):
 
 
 def get_ask_to_task(**options):
-    return fetch_table_as_df('tblos3pGBciCaxXp0', **options)
+    return fetch_airtable_as_df('tblos3pGBciCaxXp0', **options)
 
 
 def get_people(**options):
-    return fetch_table_as_df('tbl5cyHdQ9ijkbz7K', **options)
+    return fetch_airtable_as_df('tbl5cyHdQ9ijkbz7K', **options)
 
 
 def get_updates(**options):
-    return fetch_table_as_df('tblBA51bFtn6dZmRX', **options)
+    return fetch_airtable_as_df('tblBA51bFtn6dZmRX', **options)
 
 
 def get_portfolio(**options):
-    return fetch_table_as_df('tblxeUBhlLFnoG6QC', **options)
+    return fetch_airtable_as_df('tblxeUBhlLFnoG6QC', **options)
 
 
 @st.cache_data(show_spinner=False)
@@ -138,7 +155,7 @@ def fetch_linked_table_names(linked_table_id):
     primary_field_name = field.get('name')
     linked_table = {
         row['id']:row['fields'].get(primary_field_name)
-        for row in fetch_table_as_rows(linked_table_id, fields=[primary_field_name])
+        for row in fetch_airtable_as_rows(linked_table_id, fields=[primary_field_name])
     }
     return linked_table
 

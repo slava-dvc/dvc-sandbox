@@ -1,12 +1,6 @@
-import sys
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from typing import Optional, Union, List, Any
-from dataclasses import dataclass
-from pathlib import Path
-from app.integrations import airtable
-from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, replace_ids_with_values
 from app.dashboard.formatting import format_as_dollars, get_preview
 from app.foundation.primitives import datetime
 from app.dashboard.company_summary import CompanySummary
@@ -32,8 +26,8 @@ def show_key_metrics(investments: pd.DataFrame, companies: pd.DataFrame):
         "Initial Investments": len(investments) - investments['Is it follow-on?'].sum(),
         "Follow ons": investments['Is it follow-on?'].sum(),
         "MOIC": 'TBD',
-        "Exits": sum(list(companies.Status == 'Exit')),
-        "Write offs": sum(list(companies['Status'] == 'Write-off')),
+        "Exits": sum(list(companies.status == 'Exit')),
+        "Write offs": sum(list(companies.status == 'Write-off')),
         "TVPI": 'TBD',
     }
 
@@ -183,36 +177,34 @@ def fund_page():
         investments = get_investments()
     with st.spinner("Loading companies..."):
         companies = get_companies()
-        companies = companies[companies['Initial Fund Invested From'].notna()]
+        companies = companies[companies['investingFund'].notna()]
 
     with st.spinner("Load dependencies..."):
         companies = replace_ids_with_values(get_companies_config(), companies)
     with st.spinner("Loading updates..."):
         updates = get_updates()
-    #     company_id = st.query_params.get('company_id')
-    #     page = st.query_params.get('page', 'fund')
-    #
+
     selected_funds = show_fund_selector(investments)
     st.markdown("---")
     
     if selected_funds:
         investments = investments[investments['Fund'].isin(selected_funds)]
-        companies = companies[companies['Initial Fund Invested From'].isin(selected_funds)]
+        companies = companies[companies['investingFund'].isin(selected_funds)]
 
     show_key_metrics(investments, companies)
     st.markdown("---")
     chart_col1, chart_col2 = st.columns([1, 1])
     with chart_col1:
         show_counted_pie(
-            df=companies[companies['Status'].isin(["Invested", "Exit", "Write-off"])],
+            df=companies[companies['status'].isin(["Invested", "Exit", "Write-off"])],
             title="Stage when we invested",
-            column="Stage when we invested"
+            column="entryStage"
         )
     with chart_col2:
         show_counted_pie(
-            df=companies[companies['Status'].isin(["Invested", "Exit", "Write-off"])],
+            df=companies[companies['status'].isin(["Invested", "Exit", "Write-off"])],
             title="Companies by industry",
-            column="Main Industry"
+            column="mainIndustry"
         )
     st.divider()
     show_companies(companies, updates)

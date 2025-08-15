@@ -14,9 +14,10 @@ class Company(BaseModel):
         "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData"
     }
 
+
     airtableId: str
     name: str
-    website: str = ""
+    website: str | None = ""
     status: str | None = None
     id: str | None = None
     ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")

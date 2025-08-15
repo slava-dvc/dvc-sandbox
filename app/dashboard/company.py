@@ -265,9 +265,10 @@ def show_traction_graph_with_combo(company_summary: CompanySummary, selected=Non
 def company_page():
     with st.spinner("Loading investments..."):
         investments = get_investments()
+
     with st.spinner("Loading companies..."):
         companies = get_companies()
-        companies = companies[companies['Initial Fund Invested From'].notna()]
+        companies = companies[companies['investingFund'].notna()]
 
     with st.spinner("Load dependencies..."):
         companies = replace_ids_with_values(get_companies_config(), companies)
@@ -281,13 +282,13 @@ def company_page():
         st.query_params.pop('company_id', None)
 
     company_id =st.query_params.get('company_id', None)
-    companies_in_portfolio = companies.sort_values(by='Company')
+    companies_in_portfolio = companies.sort_values(by='name')
     selected_company_id = st.selectbox(
         "Pick the company",
         options=companies_in_portfolio.index,
         index=companies_in_portfolio.index.get_loc(company_id) if company_id in companies_in_portfolio.index else None,
         placeholder="Select company...",
-        format_func=lambda x: companies_in_portfolio.loc[x]['Company'],
+        format_func=lambda x: companies_in_portfolio.loc[x]['name'],
         label_visibility='hidden'
     )
 
