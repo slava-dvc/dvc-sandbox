@@ -181,18 +181,6 @@ async def pull_companies_from_airtable(
             skipped_count += 1
             continue
 
-        if not url:
-            logger.info(
-                "Skipping record - missing URL",
-                labels={
-                    "record_id": record["id"],
-                    "company": name,
-                    "status": status
-                }
-            )
-            skipped_count += 1
-            continue
-
         await _process_company_record(record, companies_collection, logger)
         processed_count += 1
 
