@@ -1,0 +1,72 @@
+A1. Individual Investments
+
+Income Evidence
+Individual threshold is over $200k, joint threshold is over $300k, both require you to have a reasonable expectation of reaching the same in the current year.
+If you plan to rely on joint income for one of the two years, you must meet the $300k threshold for both.
+If your spouse does not share your surname, we may ask for a marriage license or certificate before considering their individual tax documentation.
+Documents must be official tax documents in your name – W-2s, 1040s, K-1s, and non-US equivalents are preferred.
+Documentation must be for two consecutive years within the past two years – e.g. as of 2023, we can either accept forms from 2021+2022, or 2022+2023.
+We cannot accept internally prepared documents or documents from employers. We will always request the original tax documentation when available.
+Exception: We can accept official pay stubs alongside an employment verification letter when tax documentation is not available for the most recent year only.
+We cannot annualize your earnings for verification. Evidence must meet or exceed the threshold year-to-date.
+Documents must be in English. We recommend obtaining a third-party accreditation attestation if your income documentation cannot be translated. (attached).
+We convert non-USD income using IRS annual average exchange rates for the appropriate years.
+
+
+Net Worth Evidence
+All evidence must list the investor’s name and be dated within the last 90 days, unless otherwise noted.
+Liabilities
+We attempt to automatically run a soft credit pull for users that provide their SSN upon uploading evidence. This may fail, in which case we will request a consumer credit report.
+To consider individual evidence of assets, we require evidence of liabilities from domestic and non-domestic LPs, in the form of a consumer credit report from a major credit bureau from their region.
+The individual’s mortgage on a primary residence is excluded from the calculation.
+Assets
+Preferred forms of evidence include, but are not limited to bank statements, brokerage statements, and audited financial statements.
+We can consider private equity holdings if we receive recent evidence of ownership alongside a 409A valuation dated within the last 12 months.
+We can accept crypto holdings, provided the investor name is listed on the evidence.
+If assets are held via an entity are to be considered for an individual, we may request additional ownership documentation to prorate holdings.
+Assets held in irrevocable trusts generally cannot be considered for individual net worth.
+Professional License Certification
+We independently verify investors’ FINRA licensure via Brokercheck.
+
+Third-Party Attestation Letters
+We can accept third-party attestations in lieu of accredited investor evidence, provided the letter is written by:
+For US Investors, Licensed Attorney, Certified Public Accountant, SEC or state-registered Investment Adviser, or FINRA member Broker-Dealer. This does not include IRS Enrolled Agents.
+For Non-US Investors, Licensed Attorney or Chartered Accountant from their respective region.
+
+
+
+
+￼A2. Entity Investments
+Corporations, Limited Liability Companies, Limited Partnerships, Employee Benefit Plans, and other corporate entities.
+$5M total Assets
+Preferred forms of evidence include, but are not limited to, bank statements, brokerage statements, and audited financial statements in the name of the entity.
+We can consider private equity holdings if we receive recent evidence of ownership alongside a 409A valuation dated within the last 12 months.
+We can accept crypto holdings, provided the entity name is listed on the evidence.
+For assets held in subsidiary or affiliate entities, we may request documentation of the relationship between the entities.
+All Owners Accredited
+A corporate entity may qualify as an accredited investor if all underlying owners provide evidence that they meet the accredited investor definition.
+Revocable Trusts
+Assets
+Preferred forms of evidence include, but are not limited to, bank statements, brokerage statements, and audited financial statements in the name of the trust.
+We can consider private equity holdings if we receive recent evidence of ownership alongside a 409A valuation dated within the last 12 months.
+We can accept crypto holdings, provided the trust name is listed on the evidence.
+All Owners Accredited
+A revocable trust may qualify as an accredited investor if all grantors provide evidence that they meet the appropriate accredited investor definition.
+Irrevocable Trusts
+Assets
+Preferred forms of evidence include, but are not limited to, bank statements, brokerage statements, and audited financial statements in the name of the trust.
+We can consider private equity holdings if we receive recent evidence of ownership alongside a 409A valuation dated within the last 12 months.
+We can accept crypto holdings, provided the trust name is listed on the evidence.
+Broker-Dealers and Investment Advisers
+We independently verify licensure via Brokercheck or IAPD.
+Financial Entities
+We will attempt to independently verify the registration of other financial institutions, including banks, savings and loan associations, insurance companies, registered investment companies, business development companies, and small business investment companies or rural business investment companies.
+In the instance we cannot verify the registered status, we will request supporting documentation.
+Third-Party Attestation Letters
+Assets
+For US Entities, Licensed Attorney, Certified Public Accountant, SEC or state-registered Investment Adviser, or FINRA member Broker-Dealer. This does not include IRS Enrolled Agents.
+For Non-US Entities, Licensed Attorney or Chartered Accountant from their respective region (see attached).
+All Owners Accredited
+For US Entities, Licensed Attorney, Certified Public Accountant, SEC or state-registered Investment Adviser, or FINRA member Broker-Dealer. This does not include IRS Enrolled Agents.
+For Non-US Entities, Licensed Attorney or Chartered Accountant from their respective region.
+Entity – All Owners Accredited letter templates can be found here. Does not apply to irrevocable trusts. (see attached)
