@@ -1,33 +1,9 @@
 import streamlit as st
-from app.foundation.primitives import datetime
 from app.dashboard.data import get_jobs
+from dashboard.formatting import format_relative_time
 
 __all__ = ['jobs_page']
 
-
-def format_date(date_str):
-    """Format date to relative time"""
-    if not date_str:
-        return "Unknown"
-    
-    try:
-        job_date = datetime.any_to_datetime(date_str)
-        if not job_date:
-            return "Unknown"
-            
-        now = datetime.now()
-        delta = now - job_date
-        
-        if delta.days <1:
-            return "Today"
-        elif delta.days == 1:
-            return "Yesterday"
-        elif delta.days < 7:
-            return f"{delta.days} days ago"
-        else:
-            return f"{delta.days // 7} weeks ago"
-    except:
-        return "Unknown"
 
 
 def show_job_card(job):
@@ -50,7 +26,8 @@ def show_job_card(job):
 
         with col1:
             st.markdown(f"**{company_name}** - {title}")
-            st.caption(f"{location}, Found: {format_date(created_at)}, Updated: {format_date(updated_at)}")
+            st.caption(
+                f"{location}, Found: {format_relative_time(created_at)}, Updated: {format_relative_time(updated_at)}")
         with col2:
             if first_apply_option:
                 apply_link = first_apply_option.get('link', '#')

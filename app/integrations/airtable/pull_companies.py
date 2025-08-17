@@ -2,26 +2,29 @@ from typing import Dict, Any
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 
-from app.shared import Company, AirTableClient
+from app.shared import Company, CompanyStatus, AirTableClient
 from app.foundation.server import Logger
 from app.foundation.primitives import datetime
 
 
 _STATUS_MAP = {
-    "Invested":"Invested",
-    "Exit": "Exit",
-    "Write-off": "Write-off",
-    "Docs Sent": "Docs Sent",
-    "Offered to Invest": "Offered to Invest",
-    "New Company": "New Company",
-    "w8 Lead": "Diligence",
-    "Diligence": "Diligence",
-    "Contacted": "In Progress",
-    "Checkin": "In Progress",
-    "Second Meeting": "In Progress",
-    "DD/HomeWork": "In Progress",
-    "Fast Track": "In Progress",
-    "Going to Pass": "Going to Pass",
+    "Invested": CompanyStatus.INVESTED,
+    "Exit": CompanyStatus.EXIT,
+    "Write-off": CompanyStatus.WRITE_OFF,
+    "Docs Sent": CompanyStatus.DOCS_SENT,
+    "Offered to Invest": CompanyStatus.OFFERED_TO_INVEST,
+    "New Company": CompanyStatus.NewCompany,
+    "w8 Lead": CompanyStatus.DILIGENCE,
+    "Diligence": CompanyStatus.DILIGENCE,
+    "Contacted": CompanyStatus.IN_PROGRESS,
+    "Meeting": CompanyStatus.IN_PROGRESS,
+    "Checkin": CompanyStatus.IN_PROGRESS,
+    "Second Meeting": CompanyStatus.IN_PROGRESS,
+    "DD/HomeWork": CompanyStatus.IN_PROGRESS,
+    "Fast Track": CompanyStatus.IN_PROGRESS,
+    "Going to Pass": CompanyStatus.GOING_TO_PASS,
+    "Going to pass": CompanyStatus.GOING_TO_PASS,
+    "Radar": CompanyStatus.RADAR,
 }
 
 
@@ -57,7 +60,6 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             "companyHQ": fields.get("Company HQ"),
             "distributionModelType": fields.get("Distribution Strategy"),
             "linkToDeck": fields.get("Linktothepitchdeck"),
-            "logo": fields.get("Logo"),
             "mainIndustry": fields.get("Main Industry"),
             "problem": fields.get("Problem"),
             "productStructureType": fields.get("Product Structure"),
@@ -72,6 +74,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             'performanceOutlook': fields.get('Expected Performance'),
             'revenue': fields.get('Revenue copy'),
             'runway': fields.get('Runway'),
+            'source': fields.get('Source'),
         }
     }
 
@@ -106,8 +109,8 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
                 "company": company.model_dump(exclude_none=True,  exclude=['ourData']),
                 "operation": "update",
                 "airtableId": company.airtableId,
-                "matched_count": result.matched_count,
-                "modified_count": result.modified_count
+                "matchedCount": result.matched_count,
+                "modifiedCount": result.modified_count
             }
         )
     return True
@@ -161,10 +164,10 @@ async def pull_companies_from_airtable(
             logger.info(
                 "Skipping record - invalid status",
                 labels={
-                    "record_id": record["id"],
+                    "airtableId": record["id"],
                     "company": name,
                     "status": status,
-                    "valid_statuses": list(_STATUS_MAP.keys())
+                    "validStatuses": list(_STATUS_MAP.keys())
                 }
             )
             skipped_count += 1
@@ -174,7 +177,7 @@ async def pull_companies_from_airtable(
             logger.info(
                 "Skipping record - missing company name",
                 labels={
-                    "record_id": record["id"],
+                    "airtableId": record["id"],
                     "status": status
                 }
             )
@@ -188,11 +191,11 @@ async def pull_companies_from_airtable(
     logger.info(
         "Airtable companies sync completed",
         labels={
-            "table_id": table_id,
-            "total_records": len(records),
-            "processed_count": processed_count,
-            "skipped_count": skipped_count,
-            "success_rate": round((processed_count / len(records)) * 100, 1) if records else 0
+            "tableId": table_id,
+            "totalRecords": len(records),
+            "processedCount": processed_count,
+            "skippedCount": skipped_count,
+            "successRate": round((processed_count / len(records)) * 100, 1) if records else 0
         }
     )
     

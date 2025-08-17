@@ -5,6 +5,7 @@ import os
 import pandas as pd
 from pyairtable import Api
 from pymongo import MongoClient
+from app.shared.company import Company
 
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
 
@@ -15,7 +16,7 @@ def airtable_api_client() -> Api:
 
 @st.cache_resource
 def mongodb_client():
-    return MongoClient(os.environ['MONGODB_URI'])
+    return MongoClient(os.environ['MONGODB_URI'], tz_aware=True)
 
 @st.cache_resource()
 def mongo_database():
@@ -35,8 +36,8 @@ def fetch_airtable_as_df(table_name: str, **options) -> pd.DataFrame:
 def get_investments(**options):
     return fetch_airtable_as_df('tblrsrZTHW8famwpw', **options)
 
-
-def get_companies(**options):
+@st.cache_resource(show_spinner=False)
+def get_companies(query: dict = None):
     def transform_company(company):
         data = {'id': company['airtableId']}
         data |= {
@@ -56,34 +57,21 @@ def get_companies(**options):
     companies_collection = db.get_collection('companies')
     rows = [
         transform_company(company)
-        for company in companies_collection.find()
+        for company in companies_collection.find(query or {})
     ]
+    if not rows:
+        return pd.DataFrame()
     return pd.DataFrame(rows).set_index('id')
 
-    for air_row in air_table_rows:
-        airtable_id = air_row['id']
-        airfields = air_row['fields']
-        if not airfields.get('Initial Fund Invested From'):
-            continue
-        row = {
-            k:v for k, v in air_row['fields'].items()
-            if k in all_fields
-        } | {'id': airtable_id}
-        mongo_row = mongo_index.get(airtable_id)
-        if mongo_row:
-            row = row | {
-                'spectrId': mongo_row.get('spectrId'),
-                'spectrUpdatedAt': mongo_row.get('spectrUpdatedAt'),
-            }
-            spectrData = mongo_row.get('spectrData')
-            if spectrData:
-                row = row | {
-                    k: v for k, v in spectrData.items()
-                    if k in all_fields
-                }
 
-        rows.append(row)
-    return pd.DataFrame(rows).set_index('id')
+@st.cache_resource(show_spinner=False)
+def get_companies_v2(query: dict = None, sort: typing.List[typing.Tuple[str, int]] = None) -> typing.List[Company]:
+    db = mongo_database()
+    companies_collection = db.get_collection('companies')
+    companies = companies_collection.find(query or {}, sort=sort).to_list()
+    return [
+        Company.model_validate(company) for company in companies
+    ]
 
 
 def get_ask_to_task(**options):
@@ -121,13 +109,6 @@ def get_jobs(**options):
     return jobs
 
 
-def get_companies_config():
-    return get_table_config('tblJL5aEsZFa0x6zY')
-
-
-def get_investments_config():
-    return get_table_config('tblrsrZTHW8famwpw')
-
 @st.cache_data(show_spinner=False)
 def fetch_tables_config() -> dict:
     url = f"https://api.airtable.com/v0/meta/bases/{AIRTABLE_BASE_ID}/tables"
@@ -137,104 +118,3 @@ def fetch_tables_config() -> dict:
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return {table['id']: table for table in response.json()['tables']}
-
-
-def get_table_config(table_id: str) -> dict:
-    tables_config = fetch_tables_config()
-    return tables_config.get(table_id, {})
-
-
-def fetch_linked_table_names(linked_table_id):
-    table_config = get_table_config(linked_table_id)
-    primaryFieldId = table_config.get('primaryFieldId')
-    field = None
-    for f in table_config.get('fields', []):
-        if f.get('id') == primaryFieldId:
-            field = f
-            break
-    primary_field_name = field.get('name')
-    linked_table = {
-        row['id']:row['fields'].get(primary_field_name)
-        for row in fetch_airtable_as_rows(linked_table_id, fields=[primary_field_name])
-    }
-    return linked_table
-
-def convert_filed(field_definition: dict, column: pd.Series, linked_table: dict) -> pd.Series:
-    options = {opt['id']: opt['name'] for opt in field_definition.get('options', {}).get('choices', [])}
-    filed_type = field_definition.get('type')
-
-    def _text(value):
-        if isinstance(value, (list, tuple)):
-            value = ", ".join([str(v) for v in value])
-        if not value:
-            return None
-        return str(value)
-
-    def _multiple_record_links(value):
-        return [linked_table.get(i, None) for i in value] if isinstance(value, list) else []
-
-    def _multiple_selects(value):
-        return [options.get(i, None) for i in value] if isinstance(value, list) else []
-
-    def _single_select(value):
-        if not value:
-            return value
-        if isinstance(value, list) and len(value) == 1:
-            value = value[0]
-        return options.get(value, value)
-
-    field_serializers = {
-        # 'checkbox': _boolean_serializer,
-        # 'currency': _number_serializer,
-        'date': _text,
-        'email': _text,
-        'multilineText': _text,
-        # 'multipleLookupValues': _multiple_selects_serializer,
-        'multipleRecordLinks': _multiple_record_links,
-        'multipleSelects': _multiple_selects,
-        # 'number': _number_serializer,
-        'richText': _text,
-        'singleLineText': _text,
-        'singleSelect': _single_select,
-        # 'url': _url_serializer,
-    }
-    if filed_type in field_serializers:
-        return column.apply(field_serializers[filed_type])
-    return column
-
-
-def replace_ids_with_values(table_config: dict, df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Replace IDs with corresponding values for fields in a given dataframe.
-
-    Args:
-        table_id (str): The ID of the Airtable to fetch field configuration from.
-        df (pd.DataFrame): The dataframe containing rows with IDs to be replaced.
-
-    Returns:
-        pd.DataFrame: The updated dataframe with IDs replaced by their respective values.
-
-    Example:
-        df = replace_ids_with_values('tblJL5aEsZFa0x6zY', companies)
-    """
-    # Fetch table configuration and field definitions
-
-    field_definitions = table_config.get('fields', [])
-    linked_tables = {}
-    result = df.copy()
-    for field in field_definitions:
-        field_name = field['name']
-        # Skip fields not present in the dataframe
-        if field_name not in df.columns:
-            continue
-
-        linked_table = {}
-        if field.get('type') == 'multipleRecordLinks':
-            linked_table_id = field.get('options', {}).get('linkedTableId')
-            if linked_table_id in linked_tables:
-                linked_table = linked_tables[linked_table_id]
-            else:
-                linked_table = fetch_linked_table_names(linked_table_id)
-                linked_tables[linked_table_id] = linked_table
-        result[field_name] = convert_filed(field, result[field_name], linked_table)
-    return result

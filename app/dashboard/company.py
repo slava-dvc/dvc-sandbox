@@ -1,36 +1,37 @@
 import pandas as pd
-import requests
+
 import streamlit as st
-import uuid
 from dataclasses import fields
 from app.foundation.primitives import datetime
-from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
-from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric, TractionMetrics
-from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, \
-    replace_ids_with_values, get_portfolio, get_updates
+from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric
+from app.dashboard.data import get_investments, get_companies, get_portfolio, get_updates, get_ask_to_task, get_people
 
 __all__ = ['company_page']
 
 
 def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
-    logo_column, name_column = st.columns([1, 8])
+    logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512 )
     with logo_column:
-        if company_summary.logo_url:
-            try:
-                st.image(company_summary.logo_url, width=64)
-            except Exception:
-                st.write("📊")
-        else:
-            st.write("📊")
+        fallback_url = f'https://placehold.co/128x128?text={company_summary.name}'
+        st.image(fallback_url)
+        #
+        # if company_summary.logo_url:
+        #     try:
+        #         st.image(company_summary.logo_url, width=64)
+        #     except Exception:
+        #         st.write("📊")
+        # else:
+        #     st.write("📊")
     with name_column:
-        st.header( f"{company_summary.name} ({company_summary.status})")
+        st.header(company_summary.name)
+        st.write(company_summary.status)
     if company_summary.website and isinstance(company_summary.website, str):
         st.write(company_summary.website)
     else:
         st.caption("No URL provided.")
     if isinstance(company_summary.blurb, str):
-        st.write(company_summary.blurb)
+        st.markdown(company_summary.blurb.replace('$', '\$'))
     else:
         st.caption("No blurb provided.")
 
@@ -270,8 +271,6 @@ def company_page():
         companies = get_companies()
         companies = companies[companies['investingFund'].notna()]
 
-    with st.spinner("Load dependencies..."):
-        companies = replace_ids_with_values(get_companies_config(), companies)
     with st.spinner("Loading updates..."):
         updates = get_updates()
 

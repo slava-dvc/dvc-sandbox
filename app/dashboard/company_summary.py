@@ -328,13 +328,15 @@ def show_company_summary(company_summary: CompanySummary):
         logo_column, info_column, signals_column, button_column = st.columns([1, 7, 4, 1], gap='small')
 
         with logo_column:
-            if company_summary.logo_url:
-                try:
-                    st.image(company_summary.logo_url, width=64)
-                except Exception:
-                    st.write("📊")
-            else:
-                st.write("📊")
+            fallback_url = f'https://placehold.co/128x128?text={company_name}'
+            st.image(fallback_url)
+            # if company_summary.logo_url:
+            #     try:
+            #         st.image(company_summary.logo_url, width=64)
+            #     except Exception:
+            #         st.write("📊")
+            # else:
+            #     st.write("📊")
 
         with info_column:
             header = []

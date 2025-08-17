@@ -1,5 +1,7 @@
 import numpy as np
 
+from foundation.primitives import datetime
+
 
 def get_preview(photo_field):
     """
@@ -125,3 +127,27 @@ def format_compact_number(number, default="—", decimal_places=1):
     # Format the number with the specified decimal places
     format_str = "{:." + str(decimal_places) + "f}{}"
     return format_str.format(number, suffixes[magnitude])
+
+
+def format_relative_time(date: str | datetime.datetime):
+    """Convert datetime to human-readable relative time (e.g. 'Today', '2 days ago')"""
+    if not date:
+        return "Unknown"
+
+    try:
+        if not isinstance(date, datetime.datetime):
+            date: datetime.datetime = datetime.any_to_datetime(date)
+
+        now = datetime.now()
+        delta = now - date
+
+        if delta.days <1:
+            return "Today"
+        elif delta.days == 1:
+            return "Yesterday"
+        elif delta.days < 7:
+            return f"{delta.days} days ago"
+        else:
+            return f"{delta.days // 7} weeks ago"
+    except Exception as e:
+        return "Unknown"

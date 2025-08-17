@@ -1,11 +1,26 @@
-from typing import Optional, List, Literal, ClassVar, Set, Any
+from enum import StrEnum
+from typing import Optional, List, ClassVar, Set, Any
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field
 from app.foundation.primitives import datetime
 
 
-BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
+__all__ = ["Company", "CompanyStatus"]
+
+
+class CompanyStatus(StrEnum):
+    NEW_COMPANY = "New Company"
+    DILIGENCE = "Diligence"
+    IN_PROGRESS = "In Progress"
+    OFFERED_TO_INVEST = "Offered to Invest"
+    GOING_TO_PASS = "Going to Pass"
+    PASSED = "Passed"
+    DOCS_SENT = "Docs Sent"
+    RADAR = "Radar"
+    INVESTED = "Invested"
+    EXIT = "Exit"
+    WRITE_OFF = "Write-off"
 
 
 class Company(BaseModel):
@@ -14,11 +29,10 @@ class Company(BaseModel):
         "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData"
     }
 
-
     airtableId: str
     name: str
     website: str | None = ""
-    status: str | None = None
+    status: CompanyStatus | None = None
     id: str | None = None
     ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")
     blurb: str | None = Field(None, description="Company blurb")
