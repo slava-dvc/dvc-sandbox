@@ -8,6 +8,7 @@ from app.foundation.primitives import datetime
 
 __all__ = ["Company", "CompanyStatus"]
 
+BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
 
 class CompanyStatus(StrEnum):
     NEW_COMPANY = "New Company"

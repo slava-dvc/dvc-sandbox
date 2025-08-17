@@ -33,8 +33,6 @@ class JobDispatcher(object):
         return source in self._source_to_topic_mapping
 
     async def trigger_many(self, max_items: int, sources: List[Str]) -> int:
-        companies = await self.get_companies(max_items)
-        count = 0
         supported_sources = [source for source in sources if self.is_supported(source)]
         if not supported_sources:
             self._logger.warning("No supported sources", labels={
@@ -48,17 +46,30 @@ class JobDispatcher(object):
             })
             sources = supported_sources
 
-        for company in companies:
-            if not company.has_valid_website():
-                self._logger.warning("Company has no valid website", labels={
-                    "company": company.model_dump(exclude_none=True),
+        companies_collection = self._database["companies"]
+        projection = {f: 0 for f in Company.DATA_FIELDS}
+        cursor = companies_collection.find(projection=projection).limit(max_items)
+        count = 0
+        async for company_data in cursor:
+            try:
+                company = Company.from_dict(company_data)
+                if not company.has_valid_website():
+                    self._logger.warning("Company has no valid website", labels={
+                        "company": company.model_dump(exclude_none=True),
+                        "sources": sources,
+                    })
+                    continue
+
+                for source in supported_sources:
+                    await self.trigger_one(company, source)
+                    count += 1
+            except Exception as e:
+                self._logger.error("Failed to dispatch company data pull", exc_info=e, labels={
+                    "company": company_data,
+                    "exception": str(e),
                     "sources": sources,
                 })
                 continue
-
-            for source in supported_sources:
-                await self.trigger_one(company, source)
-                count += 1
         return count
 
     async def trigger_one(self, company: Company, source: Str):
@@ -81,15 +92,3 @@ class JobDispatcher(object):
             "message_id": message_id,
             "topic": topic_path,
         })
-
-    async def get_companies(self, max_items: int = 1000) -> List[Company]:
-        companies_collection = self._database["companies"]
-        projection = {f: 0 for f in Company.DATA_FIELDS}
-        cursor = companies_collection.find(projection=projection).limit(max_items)
-        companies = []
-        failed_count = 0
-        
-        async for doc in cursor:
-            companies.append(Company.from_dict(doc))
-
-        return companies

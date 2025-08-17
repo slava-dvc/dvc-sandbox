@@ -13,7 +13,7 @@ _STATUS_MAP = {
     "Write-off": CompanyStatus.WRITE_OFF,
     "Docs Sent": CompanyStatus.DOCS_SENT,
     "Offered to Invest": CompanyStatus.OFFERED_TO_INVEST,
-    "New Company": CompanyStatus.NewCompany,
+    "New Company": CompanyStatus.NEW_COMPANY,
     "w8 Lead": CompanyStatus.DILIGENCE,
     "Diligence": CompanyStatus.DILIGENCE,
     "Contacted": CompanyStatus.IN_PROGRESS,
