@@ -4,7 +4,7 @@ from google.cloud import pubsub
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.foundation.server import Logger
-from app.shared import Company
+from app.shared import Company, CompanyStatus
 from infrastructure.queues import company_data
 
 __all__ = ["JobDispatcher"]
@@ -48,7 +48,8 @@ class JobDispatcher(object):
 
         companies_collection = self._database["companies"]
         projection = {f: 0 for f in Company.DATA_FIELDS}
-        cursor = companies_collection.find(projection=projection).limit(max_items)
+        query = {'status': str(CompanyStatus.INVESTED)}
+        cursor = companies_collection.find(query, projection=projection).limit(max_items)
         count = 0
         async for company_data in cursor:
             try:
