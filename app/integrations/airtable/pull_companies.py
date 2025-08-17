@@ -60,7 +60,6 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             "companyHQ": fields.get("Company HQ"),
             "distributionModelType": fields.get("Distribution Strategy"),
             "linkToDeck": fields.get("Linktothepitchdeck"),
-            "logo": fields.get("Logo"),
             "mainIndustry": fields.get("Main Industry"),
             "problem": fields.get("Problem"),
             "productStructureType": fields.get("Product Structure"),
@@ -110,8 +109,8 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
                 "company": company.model_dump(exclude_none=True,  exclude=['ourData']),
                 "operation": "update",
                 "airtableId": company.airtableId,
-                "matched_count": result.matched_count,
-                "modified_count": result.modified_count
+                "matchedCount": result.matched_count,
+                "modifiedCount": result.modified_count
             }
         )
     return True
@@ -165,10 +164,10 @@ async def pull_companies_from_airtable(
             logger.info(
                 "Skipping record - invalid status",
                 labels={
-                    "record_id": record["id"],
+                    "airtableId": record["id"],
                     "company": name,
                     "status": status,
-                    "valid_statuses": list(_STATUS_MAP.keys())
+                    "validStatuses": list(_STATUS_MAP.keys())
                 }
             )
             skipped_count += 1
@@ -178,7 +177,7 @@ async def pull_companies_from_airtable(
             logger.info(
                 "Skipping record - missing company name",
                 labels={
-                    "record_id": record["id"],
+                    "airtableId": record["id"],
                     "status": status
                 }
             )
@@ -192,11 +191,11 @@ async def pull_companies_from_airtable(
     logger.info(
         "Airtable companies sync completed",
         labels={
-            "table_id": table_id,
-            "total_records": len(records),
-            "processed_count": processed_count,
-            "skipped_count": skipped_count,
-            "success_rate": round((processed_count / len(records)) * 100, 1) if records else 0
+            "tableId": table_id,
+            "totalRecords": len(records),
+            "processedCount": processed_count,
+            "skippedCount": skipped_count,
+            "successRate": round((processed_count / len(records)) * 100, 1) if records else 0
         }
     )
     

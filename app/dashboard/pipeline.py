@@ -56,58 +56,58 @@ def _extract_logo_url(logo_field):
     return None
 
 
-def _render_company_card(company: Company):
-    """Render a compact company card with logo, name, website, blurb."""
-    st.caption(f"Company ID: {company.airtableId}")
-
-    # logo may come from ourData.logo merged as top-level 'logo'
-    logo_url = _extract_logo_url(company.ourData.get('logo'))
-    fallback_url = f'https://placehold.co/128x128?text={company.name}'
-    logo_column, company_fields_column = st.columns([2, 5], vertical_alignment="center", width=512 )
-    statuses = [str(s) for s in  CompanyStatus]
-
-    with logo_column:
-        try:
-            st.image(logo_url, width=128)
-        except Exception:
-            st.image(fallback_url, width=128)
-
-    with company_fields_column:
-        source = company.ourData.get('source') or "No source provided"
+def _render_company_card_compact(company: Company):
+    """Compact horizontal card layout."""
+    # Header row
+    col1, col2 = st.columns([3, 1], vertical_alignment="center")
+    with col1:
         st.markdown(f"### {company.name}")
-        st.text(f"{source}")
-        st.markdown(f"[{company.website}]({company.website})")
-        new_status = st.selectbox(
-            label="Company status",
-            options=statuses,
-            key=f"company_status_{company.airtableId}",
-            label_visibility='hidden',
-            index=statuses.index(str(company.status))
-        )
+    with col2:
+        st.caption(f"ID: {company.airtableId}")
 
-    if isinstance(company.blurb,str):
+    logo_col, info_col, controls_col = st.columns([1, 3, 2], vertical_alignment="center")
+    
+    with logo_col:
+        logo_url = _extract_logo_url(company.ourData.get('logo'))
+        fallback_url = f'https://placehold.co/128x128?text={company.name}'
+        # try:
+        #     st.image(logo_url, width=128)
+        # except Exception:
+        st.image(fallback_url, width=128)
+    
+    with info_col:
+        # st.markdown(f"**{company.name}**")
+        st.caption(f"{company.ourData.get('source', 'No source')} • Added: {format_relative_time(company.createdAt)}")
+        if company.website:
+            st.markdown(f"🔗 [{company.website}]({company.website})")
+
+    
+    with controls_col:
+        statuses = [str(s) for s in CompanyStatus]
+        new_status = st.selectbox(
+            label="Status",
+            options=statuses,
+            key=f"status_{company.airtableId}",
+            index=statuses.index(str(company.status)) if company.status else 0,
+            label_visibility="collapsed"
+        )
+        if st.button('Show Details', key=f"details_{company.airtableId}"):
+            company_details(company)
+        
+
+    if isinstance(company.blurb, str):
         blurb = company.blurb.replace('$', '\$')
         if len(blurb) > 1024:
-            blurb = blurb[:1024] + " ..."
+            blurb = blurb[:1024] + "..."
         st.markdown(blurb)
-    columns = st.columns([0.3, 0.4, 0.3], vertical_alignment="center")
-    # with columns[0]:
-
-    with columns[1]:
-        if st.button('Details', key=f"company_details_{company.airtableId}"):
-            company_details(company)
-    with columns[2]:
-        st.text(f"Added: {format_relative_time(company.createdAt)}")
-
 
     if new_status != str(company.status):
         st.warning('Status update is not yet supported.')
 
+
 @st.fragment()
 def show_pipeline_tab(status):
     companies = get_companies_v2({'status': str(status)}, [('createdAt', -1)])
-    # if st.button("Show company details", key=f"show_company_details_{status}"):
-    #     company_dialog(1)
 
     if not companies:
         st.info("No companies found for this stage yet.")
@@ -116,7 +116,7 @@ def show_pipeline_tab(status):
     # Render a compact card for each company
     for company in companies:
         with st.container(border=True):
-            _render_company_card(company)
+            _render_company_card_compact(company)
 
 
 def pipeline_page():

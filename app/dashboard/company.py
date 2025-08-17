@@ -13,13 +13,16 @@ __all__ = ['company_page']
 def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
     logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512 )
     with logo_column:
-        if company_summary.logo_url:
-            try:
-                st.image(company_summary.logo_url, width=64)
-            except Exception:
-                st.write("📊")
-        else:
-            st.write("📊")
+        fallback_url = f'https://placehold.co/128x128?text={company_summary.name}'
+        st.image(fallback_url)
+        #
+        # if company_summary.logo_url:
+        #     try:
+        #         st.image(company_summary.logo_url, width=64)
+        #     except Exception:
+        #         st.write("📊")
+        # else:
+        #     st.write("📊")
     with name_column:
         st.header(company_summary.name)
         st.write(company_summary.status)
