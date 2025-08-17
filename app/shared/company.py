@@ -10,15 +10,17 @@ __all__ = ["Company", "CompanyStatus"]
 
 
 class CompanyStatus(StrEnum):
-    INVESTED = "Invested"
-    EXIT = "Exit"
-    WRITE_OFF = "Write-off"
-    DOCS_SENT = "Docs Sent"
-    OFFERED_TO_INVEST = "Offered to Invest"
     NEW_COMPANY = "New Company"
     DILIGENCE = "Diligence"
     IN_PROGRESS = "In Progress"
+    OFFERED_TO_INVEST = "Offered to Invest"
     GOING_TO_PASS = "Going to Pass"
+    PASSED = "Passed"
+    DOCS_SENT = "Docs Sent"
+    RADAR = "Radar"
+    INVESTED = "Invested"
+    EXIT = "Exit"
+    WRITE_OFF = "Write-off"
 
 
 class Company(BaseModel):

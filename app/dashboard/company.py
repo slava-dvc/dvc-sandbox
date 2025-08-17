@@ -11,7 +11,7 @@ __all__ = ['company_page']
 
 
 def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
-    logo_column, name_column = st.columns([1, 8])
+    logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512 )
     with logo_column:
         if company_summary.logo_url:
             try:
@@ -21,13 +21,14 @@ def show_company_basic_details(company: pd.Series, company_summary: CompanySumma
         else:
             st.write("📊")
     with name_column:
-        st.header( f"{company_summary.name} ({company_summary.status})")
+        st.header(company_summary.name)
+        st.write(company_summary.status)
     if company_summary.website and isinstance(company_summary.website, str):
         st.write(company_summary.website)
     else:
         st.caption("No URL provided.")
     if isinstance(company_summary.blurb, str):
-        st.write(company_summary.blurb)
+        st.markdown(company_summary.blurb.replace('$', '\$'))
     else:
         st.caption("No blurb provided.")
 

@@ -8,20 +8,23 @@ from app.foundation.primitives import datetime
 
 
 _STATUS_MAP = {
-    "Invested": CompanyStatus.Invested,
-    "Exit": CompanyStatus.Exit,
-    "Write-off": CompanyStatus.WriteOff,
-    "Docs Sent": CompanyStatus.DocsSent,
-    "Offered to Invest": CompanyStatus.OfferedToInvest,
+    "Invested": CompanyStatus.INVESTED,
+    "Exit": CompanyStatus.EXIT,
+    "Write-off": CompanyStatus.WRITE_OFF,
+    "Docs Sent": CompanyStatus.DOCS_SENT,
+    "Offered to Invest": CompanyStatus.OFFERED_TO_INVEST,
     "New Company": CompanyStatus.NewCompany,
-    "w8 Lead": CompanyStatus.Diligence,
-    "Diligence": CompanyStatus.Diligence,
-    "Contacted": CompanyStatus.InProgress,
-    "Checkin": CompanyStatus.InProgress,
-    "Second Meeting": CompanyStatus.InProgress,
-    "DD/HomeWork": CompanyStatus.InProgress,
-    "Fast Track": CompanyStatus.InProgress,
-    "Going to Pass": CompanyStatus.GoingToPass,
+    "w8 Lead": CompanyStatus.DILIGENCE,
+    "Diligence": CompanyStatus.DILIGENCE,
+    "Contacted": CompanyStatus.IN_PROGRESS,
+    "Meeting": CompanyStatus.IN_PROGRESS,
+    "Checkin": CompanyStatus.IN_PROGRESS,
+    "Second Meeting": CompanyStatus.IN_PROGRESS,
+    "DD/HomeWork": CompanyStatus.IN_PROGRESS,
+    "Fast Track": CompanyStatus.IN_PROGRESS,
+    "Going to Pass": CompanyStatus.GOING_TO_PASS,
+    "Going to pass": CompanyStatus.GOING_TO_PASS,
+    "Radar": CompanyStatus.RADAR,
 }
 
 
@@ -72,6 +75,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             'performanceOutlook': fields.get('Expected Performance'),
             'revenue': fields.get('Revenue copy'),
             'runway': fields.get('Runway'),
+            'source': fields.get('Source'),
         }
     }
 

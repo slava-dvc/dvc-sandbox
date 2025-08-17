@@ -23,7 +23,7 @@ PULL_COMPANIES_PATH = "v1/integrations/airtable/pull_companies"
 pull_companies_from_airtable = make_scheduled_job(
     "airtable-pull-companies",
     "Pull Companies from AirTable",
-    "5 10 * * 7",
+    "5 10 * * *",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{PULL_COMPANIES_PATH}"),
     scheduler_service_account
 )

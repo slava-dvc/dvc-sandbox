@@ -5,6 +5,7 @@ import os
 import pandas as pd
 from pyairtable import Api
 from pymongo import MongoClient
+from app.shared.company import Company
 
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
 
@@ -15,7 +16,7 @@ def airtable_api_client() -> Api:
 
 @st.cache_resource
 def mongodb_client():
-    return MongoClient(os.environ['MONGODB_URI'])
+    return MongoClient(os.environ['MONGODB_URI'], tz_aware=True)
 
 @st.cache_resource()
 def mongo_database():
@@ -35,8 +36,8 @@ def fetch_airtable_as_df(table_name: str, **options) -> pd.DataFrame:
 def get_investments(**options):
     return fetch_airtable_as_df('tblrsrZTHW8famwpw', **options)
 
-
-def get_companies(**options):
+@st.cache_resource(show_spinner=False)
+def get_companies(query: dict = None):
     def transform_company(company):
         data = {'id': company['airtableId']}
         data |= {
@@ -56,34 +57,21 @@ def get_companies(**options):
     companies_collection = db.get_collection('companies')
     rows = [
         transform_company(company)
-        for company in companies_collection.find()
+        for company in companies_collection.find(query or {})
     ]
+    if not rows:
+        return pd.DataFrame()
     return pd.DataFrame(rows).set_index('id')
 
-    for air_row in air_table_rows:
-        airtable_id = air_row['id']
-        airfields = air_row['fields']
-        if not airfields.get('Initial Fund Invested From'):
-            continue
-        row = {
-            k:v for k, v in air_row['fields'].items()
-            if k in all_fields
-        } | {'id': airtable_id}
-        mongo_row = mongo_index.get(airtable_id)
-        if mongo_row:
-            row = row | {
-                'spectrId': mongo_row.get('spectrId'),
-                'spectrUpdatedAt': mongo_row.get('spectrUpdatedAt'),
-            }
-            spectrData = mongo_row.get('spectrData')
-            if spectrData:
-                row = row | {
-                    k: v for k, v in spectrData.items()
-                    if k in all_fields
-                }
 
-        rows.append(row)
-    return pd.DataFrame(rows).set_index('id')
+@st.cache_resource(show_spinner=False)
+def get_companies_v2(query: dict = None, sort: typing.List[typing.Tuple[str, int]] = None) -> typing.List[Company]:
+    db = mongo_database()
+    companies_collection = db.get_collection('companies')
+    companies = companies_collection.find(query or {}, sort=sort).to_list()
+    return [
+        Company.model_validate(company) for company in companies
+    ]
 
 
 def get_ask_to_task(**options):
