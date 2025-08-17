@@ -1,14 +1,11 @@
 import pandas as pd
-import requests
+
 import streamlit as st
-import uuid
 from dataclasses import fields
 from app.foundation.primitives import datetime
-from app.dashboard.data import get_companies, get_ask_to_task, get_updates, get_people, get_investments, get_portfolio
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
-from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric, TractionMetrics
-from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, \
-    replace_ids_with_values, get_portfolio, get_updates
+from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric
+from app.dashboard.data import get_investments, get_companies, get_portfolio, get_updates, get_ask_to_task, get_people
 
 __all__ = ['company_page']
 
@@ -270,8 +267,6 @@ def company_page():
         companies = get_companies()
         companies = companies[companies['investingFund'].notna()]
 
-    with st.spinner("Load dependencies..."):
-        companies = replace_ids_with_values(get_companies_config(), companies)
     with st.spinner("Loading updates..."):
         updates = get_updates()
 

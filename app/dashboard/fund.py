@@ -1,12 +1,11 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from app.dashboard.formatting import format_as_dollars, get_preview
+from app.dashboard.formatting import format_as_dollars
 from app.foundation.primitives import datetime
 from app.dashboard.company_summary import CompanySummary
 from .company_summary import show_company_summary
-from app.dashboard.data import get_investments, get_companies, get_investments_config, get_companies_config, \
-    replace_ids_with_values, get_portfolio, get_updates
+from app.dashboard.data import get_investments, get_companies, get_updates
 
 __all__ = ['fund_page']
 
@@ -179,8 +178,6 @@ def fund_page():
         companies = get_companies()
         companies = companies[companies['investingFund'].notna()]
 
-    with st.spinner("Load dependencies..."):
-        companies = replace_ids_with_values(get_companies_config(), companies)
     with st.spinner("Loading updates..."):
         updates = get_updates()
 

@@ -29,7 +29,7 @@ def handle_not_authorized():
     st.write("Please contact the administrator if you believe this is an error.")
     st.button("Log out", on_click=st.logout)
 
-
+st.markdown("""<style> div[data-testid="stMainBlockContainer"] { width: 100% !important; padding: 3rem !important; } </style>""", unsafe_allow_html=True)
 
 if not st.user.is_logged_in:
     login_screen()

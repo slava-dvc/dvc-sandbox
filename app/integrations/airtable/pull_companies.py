@@ -2,26 +2,26 @@ from typing import Dict, Any
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 
-from app.shared import Company, AirTableClient
+from app.shared import Company, CompanyStatus, AirTableClient
 from app.foundation.server import Logger
 from app.foundation.primitives import datetime
 
 
 _STATUS_MAP = {
-    "Invested":"Invested",
-    "Exit": "Exit",
-    "Write-off": "Write-off",
-    "Docs Sent": "Docs Sent",
-    "Offered to Invest": "Offered to Invest",
-    "New Company": "New Company",
-    "w8 Lead": "Diligence",
-    "Diligence": "Diligence",
-    "Contacted": "In Progress",
-    "Checkin": "In Progress",
-    "Second Meeting": "In Progress",
-    "DD/HomeWork": "In Progress",
-    "Fast Track": "In Progress",
-    "Going to Pass": "Going to Pass",
+    "Invested": CompanyStatus.Invested,
+    "Exit": CompanyStatus.Exit,
+    "Write-off": CompanyStatus.WriteOff,
+    "Docs Sent": CompanyStatus.DocsSent,
+    "Offered to Invest": CompanyStatus.OfferedToInvest,
+    "New Company": CompanyStatus.NewCompany,
+    "w8 Lead": CompanyStatus.Diligence,
+    "Diligence": CompanyStatus.Diligence,
+    "Contacted": CompanyStatus.InProgress,
+    "Checkin": CompanyStatus.InProgress,
+    "Second Meeting": CompanyStatus.InProgress,
+    "DD/HomeWork": CompanyStatus.InProgress,
+    "Fast Track": CompanyStatus.InProgress,
+    "Going to Pass": CompanyStatus.GoingToPass,
 }
 
 
