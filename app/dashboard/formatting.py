@@ -1,6 +1,6 @@
 import numpy as np
 
-from foundation.primitives import datetime
+from app.foundation.primitives import datetime
 
 
 def get_preview(photo_field):

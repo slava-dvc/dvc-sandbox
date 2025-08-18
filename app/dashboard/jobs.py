@@ -1,6 +1,6 @@
 import streamlit as st
 from app.dashboard.data import get_jobs
-from dashboard.formatting import format_relative_time
+from app.dashboard.formatting import format_relative_time
 
 __all__ = ['jobs_page']
 
