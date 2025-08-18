@@ -6,7 +6,6 @@ from app.shared import Company, CompanyStatus, AirTableClient
 from app.foundation.server import Logger
 from app.foundation.primitives import datetime
 
-
 _STATUS_MAP = {
     "Invested": CompanyStatus.INVESTED,
     "Exit": CompanyStatus.EXIT,
@@ -16,16 +15,16 @@ _STATUS_MAP = {
     "New Company": CompanyStatus.NEW_COMPANY,
     "w8 Lead": CompanyStatus.DILIGENCE,
     "Diligence": CompanyStatus.DILIGENCE,
-    "Contacted": CompanyStatus.IN_PROGRESS,
-    "Meeting": CompanyStatus.IN_PROGRESS,
-    "Checkin": CompanyStatus.IN_PROGRESS,
-    "Second Meeting": CompanyStatus.IN_PROGRESS,
-    "DD/HomeWork": CompanyStatus.IN_PROGRESS,
-    "Fast Track": CompanyStatus.IN_PROGRESS,
+    "Contacted": CompanyStatus.CONTACTED,
+    "Meeting": CompanyStatus.MEETING,
+    "Checkin": CompanyStatus.CHECKIN,
+    "Second Meeting": CompanyStatus.MEETING,
+    "DD/HomeWork": CompanyStatus.DILIGENCE,
     "Going to Pass": CompanyStatus.GOING_TO_PASS,
     "Going to pass": CompanyStatus.GOING_TO_PASS,
     "Radar": CompanyStatus.RADAR,
 }
+
 
 
 def _unwrap_single_item(value):
@@ -49,6 +48,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
     status = fields.get("Status")
 
     company_data = {
+        "id": None,
         "name": (fields.get("Company") or "").strip(),
         "website": fields.get("URL"),
         "airtableId": record["id"],
@@ -79,7 +79,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
     }
 
     # Create Company model
-    company = Company(**company_data)
+    company = Company.model_validate(company_data)
 
     # Upsert to MongoDB (update if exists, insert if new)
     result = await companies_collection.update_one(

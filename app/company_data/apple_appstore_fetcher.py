@@ -50,8 +50,7 @@ class AppleAppStoreFetcher(DataFetcher):
                     updated_at = datetime.any_to_datetime(processed_at)
         else:
             self._logger.info("Company has no App Store presence", labels={
-                "company_id": company.id,
-                "company_name": company.name,
+                "company": company.model_dump_for_logs(),
             })
 
         return FetchResult(

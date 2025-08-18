@@ -17,7 +17,7 @@ async def map_async(array: typing.List[typing.Any], async_fn: typing.Callable, *
     backlog = list(array)
     results = []
     while backlog:
-        tasks = [async_fn(item, *args, **kwargs) for item in backlog[:concurrency()]]
+        tasks = [asyncio.create_task(async_fn(item, *args, **kwargs)) for item in backlog[:concurrency()]]
         backlog = backlog[concurrency():]
 
         done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=kwargs.get('timeout', 60))

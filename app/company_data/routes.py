@@ -8,13 +8,14 @@ from pymongo.asynchronous.database import AsyncDatabase
 from app.foundation.server import dependencies, Logger
 from app.foundation.server.config import AppConfig
 from app.shared import Company
-from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client, get_genai_client
+from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client, get_genai_client, get_spectr_client
 from .job_dispatcher import JobDispatcher
 from .data_syncer import DataSyncer
 from .linkedin_fetcher import LinkedInFetcher
 from .googleplay_fetcher import GooglePlayFetcher
 from .apple_appstore_fetcher import AppleAppStoreFetcher
 from .google_jobs import GoogleJobsFetcher, GoogleJobsDataSyncer
+from .spectr_fetcher import SpectrFetcher
 
 router = APIRouter(
     prefix="/company_data",
@@ -152,5 +153,29 @@ async def sync_company_google_jobs(
         logger=logger,
     )
 
+    await data_syncer.sync_one(company=data)
+    return
+
+
+@router.post('/pull/spectr', status_code=HTTPStatus.ACCEPTED)
+async def sync_company_spectr(
+        data: Company = Body(),
+        database: AsyncDatabase = Depends(dependencies.get_default_database),
+        dataset_bucket: storage.Bucket = Depends(dependencies.get_dataset_bucket),
+        spectr_client = Depends(get_spectr_client),
+        logger: Logger = Depends(dependencies.get_logger),
+):
+    fetcher = SpectrFetcher(
+        spectr_client=spectr_client,
+        logger=logger,
+    )
+    
+    data_syncer = DataSyncer(
+        dataset_bucket=dataset_bucket,
+        database=database,
+        data_fetcher=fetcher,
+        logger=logger,
+    )
+    
     await data_syncer.sync_one(company=data)
     return

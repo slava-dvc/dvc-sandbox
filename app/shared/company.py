@@ -13,7 +13,9 @@ BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
 class CompanyStatus(StrEnum):
     NEW_COMPANY = "New Company"
     DILIGENCE = "Diligence"
-    IN_PROGRESS = "In Progress"
+    CONTACTED = "Contacted"
+    MEETING = "Meeting"
+    CHECKIN = "Checkin"
     OFFERED_TO_INVEST = "Offered to Invest"
     GOING_TO_PASS = "Going to Pass"
     PASSED = "Passed"
@@ -30,11 +32,11 @@ class Company(BaseModel):
         "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData", "blurb"
     }
 
+    id: str | None
     airtableId: str
     name: str
     website: str | None = None
     status: CompanyStatus | None = None
-    id: str | None = None
     ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")
     blurb: str | None = Field(None, description="Company blurb")
 

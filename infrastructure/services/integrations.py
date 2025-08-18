@@ -28,13 +28,16 @@ pull_companies_from_airtable = make_scheduled_job(
     scheduler_service_account
 )
 
-SYNC_COMPANIES_PATH = "v1/integrations/spectr/sync_companies"
-sync_companies_from_spectr = make_scheduled_job(
-    "spectr-pull-companies",
-    "Pull Companies from Spectr",
-    "13 17 5 * *",
-    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{SYNC_COMPANIES_PATH}"),
-    cloud_run_service_account
+company_data_pull_spectr = make_scheduled_job(
+    "company-data-pull-spectr",
+    "Pull Company Data (Spectr)",
+    "13 17 * * 7",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL}"),
+    cloud_run_service_account,
+    {
+        "sources": ["spectr"],
+        "max_items": 50000
+    }
 )
 
 COMPANY_DATA_PULL = "v1/company_data/pull"
@@ -115,6 +118,14 @@ create_subscription_with_push_and_dlq(
     company_data.google_jobs_topic_name,
     "consume",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_GOOGLE_JOBS}"),
+    cloud_run_service_account
+)
+
+COMPANY_DATA_PULL_SPECTR = "v1/company_data/pull/spectr"
+create_subscription_with_push_and_dlq(
+    company_data.spectr_topic_name,
+    "consume",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_SPECTR}"),
     cloud_run_service_account
 )
 

@@ -1,9 +1,7 @@
 import httpx
-import gzip
 from google.cloud import storage
-from app.foundation import get_env, as_async, map_async
+from app.foundation import get_env, as_async
 from app.foundation.server.logger import Logger
-from app.foundation.primitives import json, datetime
 from typing import Dict, Any, List
 
 
@@ -43,7 +41,7 @@ class SpectrClient(object):
             "remaining": response.headers.get("X-CreditLimit-Remaining"),
             "reset": response.headers.get("X-CreditLimit-Reset")
         }
-
+        kwargs.pop("headers", None)
         self._logger.info(f'Spectr request', labels={
             "spectrEndpoint": endpoint,
             "rateLimit": rate_limit,
@@ -53,11 +51,6 @@ class SpectrClient(object):
 
         response.raise_for_status()  # Raises detailed HTTP errors (if any)
         company_data = response.json()
-        if isinstance(company_data, list) and len(company_data) == 1:
-            company_data = company_data[0]
-        else:
-            raise ValueError(f"Unexpected response format from spectr")
-        await self.persist_company_data(company_data)
         return company_data
 
     async def get_company_by_id(self, company_id: str) -> Dict[str, Any]:
@@ -121,21 +114,4 @@ class SpectrClient(object):
 
         endpoint = "companies"
         companies = await self.request(method="POST", endpoint=endpoint, json=json_body)
-        await map_async(companies, self.persist_company_data)
         return companies
-
-    async def persist_company_data(self, company_data: Dict[str, Any]) -> None:
-        last_updated = company_data.get("last_updated")
-        company_id = company_data.get("id")
-        data = json.dumps(company_data)
-        
-        # Compress the data using gzip
-        compressed_data = gzip.compress(data.encode('utf-8'))
-        
-        blob = self._dataset_bucket.blob(f"spectr/{last_updated}/{company_id}.json.gz")
-        # Set content encoding so clients know it's compressed
-        blob.content_encoding = 'gzip'
-        await as_async(blob.upload_from_string,
-            data=compressed_data,
-            content_type='application/json',
-        )

@@ -100,6 +100,12 @@ class DataSyncer:
         )
 
     async def store_db_data(self, company: Company, result: FetchResult):
+        if not company.id:
+            self._logger.warning("Cannot store DB data", labels={
+                "company": company.model_dump_for_logs(),
+                "reason": "missing_company_id"
+            })
+            return
         update_result = await self._companies_collection.update_one(
             {
                 '_id': ObjectId(company.id)
@@ -108,3 +114,4 @@ class DataSyncer:
                 "$set": result.db_update_fields
             },
         )
+
