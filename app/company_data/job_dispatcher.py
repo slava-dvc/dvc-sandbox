@@ -56,7 +56,7 @@ class JobDispatcher(object):
                 company = Company.from_dict(company_data)
                 if not company.has_valid_website():
                     self._logger.warning("Company has no valid website", labels={
-                        "company": company.model_dump(exclude_none=True),
+                        "company": company.model_dump(exclude_none=True, exclude=['blurb']),
                         "sources": sources,
                     })
                     continue
@@ -66,7 +66,13 @@ class JobDispatcher(object):
                     count += 1
             except Exception as e:
                 self._logger.error("Failed to dispatch company data pull", exc_info=e, labels={
-                    "company": company_data,
+                    "company": {
+                        "id": str(company_data.get("_id")),
+                        "airtableId": company_data.get("airtableId"),
+                        "name": company_data.get("name"),
+                        "website": company_data.get("website"),
+                        "status": company_data.get("status"),
+                    },
                     "exception": str(e),
                     "sources": sources,
                 })
@@ -90,6 +96,6 @@ class JobDispatcher(object):
         self._logger.info("Dispatch company data pull", labels={
             "company": company.model_dump(exclude_none=True),
             "source": source,
-            "message_id": message_id,
+            "messageId": str(message_id),
             "topic": topic_path,
         })

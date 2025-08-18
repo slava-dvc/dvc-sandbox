@@ -27,7 +27,7 @@ class CompanyStatus(StrEnum):
 class Company(BaseModel):
 
     DATA_FIELDS: ClassVar[Set[str]] = {
-        "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData"
+        "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData", "blurb"
     }
 
     airtableId: str
