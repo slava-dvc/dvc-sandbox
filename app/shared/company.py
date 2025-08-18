@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Optional, List, ClassVar, Set, Any
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AliasChoices
 from app.foundation.primitives import datetime
 
 
@@ -32,7 +32,7 @@ class Company(BaseModel):
         "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData", "blurb"
     }
 
-    id: str | None
+    id: str | None = Field(..., validation_alias=AliasChoices("_id", 'id'))
     airtableId: str
     name: str
     website: str | None = None
