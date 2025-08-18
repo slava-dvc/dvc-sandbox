@@ -59,6 +59,9 @@ class Company(BaseModel):
 
     googleJobsUpdatedAt: datetime.datetime | None = None
 
+    def model_dump_for_logs(self):
+        return self.model_dump(exclude_none=True, exclude=self.DATA_FIELDS)
+
     def has_valid_website(self):
         if not self.website:
             return False

@@ -83,10 +83,6 @@ class SpectrSyncAction:
                 self.logger.error(
                     'Error processing company',
                     labels={
-                        'companyName': company_doc.get("name", "unknown"),
-                        'airtableId': company_doc.get("airtableId"),
-                        'spectrId': company_doc.get("spectrId"),
-                        'website': company_doc.get("website"),
                         'error': str(e),
                     },
                     exc_info=e
@@ -109,9 +105,7 @@ class SpectrSyncAction:
             self.logger.warning(
                 'Cannot enrich company: no website provided',
                 labels={
-                    'companyName': company.name,
-                    'airtableId': company.airtableId,
-                    'spectrId': company.spectrId
+                    'company': company.model_dump_for_logs()
                 }
             )
             return False
@@ -120,10 +114,7 @@ class SpectrSyncAction:
             self.logger.warning(
                 'Cannot enrich company: not a company website',
                 labels={
-                    'companyName': company.name,
-                    'airtableId': company.airtableId,
-                    'spectrId': company.spectrId,
-                    'website': company.website,
+                    'company': company.model_dump_for_logs(),
                     'netloc': parsed_url.netloc
                 }
             )
@@ -137,10 +128,7 @@ class SpectrSyncAction:
                 self.logger.info(
                     'No Spectr data found for company',
                     labels={
-                        'companyName': company.name,
-                        'airtableId': company.airtableId,
-                        'spectrId': company.spectrId,
-                        'website': company.website
+                        'company': company.model_dump_for_logs()
                     }
                 )
                 return False
@@ -150,10 +138,7 @@ class SpectrSyncAction:
                 self.logger.warning(
                     'Multiple Spectr matches found for company',
                     labels={
-                        'companyName': company.name,
-                        'airtableId': company.airtableId,
-                        'spectrId': company.spectrId,
-                        'website': company.website,
+                        'company': company.model_dump_for_logs(),
                         'matchCount': len(enrichment_result)
                     }
                 )
@@ -179,10 +164,7 @@ class SpectrSyncAction:
                 self.logger.info(
                     'Enriched company with Spectr ID',
                     labels={
-                        'companyName': company.name,
-                        'airtableId': company.airtableId,
-                        'spectrId': company.spectrId,
-                        'website': company.website
+                        'company': company.model_dump_for_logs()
                     }
                 )
                 return True
@@ -193,11 +175,7 @@ class SpectrSyncAction:
             self.logger.error(
                 'Error enriching company',
                 labels={
-                    'companyName': company.name,
-                    'airtableId': company.airtableId,
-                    'spectrId': company.spectrId,
-                    'website': company.website,
-                    'company': jsonable_encoder(company.dict()),
+                    'company': company.model_dump_for_logs(),
                     'error': str(e)
                 },
                 exc_info=e
@@ -224,10 +202,7 @@ class SpectrSyncAction:
                 self.logger.warning(
                     'No Spectr data found for company',
                     labels={
-                        'companyName': company.name,
-                        'airtableId': company.airtableId,
-                        'spectrId': company.spectrId,
-                        'website': company.website
+                        'company': company.model_dump_for_logs()
                     }
                 )
                 return False
@@ -248,10 +223,7 @@ class SpectrSyncAction:
                 self.logger.info(
                     'Updated company with latest Spectr data',
                     labels={
-                        'companyName': company.name,
-                        'airtableId': company.airtableId,
-                        'spectrId': company.spectrId,
-                        'website': company.website
+                        'company': company.model_dump_for_logs()
                     }
                 )
                 return True
@@ -259,10 +231,7 @@ class SpectrSyncAction:
                 self.logger.error(
                     'Company does not exist in MongoDB or data is the same',
                     labels={
-                        'companyName': company.name,
-                        'airtableId': company.airtableId,
-                        'spectrId': company.spectrId,
-                        'website': company.website
+                        'company': company.model_dump_for_logs()
                     }
                 )
             return False
@@ -271,11 +240,7 @@ class SpectrSyncAction:
             self.logger.error(
                 'Error updating company',
                 labels={
-                    'companyName': company.name,
-                    'airtableId': company.airtableId,
-                    'spectrId': company.spectrId,
-                    'website': company.website,
-                    'company': jsonable_encoder(company.dict()),
+                    'company': company.model_dump_for_logs(),
                     'error': str(e)
                 },
                 exc_info=e

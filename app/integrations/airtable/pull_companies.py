@@ -97,7 +97,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
         logger.info(
             "Company inserted",
             labels={
-                "company": company.model_dump(exclude_none=True, exclude=['ourData']),
+                "company": company.model_dump_for_logs(),
                 "operation": "insert",
                 "airtableId": company.airtableId
             }
@@ -106,7 +106,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
         logger.info(
             "Company updated", 
             labels={
-                "company": company.model_dump(exclude_none=True,  exclude=['ourData']),
+                "company": company.model_dump_for_logs(),
                 "operation": "update",
                 "airtableId": company.airtableId,
                 "matchedCount": result.matched_count,

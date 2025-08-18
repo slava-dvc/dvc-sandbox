@@ -150,7 +150,7 @@ class GoogleJobsFetcher(DataFetcher):
                 self._logger.info(
                     "Job does not contain company name",
                     labels={
-                        "company": company.model_dump(exclude_none=True),
+                        "company": company.model_dump_for_logs(),
                         "job": {k: v for k,v in job.items() if k in {'title', 'location', 'company_name'}}
                     }
                 )
@@ -159,7 +159,7 @@ class GoogleJobsFetcher(DataFetcher):
                 self._logger.info(
                     "Job filtered since company has no blurb",
                     labels={
-                        "company": company.model_dump(exclude_none=True),
+                        "company": company.model_dump_for_logs(),
                     }
                 )
                 return False
@@ -168,7 +168,7 @@ class GoogleJobsFetcher(DataFetcher):
                 self._logger.info(
                     "Job filtered by LLM validation",
                     labels={
-                        "company": company.model_dump(exclude_none=True),
+                        "company": company.model_dump_for_logs(),
                         "job": {k: v for k,v in job.items() if k in {'title', 'location', 'company_name'}}
                     }
                 )
