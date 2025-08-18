@@ -14,7 +14,6 @@ from google.cloud import firestore, pubsub, storage
 from functools import cached_property
 from fastapi import FastAPI, Depends, Request
 from fastapi.middleware import gzip, trustedhost
-from starlette.middleware.authentication import AuthenticationMiddleware
 
 from .async_server import AsyncServer
 from .exception_handlers import *
@@ -114,6 +113,11 @@ class FastAPIServer(AsyncServer):
             httpx.HTTPStatusError
         ]:
             app.add_exception_handler(exception_class, http_exception_handler)
+
+        for exception_class in [
+            httpx.ReadError, httpx.ConnectError
+        ]:
+            app.add_exception_handler(exception_class, http_connection_exception_handler)
 
     def setup_middleware(self, app: FastAPI):
         app.add_middleware(RequestTimeoutMiddleware, timeout=1800)

@@ -6,14 +6,14 @@ from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
-from httpx import HTTPStatusError, StreamError
+from httpx import HTTPStatusError, StreamError, ReadError, ConnectError
 from starlette.requests import ClientDisconnect
 
 from .config import AppConfig
 from .dependencies import get_logger
 
 __all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_exception_handler',
-           'request_validation_exception_handler']
+           'http_connection_exception_handler', 'request_validation_exception_handler']
 
 
 
@@ -54,6 +54,24 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
             "error": {
                 "code": HTTPStatus.BAD_GATEWAY,
                 "message": f"Http status {exc.response.status_code} from downstream http call"
+            }
+        },
+        status_code=HTTPStatus.BAD_GATEWAY
+    )
+
+
+def http_connection_exception_handler(request: Request, exc: (ReadError | ConnectError)):
+    logger = get_logger(request)
+    logger.warning("Downstream HTTP connection error", labels={
+        "exceptionType": type(exc).__name__,
+        "exception": str(exc)
+    })
+    
+    return JSONResponse(
+        content={
+            "error": {
+                "code": HTTPStatus.BAD_GATEWAY,
+                "message": f"Connection error to downstream service: {type(exc).__name__}"
             }
         },
         status_code=HTTPStatus.BAD_GATEWAY
@@ -103,4 +121,4 @@ async def request_validation_exception_handler(request: Request, exc: RequestVal
         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
         content={"detail": jsonable_encoder(exc.errors())},
     )
-    
+

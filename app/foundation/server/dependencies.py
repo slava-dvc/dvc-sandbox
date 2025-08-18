@@ -9,7 +9,7 @@ from .logger import CloudLogger, LocalLogger, Logger
 
 __all__ = [
     'get_config', 'get_mongo_client', 'get_default_database', 'get_firestore_client',
-    'get_pubsub_client', 'get_http_client', 'get_auth_token', 'get_logger', 'get_storage_client',
+    'get_publisher_client', 'get_http_client', 'get_auth_token', 'get_logger', 'get_storage_client',
     'get_dataset_bucket'
 ]
 

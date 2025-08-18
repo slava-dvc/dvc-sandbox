@@ -1,6 +1,7 @@
 import abc
 import logging as python_logging
 import os
+import traceback
 from fastapi import Request
 from google.cloud import logging as google_logging
 
@@ -31,10 +32,11 @@ class Logger:
             self._span_id = None
         
         labels = {
-            "request_headers": {k:v for k,v in request.headers.items() if k.lower() not in self.BLOCKLISTED_HEADERS},
-            "request_query_params": request.query_params,
-            "request_url": str(request.url),
-            "request_method": request.method,
+            # "request_headers": {k:v for k,v in request.headers.items() if k.lower() not in self.BLOCKLISTED_HEADERS},
+            "requestClient": str(request.client),
+            "requestQueryParams": request.query_params,
+            "requestUrl": str(request.url),
+            "requestMethod": request.method,
             "handler": self._name,
         }
         self._labels = jsonable_encoder(labels)
@@ -85,7 +87,7 @@ class CloudLogger(Logger):
             log_data["spanId"] = self._span_id
         
         if exc_info:
-            log_data["exc_info"] = str(exc_info)
+            log_data["excInfo"] = ''.join(traceback.format_exception(type(exc_info), exc_info, exc_info.__traceback__))
             
         return log_data
 

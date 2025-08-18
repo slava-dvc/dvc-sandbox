@@ -45,9 +45,9 @@ class SpectrClient(object):
         }
 
         self._logger.info(f'Spectr request', labels={
-            "spectr_endpoint": endpoint,
-            "rate_limit": rate_limit,
-            "credit_limit": credit_limit
+            "spectrEndpoint": endpoint,
+            "rateLimit": rate_limit,
+            "creditLimit": credit_limit
         })
 
         response.raise_for_status()  # Raises detailed HTTP errors (if any)
