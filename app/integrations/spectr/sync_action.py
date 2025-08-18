@@ -88,7 +88,6 @@ class SpectrSyncAction:
                         'spectrId': company_doc.get("spectrId"),
                         'website': company_doc.get("website"),
                         'error': str(e),
-                        'company': jsonable_encoder(company.dict()),
                     },
                     exc_info=e
                 )

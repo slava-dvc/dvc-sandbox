@@ -47,11 +47,16 @@ class SpectrClient(object):
         self._logger.info(f'Spectr request', labels={
             "spectrEndpoint": endpoint,
             "rateLimit": rate_limit,
-            "creditLimit": credit_limit
+            "creditLimit": credit_limit,
+            'kwargs': kwargs,
         })
 
         response.raise_for_status()  # Raises detailed HTTP errors (if any)
         company_data = response.json()
+        if isinstance(company_data, list) and len(company_data) == 1:
+            company_data = company_data[0]
+        else:
+            raise ValueError(f"Unexpected response format from spectr")
         await self.persist_company_data(company_data)
         return company_data
 

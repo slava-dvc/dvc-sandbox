@@ -32,7 +32,7 @@ class Company(BaseModel):
 
     airtableId: str
     name: str
-    website: str | None = ""
+    website: str | None = None
     status: CompanyStatus | None = None
     id: str | None = None
     ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")
@@ -76,27 +76,3 @@ class Company(BaseModel):
         parsed = urlparse(website)
         domain = '.'.join(parsed.netloc.split('.')[-2:])
         return domain
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls(
-            id=str(data['_id']),
-            airtableId=data['airtableId'],
-            name=data['name'],
-            blurb=data.get('blurb'),
-            createdAt=datetime.any_to_datetime(data.get('createdAt')),
-            updatedAt=datetime.any_to_datetime(data.get('updatedAt')),
-            website=data['website'],
-            linkedInId=data.get('linkedInId'),
-            linkedInData=data.get('linkedInData'),
-            linkedInUpdatedAt=datetime.any_to_datetime(data.get('linkedInUpdatedAt')),
-            spectrId=data.get('spectrId'),
-            spectrUpdatedAt=datetime.any_to_datetime(data.get('spectrUpdatedAt')),
-            spectrData=data.get('spectrData'),
-            googlePlayId=data.get('googlePlayId'),
-            googlePlayData=data.get('googlePlayData'),
-            googlePlayUpdatedAt=datetime.any_to_datetime(data.get('googlePlayUpdatedAt')),
-            appStoreId=data.get('appStoreId'),
-            appStoreData=data.get('appStoreData'),
-            appStoreUpdatedAt=datetime.any_to_datetime(data.get('appStoreUpdatedAt')),
-        )

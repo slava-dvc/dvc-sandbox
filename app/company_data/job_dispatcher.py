@@ -53,7 +53,7 @@ class JobDispatcher(object):
         count = 0
         async for company_data in cursor:
             try:
-                company = Company.from_dict(company_data)
+                company = Company.model_validate(company_data)
                 if not company.has_valid_website():
                     self._logger.warning("Company has no valid website", labels={
                         "company": company.model_dump(exclude_none=True, exclude=['blurb']),
