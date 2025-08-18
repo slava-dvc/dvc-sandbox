@@ -1,3 +1,6 @@
+from http import HTTPStatus
+from httpx import HTTPStatusError
+
 from app.shared import Company, SpectrClient
 from app.foundation.primitives import datetime
 from app.foundation.server import Logger
@@ -33,7 +36,24 @@ class SpectrFetcher(DataFetcher):
         """Enrich a company without spectrId using its website."""
         enrichment_result = None
         if company.website:
-            enrichment_result = await self._spectr_client.enrich_companies(website_url=company.website)
+            try:
+                enrichment_result = await self._spectr_client.enrich_companies(website_url=company.website)
+            except HTTPStatusError as e:
+                if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    self._logger.info(
+                        'Company not found in Spectr',
+                        labels={
+                            'company': company.model_dump_for_logs(),
+                            'reason': 'website_not_found_in_spectr_database'
+                        }
+                    )
+                    return FetchResult(
+                        raw_data={},
+                        remote_id=None,
+                        db_update_fields={},
+                        updated_at=datetime.now()
+                    )
+                raise
         
         if not enrichment_result or not isinstance(enrichment_result, list) or len(enrichment_result) != 1:
             self._logger.info(
@@ -68,14 +88,29 @@ class SpectrFetcher(DataFetcher):
 
     async def _update_company(self, company: Company) -> FetchResult:
         """Update a company that already has a spectrId."""
-        spectr_company = await self._spectr_client.get_company_by_id(company.spectrId)
+        try:
+            spectr_company = await self._spectr_client.get_company_by_id(company.spectrId)
+        except HTTPStatusError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                self._logger.warning(
+                    'Spectr company not found',
+                    labels={
+                        'company': company.model_dump_for_logs(),
+                    }
+                )
+                return FetchResult(
+                    raw_data={},
+                    remote_id=company.spectrId,
+                    db_update_fields={},
+                    updated_at=datetime.now()
+                )
+            raise
 
         if not spectr_company:
             self._logger.warning(
                 'No Spectr data found',
                 labels={
                     'company': company.model_dump_for_logs(),
-                    'reason': 'existing_spectr_id_not_found_in_api'
                 }
             )
             return FetchResult(
