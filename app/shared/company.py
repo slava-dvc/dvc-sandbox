@@ -1,8 +1,9 @@
 from enum import StrEnum
 from typing import Optional, List, ClassVar, Set, Any
 from urllib.parse import urlparse
+from bson import ObjectId
 
-from pydantic import BaseModel, Field, AliasChoices
+from pydantic import BaseModel, Field, AliasChoices, field_validator
 from app.foundation.primitives import datetime
 
 
@@ -33,6 +34,14 @@ class Company(BaseModel):
     }
 
     id: str | None = Field(..., validation_alias=AliasChoices("_id", 'id'))
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def validate_object_id(cls, v):
+        if isinstance(v, ObjectId):
+            return str(v)
+        return v
+
     airtableId: str
     name: str
     website: str | None = None
