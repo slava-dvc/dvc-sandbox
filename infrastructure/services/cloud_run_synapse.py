@@ -18,7 +18,7 @@ synapse_cloud_run = gcp.cloudrunv2.Service(
     template=gcp.cloudrunv2.ServiceTemplateArgs(**{
         "scaling": {
             "min_instance_count": 0,
-            "max_instance_count": 2,
+            "max_instance_count": 8,
         },
         "service_account": cloud_run_service_account.email,
         "containers": [
