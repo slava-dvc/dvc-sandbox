@@ -18,6 +18,7 @@ _STATUS_MAP = {
     "Contacted": CompanyStatus.CONTACTED,
     "Meeting": CompanyStatus.MEETING,
     "Checkin": CompanyStatus.CHECKIN,
+    "Submitted AL": CompanyStatus.SUBMITTED_AL,
     "Second Meeting": CompanyStatus.MEETING,
     "DD/HomeWork": CompanyStatus.DILIGENCE,
     "Going to Pass": CompanyStatus.GOING_TO_PASS,
@@ -55,6 +56,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
         "blurb": fields.get("Blurb"),
         "status": _STATUS_MAP[status],
         "ourData": {
+            "summary": fields.get("DVC Summary"),
             "businessModelType": fields.get("Business Model"),
             "category": fields.get("Category"),
             "companyHQ": fields.get("Company HQ"),
@@ -75,6 +77,9 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             'revenue': fields.get('Revenue copy'),
             'runway': fields.get('Runway'),
             'source': fields.get('Source'),
+            'traction': fields.get('Traction (for minimemo)'),
+            'businessModel': fields.get('Business Model'),
+            'marketSize': fields.get('Market Size'),
         }
     }
 
@@ -167,7 +172,6 @@ async def pull_companies_from_airtable(
                     "airtableId": record["id"],
                     "company": name,
                     "status": status,
-                    "validStatuses": list(_STATUS_MAP.keys())
                 }
             )
             skipped_count += 1

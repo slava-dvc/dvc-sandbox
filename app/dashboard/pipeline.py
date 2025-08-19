@@ -20,6 +20,7 @@ _PIPELINE_STATUES = {
     ],
     "Offered to Invest": [
         CompanyStatus.OFFERED_TO_INVEST,
+        CompanyStatus.SUBMITTED_AL
     ],
     "Going to Pass": [
         CompanyStatus.GOING_TO_PASS,

@@ -18,6 +18,7 @@ class CompanyStatus(StrEnum):
     MEETING = "Meeting"
     CHECKIN = "Checkin"
     OFFERED_TO_INVEST = "Offered to Invest"
+    SUBMITTED_AL = "Submitted AL"
     GOING_TO_PASS = "Going to Pass"
     PASSED = "Passed"
     DOCS_SENT = "Docs Sent"

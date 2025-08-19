@@ -24,11 +24,13 @@ def get_company_news(company: Company) -> list[NewsItem]:
         return []
     return [NewsItem.from_dict(news_item) for news_item in company.spectrData['news']]
 
+
 def get_company_highlights(company: Company) -> list[str]:
     """Extract highlights from Company object."""
     if not company.spectrData:
         return []
     return company.spectrData.get('new_highlights', [])
+
 
 def get_company_financial_data(company: Company) -> dict:
     """Extract financial data from Company object."""
@@ -41,8 +43,52 @@ def get_company_financial_data(company: Company) -> dict:
         'expected_performance': our_data.get('performanceOutlook')
     }
 
+def show_overview_row(key: str, value: str | None):
+    """Helper function to display a key-value pair in two columns with proper formatting."""
+    col1, col2 = st.columns([3, 7])
+    with col1:
+        st.markdown(f"**{key}**")
+    with col2:
+        if value and isinstance(value, str) and value.strip():
+            st.markdown(value.replace('$', '\$'))
+        else:
+            st.markdown("—")
+
+def show_overview(company: Company):
+    """Display company overview information in a structured format."""
+    
+    # Main Industry
+    main_industry = company.ourData.get('mainIndustry') if company.ourData else None
+    industry_value = ', '.join(main_industry) if main_industry and isinstance(main_industry, list) else None
+    show_overview_row("Main Industry", industry_value)
+
+    # Summary
+    show_overview_row("Summary", company.blurb)
+    
+    # Problem
+    problem = company.ourData.get('problem') if company.ourData else None
+    show_overview_row("Problem", problem)
+    
+    # Solution
+    solution = company.spectrData.get('description') if company.spectrData else None
+    show_overview_row("Solution", solution)
+    
+    # Why we're excited (skip for now)
+    show_overview_row("Why we're excited", "Not implemented yet.")
+    
+    # Market Size (not available)
+    show_overview_row("Market Size", "Not implemented yet.")
+
+    show_overview_row("Concerns", "Not implemented yet.")
+
+    # Target Market
+    target_market = company.ourData.get('targetMarket') if company.ourData else None
+    show_overview_row("Target Market", target_market)
+
+
 def show_company_basic_details(company: Company):
-    logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512)
+    logo_column, name_column, pitch_deck_column = st.columns([1, 5, 1], vertical_alignment="center")
+
     with logo_column:
         fallback_url = f'https://placehold.co/128x128?text={company.name}'
         st.image(fallback_url, width=128)
@@ -50,19 +96,27 @@ def show_company_basic_details(company: Company):
     with name_column:
         st.header(company.name)
         st.write(company.status.value if company.status else "Unknown")
-    if company.website and isinstance(company.website, str):
-        st.write(company.website)
-    else:
-        st.caption("No URL provided.")
-    if company.blurb and isinstance(company.blurb, str):
-        st.markdown(company.blurb.replace('$', '\$'))
-    else:
-        st.caption("No blurb provided.")
+        if company.website and isinstance(company.website, str):
+            st.write(company.website)
+        else:
+            st.caption("No URL provided.")
+        if company.blurb and isinstance(company.blurb, str):
+            st.markdown(company.blurb.replace('$', '\$'))
+        else:
+            st.caption("No blurb provided.")
+
+    with pitch_deck_column:
+        pitch_deck_url = company.ourData.get('linkToDeck') if company.ourData else None
+        if pitch_deck_url and isinstance(pitch_deck_url, str):
+            st.link_button("Pitchdeck", pitch_deck_url)
+        
+        if st.button("Update Data"):
+            st.info("Update Data functionality is not implemented yet.")
 
 
-def show_company_investment_details(company: pd.Series, investments: pd.DataFrame, portfolio: pd.DataFrame):
+def show_company_investment_details(company: Company, investments: pd.DataFrame, portfolio: pd.DataFrame):
     col1, col2, col3, col4 = st.columns(4)
-    company_id = company.name
+    company_id = company.airtableId
     company_investments = investments[investments['Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)]
     portfolio_index = portfolio['Companies'].apply(lambda x: company_id in x if isinstance(x, list) else False)
     company_in_portfolio = None
@@ -105,8 +159,8 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
         st.metric("MOIC", f"{moic:0.2f}" if is_valid_number(moic) else "—")
 
 
-def show_asks(company: pd.Series):
-    company_id = company.name
+def show_asks(company: Company):
+    company_id = company.airtableId
     with st.spinner("Loading..."):
         asks = get_ask_to_task()
 
@@ -339,8 +393,7 @@ def company_page():
     tabs = st.tabs(names)
 
     with tabs[0]:
-        st.text("TBD")
-        pass
+        show_overview(company)
 
     with tabs[1]:
         show_team(company)
@@ -367,11 +420,10 @@ def company_page():
 
         with st.spinner("Loading ..."):
             portfolio = get_portfolio()
-        mock_series = pd.Series({'name': company.name}, name=company.airtableId)
-        show_company_investment_details(mock_series, investments, portfolio)
+        show_company_investment_details(company, investments, portfolio)
 
     with tabs[6]:
-        show_asks(mock_series)
+        show_asks(company)
 
     with tabs[7]:
         with st.spinner("Loading ..."):
