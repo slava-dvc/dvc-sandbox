@@ -64,7 +64,6 @@ def get_companies(query: dict = None):
     return pd.DataFrame(rows).set_index('id')
 
 
-@st.cache_resource(show_spinner=False)
 def get_companies_v2(query: dict = None, sort: typing.List[typing.Tuple[str, int]] = None) -> typing.List[Company]:
     db = mongo_database()
     companies_collection = db.get_collection('companies')

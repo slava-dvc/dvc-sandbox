@@ -1,9 +1,10 @@
+from bson import ObjectId
 import streamlit as st
 import itertools
 from app.dashboard.data import get_companies_v2
 from app.shared import Company, CompanyStatus
 from app.dashboard.formatting import format_relative_time
-
+from .data import mongo_database, airtable_api_client, AIRTABLE_BASE_ID
 
 _PIPELINE_STATUES = {
     "New Company": [
@@ -13,7 +14,6 @@ _PIPELINE_STATUES = {
         CompanyStatus.CONTACTED,
         CompanyStatus.MEETING,
         CompanyStatus.CHECKIN,
-        # 'In Progress'
     ],
     "Diligence": [
         CompanyStatus.DILIGENCE,
@@ -38,6 +38,20 @@ def company_details(company):
     st.write(
         "This is a placeholder for the company details"
     )
+
+
+def _update_company_status(company: Company, status):
+    # Update MongoDB
+    mongo_database().companies.update_one(
+        {'_id': ObjectId(company.id)},
+        {'$set': {'status': str(status)}}
+    )
+    
+    # Update Airtable
+    api = airtable_api_client()
+    table = api.table(AIRTABLE_BASE_ID, 'tblJL5aEsZFa0x6zY')  # Companies table
+    table.update(company.airtableId, {'Status': str(status)})
+
 
 def _render_company_card(company: Company):
     company_id = company.id
@@ -75,7 +89,7 @@ def _render_company_card(company: Company):
 
     with button_column:
         def update_company_id(company_id):
-            st.query_params.update({'company_id': company_id})
+            st.query_params.update({'company_id': company.airtableId})
 
         st.link_button("View", url=f'/company_page?company_id={company.airtableId}')
 
@@ -85,55 +99,13 @@ def _render_company_card(company: Company):
             blurb = blurb[:1024] + "..."
         st.markdown(blurb)
 
-def _render_company_card_compact(company: Company):
-    """Compact horizontal card layout."""
-    # Header row
-    col1, col2 = st.columns([3, 1], vertical_alignment="center")
-    with col1:
-        st.markdown(f"### {company.name}")
-    with col2:
-        st.caption(f"ID: {company.airtableId}")
-
-    logo_col, info_col, controls_col = st.columns([1, 3, 2], vertical_alignment="center")
-    
-    with logo_col:
-        fallback_url = f'https://placehold.co/128x128?text={company.name}'
-        # try:
-        #     st.image(logo_url, width=128)
-        # except Exception:
-        st.image(fallback_url, width=128)
-    
-    with info_col:
-        # st.markdown(f"**{company.name}**")
-        st.caption(f"{company.ourData.get('source', 'No source')} • Added: {format_relative_time(company.createdAt)}")
-        if company.website:
-            st.markdown(f"🔗 [{company.website}]({company.website})")
-
-    
-    with controls_col:
-        statuses = [str(s) for s in CompanyStatus]
-        new_status = st.selectbox(
-            label="Status",
-            options=statuses,
-            key=f"status_{company.airtableId}",
-            index=statuses.index(str(company.status)) if company.status else 0,
-            label_visibility="collapsed"
-        )
-        if st.button('Show Details', key=f"details_{company.airtableId}"):
-            company_details(company)
-        
-
-    if isinstance(company.blurb, str):
-        blurb = company.blurb.replace('$', '\$')
-        if len(blurb) > 1024:
-            blurb = blurb[:1024] + "..."
-        st.markdown(blurb)
-
     if new_status != str(company.status):
-        st.warning('Status update is not yet supported.')
+        with st.spinner("Updating..."):
+            _update_company_status(company, new_status)
+
+        st.rerun(scope='fragment')
 
 
-@st.fragment()
 def show_pipeline_tab(statuses):
     query = {
         'status': {
@@ -151,7 +123,7 @@ def show_pipeline_tab(statuses):
         with st.container(border=True):
             _render_company_card(company)
 
-
+@st.fragment()
 def pipeline_page():
     tabs = st.tabs(_PIPELINE_STATUES)
     for tab, (tab_name, statuses) in zip(tabs, _PIPELINE_STATUES.items()):
