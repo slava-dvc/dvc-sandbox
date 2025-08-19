@@ -3,38 +3,58 @@ import pandas as pd
 import streamlit as st
 from dataclasses import fields
 
-from app.shared import CompanyStatus
+from app.shared.company import Company, CompanyStatus
 from app.foundation.primitives import datetime
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
-from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric
+from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem, HIGHLIGHTS_DICT
 from app.dashboard.data import get_investments, get_portfolio, get_updates, get_ask_to_task, get_people, get_companies_v2
 
 __all__ = ['company_page']
 
 
+def get_company_traction_metrics(company: Company) -> TractionMetrics:
+    """Extract traction metrics from Company object."""
+    if not company.spectrData or not company.spectrData.get('traction_metrics'):
+        return TractionMetrics()
+    return TractionMetrics.from_dict(company.spectrData['traction_metrics'])
 
-def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
+def get_company_news(company: Company) -> list[NewsItem]:
+    """Extract news items from Company object."""
+    if not company.spectrData or not company.spectrData.get('news'):
+        return []
+    return [NewsItem.from_dict(news_item) for news_item in company.spectrData['news']]
+
+def get_company_highlights(company: Company) -> list[str]:
+    """Extract highlights from Company object."""
+    if not company.spectrData:
+        return []
+    return company.spectrData.get('new_highlights', [])
+
+def get_company_financial_data(company: Company) -> dict:
+    """Extract financial data from Company object."""
+    our_data = company.ourData or {}
+    return {
+        'runway': our_data.get('runway'),
+        'revenue': our_data.get('revenue'),
+        'burnrate': our_data.get('burnRate'),
+        'customers_cnt': our_data.get('customerCount'),
+        'expected_performance': our_data.get('performanceOutlook')
+    }
+
+def show_company_basic_details(company: Company):
     logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512 )
     with logo_column:
-        fallback_url = f'https://placehold.co/128x128?text={company_summary.name}'
+        fallback_url = f'https://placehold.co/128x128?text={company.name}'
         st.image(fallback_url)
-        #
-        # if company_summary.logo_url:
-        #     try:
-        #         st.image(company_summary.logo_url, width=64)
-        #     except Exception:
-        #         st.write("📊")
-        # else:
-        #     st.write("📊")
     with name_column:
-        st.header(company_summary.name)
-        st.write(company_summary.status)
-    if company_summary.website and isinstance(company_summary.website, str):
-        st.write(company_summary.website)
+        st.header(company.name)
+        st.write(company.status.value if company.status else "Unknown")
+    if company.website and isinstance(company.website, str):
+        st.write(company.website)
     else:
         st.caption("No URL provided.")
-    if isinstance(company_summary.blurb, str):
-        st.markdown(company_summary.blurb.replace('$', '\$'))
+    if company.blurb and isinstance(company.blurb, str):
+        st.markdown(company.blurb.replace('$', '\$'))
     else:
         st.caption("No blurb provided.")
 
@@ -96,9 +116,9 @@ def show_asks(company: pd.Series):
         st.dataframe(filtered_asks[columns], hide_index=True, use_container_width=True)
 
 
-def show_last_updates_and_news(company_summary: CompanySummary, updates):
+def show_last_updates_and_news(company: Company, updates):
     rows = []
-    relevant_updates = updates['Company Name'].apply(lambda x: company_summary.company_id in x if isinstance(x, list) else False)
+    relevant_updates = updates['Company Name'].apply(lambda x: company.airtableId in x if isinstance(x, list) else False)
     company_updates = updates[relevant_updates].copy()
     company_updates.rename(columns={'Please provide any comments/questions': "Comment"}, inplace=True)
     for company_update in company_updates.itertuples():
@@ -110,7 +130,8 @@ def show_last_updates_and_news(company_summary: CompanySummary, updates):
             'title': company_update.Comment,
         })
     news_after = datetime.now() - datetime.timedelta(days=90)
-    for company_news_item in company_summary.news:
+    company_news = get_company_news(company)
+    for company_news_item in company_news:
         if company_news_item.date < news_after:
             continue
         rows.append({
@@ -161,16 +182,25 @@ def show_team(company: pd.Series):
         col3.link_button("Contact", founder.LinkedIn)
 
 
-def show_signals(company_summary: CompanySummary):
+def show_signals(company: Company):
     c1, c2, c3 = st.columns(3)
+    financial_data = get_company_financial_data(company)
+    traction_metrics = get_company_traction_metrics(company)
+    highlights = get_company_highlights(company)
+    
     with c1:
-        st.metric("Runway", company_summary.runway)
-        st.metric("Revenue", format_as_dollars(company_summary.revenue))
+        st.metric("Runway", financial_data['runway'])
+        st.metric("Revenue", format_as_dollars(financial_data['revenue']))
     with c2:
-        st.metric("Burnrate", company_summary.burnrate)
-        st.metric("Customers Cnt", company_summary.customers_cnt)
+        st.metric("Burnrate", financial_data['burnrate'])
+        st.metric("Customers Cnt", financial_data['customers_cnt'])
     with c3:
-        highlights_cnt = show_highlights(company_summary)
+        # Create a mock object with required attributes for show_highlights
+        mock_summary = type('MockSummary', (), {
+            'new_highlights': highlights,
+            'traction_metrics': traction_metrics
+        })()
+        highlights_cnt = show_highlights(mock_summary)
         if not highlights_cnt:
             st.info("No signals for this company.")
 
@@ -214,8 +244,8 @@ def show_traction_graph(traction_metric: TractionMetric, label=None):
     )
 
 
-def show_traction_graph_with_combo(company_summary: CompanySummary, selected=None):
-    traction_metrics = company_summary.traction_metrics
+def show_traction_graph_with_combo(company: Company, selected=None):
+    traction_metrics = get_company_traction_metrics(company)
     traction_metrics_fields = fields(traction_metrics)
     # Dictionary mapping internal field names to human-readable display names
     metric_display_names = {
@@ -293,45 +323,43 @@ def company_page():
         st.info("Please select a company.")
         return
 
+    st.query_params.update({'company_id': selected_company_id})
     companies = get_companies_v2(query={'airtableId': selected_company_id})
     if len(companies) != 1:
         st.warning("Company not found.")
         return
     company = companies[0]
+    
     with st.spinner("Loading investments..."):
         investments = get_investments()
-
     with st.spinner("Loading updates..."):
         updates = get_updates()
-
     with st.spinner("Loading portfolio..."):
         portfolio = get_portfolio()
 
-    # companies_in_portfolio = get_portfolio()
-    investments = get_investments()
-    updates = get_updates()
-    portfolio = get_portfolio()
-    st.query_params.update({'company_id': selected_company_id})
-    selected_company = companies_in_portfolio.loc[selected_company_id]
-    company_summary = CompanySummary.from_dict(selected_company, selected_company_id)
-    show_company_basic_details(selected_company, company_summary)
+    show_company_basic_details(company)
     st.divider()
-    show_company_investment_details(selected_company, investments, portfolio)
+    
+    # Note: show_company_investment_details and show_asks still need pandas Series format
+    # Creating a mock pandas Series for backwards compatibility
+    mock_series = pd.Series({'name': company.name}, name=company.airtableId)
+    show_company_investment_details(mock_series, investments, portfolio)
     st.divider()
     st.subheader("Asks")
-    show_asks(selected_company)
+    show_asks(mock_series)
     st.divider()
+    
     c1, c2 = st.columns(2)
     with c1:
-        show_traction_graph_with_combo(company_summary, 'web_visits')
+        show_traction_graph_with_combo(company, 'web_visits')
     with c2:
-        show_traction_graph_with_combo(company_summary, 'employee_count')
+        show_traction_graph_with_combo(company, 'employee_count')
     st.divider()
     st.subheader("Signals")
-    show_signals(company_summary)
+    show_signals(company)
     st.divider()
     st.subheader("Last Updates and News")
-    show_last_updates_and_news(company_summary, updates)
+    show_last_updates_and_news(company, updates)
     st.divider()
     st.subheader("Team")
-    show_team(selected_company)
+    show_team(mock_series)
