@@ -2,12 +2,15 @@ import pandas as pd
 
 import streamlit as st
 from dataclasses import fields
+
+from app.shared import CompanyStatus
 from app.foundation.primitives import datetime
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
 from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric
-from app.dashboard.data import get_investments, get_companies, get_portfolio, get_updates, get_ask_to_task, get_people
+from app.dashboard.data import get_investments, get_portfolio, get_updates, get_ask_to_task, get_people, get_companies_v2
 
 __all__ = ['company_page']
+
 
 
 def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
@@ -263,13 +266,40 @@ def show_traction_graph_with_combo(company_summary: CompanySummary, selected=Non
             st.warning("Please select a metric.")
 
 
+def get_selected_company():
+    active_companies_query = {
+        'status': {'$in': [s for s in CompanyStatus if s not in {CompanyStatus.PASSED}]}
+    }
+    companies = {
+        c.airtableId: c.name for c in
+        get_companies_v2(query=active_companies_query, projection=['name', 'airtableId'])
+    }
+    ids = sorted(companies.keys(), key=lambda x: companies[x])
+    company_id = st.query_params.get('company_id', None)
+    selected_company_id = st.selectbox(
+        "Pick the company",
+        options=ids,
+        index=ids.index(company_id) if company_id and company_id in ids else None,
+        placeholder="Select company...",
+        format_func=lambda x: companies.get(x),
+        label_visibility='hidden'
+    )
+    return selected_company_id
+
+
 def company_page():
+    selected_company_id = get_selected_company()
+    if not selected_company_id:
+        st.info("Please select a company.")
+        return
+
+    companies = get_companies_v2(query={'airtableId': selected_company_id})
+    if len(companies) != 1:
+        st.warning("Company not found.")
+        return
+    company = companies[0]
     with st.spinner("Loading investments..."):
         investments = get_investments()
-
-    with st.spinner("Loading companies..."):
-        companies = get_companies()
-        companies = companies[companies['investingFund'].notna()]
 
     with st.spinner("Loading updates..."):
         updates = get_updates()
@@ -277,44 +307,31 @@ def company_page():
     with st.spinner("Loading portfolio..."):
         portfolio = get_portfolio()
 
-    def reset_company_id():
-        st.query_params.pop('company_id', None)
-
-    company_id =st.query_params.get('company_id', None)
-    companies_in_portfolio = companies.sort_values(by='name')
-    selected_company_id = st.selectbox(
-        "Pick the company",
-        options=companies_in_portfolio.index,
-        index=companies_in_portfolio.index.get_loc(company_id) if company_id in companies_in_portfolio.index else None,
-        placeholder="Select company...",
-        format_func=lambda x: companies_in_portfolio.loc[x]['name'],
-        label_visibility='hidden'
-    )
-
-    if selected_company_id:
-        st.query_params.update({'company_id': selected_company_id})
-        selected_company = companies_in_portfolio.loc[selected_company_id]
-        company_summary = CompanySummary.from_dict(selected_company, selected_company_id)
-        show_company_basic_details(selected_company, company_summary)
-        st.divider()
-        show_company_investment_details(selected_company, investments, portfolio)
-        st.divider()
-        st.subheader("Asks")
-        show_asks(selected_company)
-        st.divider()
-        c1, c2 = st.columns(2)
-        with c1:
-            show_traction_graph_with_combo(company_summary, 'web_visits')
-        with c2:
-            show_traction_graph_with_combo(company_summary, 'employee_count')
-        st.divider()
-        st.subheader("Signals")
-        show_signals(company_summary)
-        st.divider()
-        st.subheader("Last Updates and News")
-        show_last_updates_and_news(company_summary, updates)
-        st.divider()
-        st.subheader("Team")
-        show_team(selected_company)
-    else:
-        st.warning("Please select a company.")
+    # companies_in_portfolio = get_portfolio()
+    investments = get_investments()
+    updates = get_updates()
+    portfolio = get_portfolio()
+    st.query_params.update({'company_id': selected_company_id})
+    selected_company = companies_in_portfolio.loc[selected_company_id]
+    company_summary = CompanySummary.from_dict(selected_company, selected_company_id)
+    show_company_basic_details(selected_company, company_summary)
+    st.divider()
+    show_company_investment_details(selected_company, investments, portfolio)
+    st.divider()
+    st.subheader("Asks")
+    show_asks(selected_company)
+    st.divider()
+    c1, c2 = st.columns(2)
+    with c1:
+        show_traction_graph_with_combo(company_summary, 'web_visits')
+    with c2:
+        show_traction_graph_with_combo(company_summary, 'employee_count')
+    st.divider()
+    st.subheader("Signals")
+    show_signals(company_summary)
+    st.divider()
+    st.subheader("Last Updates and News")
+    show_last_updates_and_news(company_summary, updates)
+    st.divider()
+    st.subheader("Team")
+    show_team(selected_company)
