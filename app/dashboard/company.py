@@ -42,10 +42,11 @@ def get_company_financial_data(company: Company) -> dict:
     }
 
 def show_company_basic_details(company: Company):
-    logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512 )
+    logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512)
     with logo_column:
         fallback_url = f'https://placehold.co/128x128?text={company.name}'
-        st.image(fallback_url)
+        st.image(fallback_url, width=128)
+
     with name_column:
         st.header(company.name)
         st.write(company.status.value if company.status else "Unknown")
@@ -106,7 +107,9 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
 
 def show_asks(company: pd.Series):
     company_id = company.name
-    asks = get_ask_to_task()
+    with st.spinner("Loading..."):
+        asks = get_ask_to_task()
+
     filtered_index = asks['Companies'].apply(lambda x: company_id in x if isinstance(x, list) else False)
     filtered_asks = asks[filtered_index & (asks['Status'] != 'Done')]
     if len(filtered_asks) == 0:
@@ -161,10 +164,10 @@ def show_last_updates_and_news(company: Company, updates):
         pass
 
 
-def show_team(company: pd.Series):
-    company_id = company.name
-    people = get_people()
-    filtered_index = people['Founder of Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)
+def show_team(company: Company):
+    with st.spinner("Loading..."):
+        people = get_people()
+    filtered_index = people['Founder of Company'].apply(lambda x: company.airtableId in x if isinstance(x, list) else False)
     founders = people[filtered_index]
     if len(founders) == 0:
         st.info("No founders for this company.")
@@ -173,7 +176,6 @@ def show_team(company: pd.Series):
         image_column, col1, col2, col3 = st.columns([1, 2, 3, 1], gap='small', vertical_alignment='center')
         photo_url = get_preview(founder.Photo)
         if photo_url:
-
             image_column.image(photo_url)
 
         col1.subheader(founder.Name)
@@ -328,38 +330,50 @@ def company_page():
     if len(companies) != 1:
         st.warning("Company not found.")
         return
-    company = companies[0]
-    
-    with st.spinner("Loading investments..."):
-        investments = get_investments()
-    with st.spinner("Loading updates..."):
-        updates = get_updates()
-    with st.spinner("Loading portfolio..."):
-        portfolio = get_portfolio()
 
+    company = companies[0]
     show_company_basic_details(company)
     st.divider()
-    
-    # Note: show_company_investment_details and show_asks still need pandas Series format
-    # Creating a mock pandas Series for backwards compatibility
-    mock_series = pd.Series({'name': company.name}, name=company.airtableId)
-    show_company_investment_details(mock_series, investments, portfolio)
-    st.divider()
-    st.subheader("Asks")
-    show_asks(mock_series)
-    st.divider()
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        show_traction_graph_with_combo(company, 'web_visits')
-    with c2:
-        show_traction_graph_with_combo(company, 'employee_count')
-    st.divider()
-    st.subheader("Signals")
-    show_signals(company)
-    st.divider()
-    st.subheader("Last Updates and News")
-    show_last_updates_and_news(company, updates)
-    st.divider()
-    st.subheader("Team")
-    show_team(mock_series)
+
+    names = ["Overview", "Team", "Financial", "Traction", "Signals", "investments", "Asks", "Updates"]
+    tabs = st.tabs(names)
+
+    with tabs[0]:
+        st.text("TBD")
+        pass
+
+    with tabs[1]:
+        show_team(company)
+
+    with tabs[2]:
+        st.text("TBD")
+
+    with tabs[3]:
+        st.text("TBD")
+
+
+    with tabs[4]:
+        show_signals(company)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            show_traction_graph_with_combo(company, 'web_visits')
+        with c2:
+            show_traction_graph_with_combo(company, 'employee_count')
+
+    with tabs[5]:
+        with st.spinner("Loading ..."):
+            investments = get_investments()
+
+        with st.spinner("Loading ..."):
+            portfolio = get_portfolio()
+        mock_series = pd.Series({'name': company.name}, name=company.airtableId)
+        show_company_investment_details(mock_series, investments, portfolio)
+
+    with tabs[6]:
+        show_asks(mock_series)
+
+    with tabs[7]:
+        with st.spinner("Loading ..."):
+            updates = get_updates()
+        show_last_updates_and_news(company, updates)
