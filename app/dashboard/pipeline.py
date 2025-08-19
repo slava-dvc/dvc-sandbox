@@ -3,7 +3,7 @@ import streamlit as st
 import itertools
 from app.dashboard.data import get_companies_v2
 from app.shared import Company, CompanyStatus
-from app.dashboard.formatting import format_relative_time
+from app.dashboard.formatting import format_relative_time, safe_markdown
 from .data import mongo_database, airtable_api_client, AIRTABLE_BASE_ID
 
 _PIPELINE_STATUES = {
@@ -95,7 +95,7 @@ def _render_company_card(company: Company):
         st.link_button("View", url=f'/company_page?company_id={company.airtableId}')
 
     if isinstance(company.blurb, str):
-        blurb = company.blurb.replace('$', '\$')
+        blurb = safe_markdown(company.blurb)
         if len(blurb) > 1024:
             blurb = blurb[:1024] + "..."
         st.markdown(blurb)

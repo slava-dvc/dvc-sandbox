@@ -5,7 +5,7 @@ from dataclasses import fields
 
 from app.shared.company import Company, CompanyStatus
 from app.foundation.primitives import datetime
-from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
+from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview, safe_markdown
 from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem, HIGHLIGHTS_DICT
 from app.dashboard.data import get_investments, get_portfolio, get_updates, get_ask_to_task, get_people, get_companies_v2
 
@@ -43,23 +43,72 @@ def get_company_financial_data(company: Company) -> dict:
         'expected_performance': our_data.get('performanceOutlook')
     }
 
-def show_overview_row(key: str, value: str | None):
+def show_key_value_row(key: str, value: str | None):
     """Helper function to display a key-value pair in two columns with proper formatting."""
     col1, col2 = st.columns([3, 7])
     with col1:
         st.markdown(f"**{key}**")
     with col2:
         if value and isinstance(value, str) and value.strip():
-            st.markdown(value.replace('$', '\$'))
+            st.markdown(safe_markdown(value))
         else:
             st.markdown("—")
+
+def show_financial(company: Company):
+    """Display financial information in a structured format."""
+    
+    # Revenue Model Type
+    revenue_model = company.ourData.get('revenueModelType') if company.ourData else None
+    revenue_model_value = ', '.join(revenue_model) if revenue_model and isinstance(revenue_model, list) else None
+    show_key_value_row("Revenue Model Type", revenue_model_value)
+    
+    # Revenue
+    revenue = company.ourData.get('revenue') if company.ourData else None
+    show_key_value_row("Revenue", format_as_dollars(revenue) if revenue else None)
+    
+    # Total Funding
+    total_funding = company.spectrData.get('funding', {}).get('total_funding_usd') if company.spectrData else None
+    show_key_value_row("Total Funding", format_as_dollars(total_funding) if total_funding else None)
+    
+    # Round Size - Not clear from data structure
+    show_key_value_row("Round Size", "Not implemented yet.")
+    
+    # Valuation - use latest valuation
+    valuation = company.ourData.get('latestValuation') if company.ourData else None
+    if valuation and isinstance(valuation, list) and valuation:
+        valuation_value = format_as_dollars(valuation[0])
+    else:
+        valuation_value = None
+    show_key_value_row("Valuation", valuation_value)
+    
+    # Burnrate
+    burnrate = company.ourData.get('burnRate') if company.ourData else None
+    show_key_value_row("Burnrate", format_as_dollars(burnrate) if burnrate else None)
+    
+    # Last Financing Date
+    last_funding_date = company.spectrData.get('funding', {}).get('last_funding_date') if company.spectrData else None
+    show_key_value_row("Last Financing Date", last_funding_date)
+    
+    # Instrument - Not clear from data structure
+    show_key_value_row("Instrument", "Not implemented yet.")
+    
+    # Business Model
+    business_model = company.ourData.get('businessModelType') if company.ourData else None
+    if business_model and isinstance(business_model, list) and business_model:
+        business_model_value = business_model[0]  # Take first item as it's long text
+    else:
+        business_model_value = None
+    show_key_value_row("Business Model", business_model_value)
+    
+    # Co-Investors - Not clear from data structure
+    show_key_value_row("Co-Investors", "Not implemented yet.")
 
 def show_traction_content(company: Company):
     """Display detailed traction information from ourData.traction."""
     traction = company.ourData.get('traction') if company.ourData else None
     
     if traction and isinstance(traction, str) and traction.strip():
-        st.markdown(traction.replace('$', '\$'))
+        st.markdown(safe_markdown(traction))
     else:
         st.info("No traction information available for this company.")
 
@@ -69,34 +118,34 @@ def show_overview(company: Company):
     # Main Industry
     main_industry = company.ourData.get('mainIndustry') if company.ourData else None
     industry_value = ', '.join(main_industry) if main_industry and isinstance(main_industry, list) else None
-    show_overview_row("Main Industry", industry_value)
+    show_key_value_row("Main Industry", industry_value)
 
     # Summary - prefer ourData.summary over blurb
     summary = company.ourData.get('summary') if company.ourData else None
     if not summary:
         summary = company.blurb
-    show_overview_row("Summary", summary)
+    show_key_value_row("Summary", summary)
     
     # Problem
     problem = company.ourData.get('problem') if company.ourData else None
-    show_overview_row("Problem", problem)
+    show_key_value_row("Problem", problem)
     
     # Solution
     solution = company.spectrData.get('description') if company.spectrData else None
-    show_overview_row("Solution", solution)
+    show_key_value_row("Solution", solution)
     
     # Why we're excited (skip for now)
-    show_overview_row("Why we're excited", "Not implemented yet.")
+    show_key_value_row("Why we're excited", "Not implemented yet.")
     
     # Market Size
     market_size = company.ourData.get('marketSize') if company.ourData else None
-    show_overview_row("Market Size", market_size)
+    show_key_value_row("Market Size", market_size)
 
-    show_overview_row("Concerns", "Not implemented yet.")
+    show_key_value_row("Concerns", "Not implemented yet.")
 
     # Target Market
     target_market = company.ourData.get('targetMarket') if company.ourData else None
-    show_overview_row("Target Market", target_market)
+    show_key_value_row("Target Market", target_market)
 
 
 def show_company_basic_details(company: Company):
@@ -114,7 +163,7 @@ def show_company_basic_details(company: Company):
         else:
             st.caption("No URL provided.")
         if company.blurb and isinstance(company.blurb, str):
-            st.markdown(company.blurb.replace('$', '\$'))
+            st.markdown(safe_markdown(company.blurb))
         else:
             st.caption("No blurb provided.")
 
@@ -222,7 +271,7 @@ def show_last_updates_and_news(company: Company, updates):
                 title = row['title']
                 if not isinstance(title, str):
                     title = "—"
-                st.markdown(f"**{row['publisher']}**: {title.replace('$', '\$')}".format(row=row))
+                st.markdown(f"**{row['publisher']}**: {safe_markdown(title)}".format(row=row))
             with date_column:
                 st.write(row['date'].strftime('%d %b %Y'))
             if row['type'] == 'news':
@@ -248,7 +297,10 @@ def show_team(company: Company):
         col1.subheader(founder.Name)
         col1.write(founder.Email)
         col2.write(founder.Bio)
-        col3.link_button("Contact", founder.LinkedIn)
+        if founder.LinkedIn and isinstance(founder.LinkedIn, str):
+            col3.link_button("Contact", founder.LinkedIn)
+        else:
+            col3.write("No LinkedIn")
 
 
 def show_signals(company: Company):
@@ -412,7 +464,7 @@ def company_page():
         show_team(company)
 
     with tabs[2]:
-        st.text("TBD")
+        show_financial(company)
 
     with tabs[3]:
         show_traction_content(company)
