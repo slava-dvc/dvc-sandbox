@@ -325,23 +325,14 @@ def show_company_summary(company_summary: CompanySummary):
 
     with st.container(border=True):
         # st.write(f"expected_performance: {company_summary.expected_performance}")
-        logo_column, info_column, signals_column, button_column = st.columns([1, 7, 4, 1], gap='small')
+        logo_column, info_column, signals_column, button_column = st.columns([1, 6, 4, 1], gap='small', vertical_alignment='center')
 
         with logo_column:
             fallback_url = f'https://placehold.co/128x128?text={company_name}'
             st.image(fallback_url)
-            # if company_summary.logo_url:
-            #     try:
-            #         st.image(company_summary.logo_url, width=64)
-            #     except Exception:
-            #         st.write("📊")
-            # else:
-            #     st.write("📊")
 
         with info_column:
             header = []
-            # c1, c2, c3, c4 = st.columns(4)
-            # with c1:
             if company_website and isinstance(company_website, str):
                 header.append(f"**[{company_name}]({company_website})**")
             else:
@@ -358,11 +349,7 @@ def show_company_summary(company_summary: CompanySummary):
             else:
                 header.append("❌ No updates")
             st.markdown("&nbsp; | &nbsp;".join(header))
-            # with c2:
-            #     show_highlights(company_summary)
-
-            # All information in one row using 3 smaller columns
-            c1, c2, c3, = st.columns(3)
+            c1, c2, = st.columns(2, gap='small')
             c1.markdown(f"Initial Fund: **{initial_fund}**")
             c1.write(company_summary.expected_performance)
             c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, '—')}**")
@@ -370,14 +357,12 @@ def show_company_summary(company_summary: CompanySummary):
 
 
         with signals_column:
-            show_highlights(company_summary)
+            highlights_cnt = show_highlights(company_summary)
+            if not highlights_cnt:
+                st.info("No signals for this company.")
 
         with button_column:
             def update_company_id(company_id):
                 st.query_params.update({'company_id': company_id})
 
-            # Push the button higher on the row by adding padding
-            st.write("")  # Small spacer to align with company name
             st.link_button("View", url=f'/company_page?company_id={company_id}')
-            # st.button("View", key=f"open_company_{company_id}", on_click=update_company_id, args=[company_id],
-            #     use_container_width=True)

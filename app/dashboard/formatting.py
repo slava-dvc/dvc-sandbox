@@ -151,3 +151,10 @@ def format_relative_time(date: str | datetime.datetime):
             return f"{delta.days // 7} weeks ago"
     except Exception as e:
         return "Unknown"
+
+
+def safe_markdown(text: str | None) -> str:
+    """Helper function to safely format text for markdown display by escaping special characters."""
+    if not text or not isinstance(text, str):
+        return text or ""
+    return text.replace('$', '\$')

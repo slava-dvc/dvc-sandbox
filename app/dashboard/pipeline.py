@@ -1,16 +1,35 @@
-import os
+from bson import ObjectId
 import streamlit as st
+import itertools
 from app.dashboard.data import get_companies_v2
 from app.shared import Company, CompanyStatus
-from app.dashboard.formatting import format_relative_time
+from app.dashboard.formatting import format_relative_time, safe_markdown
+from .data import mongo_database, airtable_api_client, AIRTABLE_BASE_ID
 
+_PIPELINE_STATUES = {
+    "New Company": [
+        CompanyStatus.NEW_COMPANY,
+    ],
+    "In Progress": [
+        CompanyStatus.CONTACTED,
+        CompanyStatus.MEETING,
+        CompanyStatus.CHECKIN,
+    ],
+    "Diligence": [
+        CompanyStatus.DILIGENCE,
+    ],
+    "Offered to Invest": [
+        CompanyStatus.OFFERED_TO_INVEST,
+        CompanyStatus.SUBMITTED_AL
+    ],
+    "Going to Pass": [
+        CompanyStatus.GOING_TO_PASS,
+    ]
+}
 
-_PIPELINE_STATUES = [
-    CompanyStatus.NEW_COMPANY,
-    # CompanyStatus.IN_PROGRESS,
-    CompanyStatus.DILIGENCE,
-    CompanyStatus.OFFERED_TO_INVEST,
-    CompanyStatus.GOING_TO_PASS
+_AVAILABLE_STATUES = list(itertools.chain.from_iterable(_PIPELINE_STATUES.values())) + [
+    CompanyStatus.INVESTED,
+    CompanyStatus.PASSED
 ]
 
 
@@ -22,92 +41,79 @@ def company_details(company):
     )
 
 
-def _extract_logo_url(logo_field):
-    """Return a best-effort logo URL from the provided field.
-    Supports:
-    - Airtable attachment arrays (with thumbnails)
-    - Direct string URLs
-    - Single attachment dict
-    """
-    if not logo_field:
-        return None
+def _update_company_status(company: Company, status):
+    # Update MongoDB
+    mongo_database().companies.update_one(
+        {'_id': ObjectId(company.id)},
+        {'$set': {'status': str(status)}}
+    )
 
-    # If it's a list/tuple of attachments or URLs
-    if isinstance(logo_field, (list, tuple)):
-        if not logo_field:
-            return None
-        first = logo_field[0]
-        logo_field = first
-
-    # If it is a dict (Airtable attachment)
-    if isinstance(logo_field, dict):
-        thumbs = logo_field.get("thumbnails") or {}
-        # Prefer large then full then small (favor larger images)
-        for size in ("large", "full", "small"):
-            url = (thumbs.get(size) or {}).get("url")
-            if url:
-                return url
-        return logo_field.get("url")
-
-    # If it's a direct URL string
-    if isinstance(logo_field, str):
-        return logo_field
-
-    return None
+    # Update Airtable
+    api = airtable_api_client()
+    table = api.table(AIRTABLE_BASE_ID, 'tblJL5aEsZFa0x6zY')  # Companies table
+    table.update(company.airtableId, {'Status': str(status)})
 
 
-def _render_company_card_compact(company: Company):
-    """Compact horizontal card layout."""
-    # Header row
-    col1, col2 = st.columns([3, 1], vertical_alignment="center")
-    with col1:
-        st.markdown(f"### {company.name}")
-    with col2:
-        st.caption(f"ID: {company.airtableId}")
+def _render_company_card(company: Company):
+    company_id = company.id
+    company_name = company.name
+    company_website = company.website
+    company_stage = company.ourData.get('currentStage')
+    source = company.ourData.get('source')
+    logo_column, info_column, signals_column, button_column = st.columns([1, 7, 4, 1], gap='small', vertical_alignment='center')
 
-    logo_col, info_col, controls_col = st.columns([1, 3, 2], vertical_alignment="center")
-    
-    with logo_col:
-        logo_url = _extract_logo_url(company.ourData.get('logo'))
-        fallback_url = f'https://placehold.co/128x128?text={company.name}'
-        # try:
-        #     st.image(logo_url, width=128)
-        # except Exception:
-        st.image(fallback_url, width=128)
-    
-    with info_col:
-        # st.markdown(f"**{company.name}**")
-        st.caption(f"{company.ourData.get('source', 'No source')} • Added: {format_relative_time(company.createdAt)}")
-        if company.website:
-            st.markdown(f"🔗 [{company.website}]({company.website})")
+    with logo_column:
+        fallback_url = f'https://placehold.co/128x128?text={company_name}'
+        st.image(fallback_url)
 
-    
-    with controls_col:
-        statuses = [str(s) for s in CompanyStatus]
+    with info_column:
+        header = []
+        if company_website and isinstance(company_website, str):
+            header.append(f"**[{company_name}]({company_website})**")
+        else:
+            header.append(f"**{company_name}**")
+        header.append(company_stage or "Unknown")
+        header.append(f"🕐 {format_relative_time(company.createdAt)}")
+
+        st.markdown("&nbsp; | &nbsp;".join(header))
+        st.text(source if source else "No source provided")
         new_status = st.selectbox(
             label="Status",
-            options=statuses,
+            options=_AVAILABLE_STATUES,
             key=f"status_{company.airtableId}",
-            index=statuses.index(str(company.status)) if company.status else 0,
-            label_visibility="collapsed"
+            index=_AVAILABLE_STATUES.index(str(company.status)) if company.status else 0,
+            label_visibility="collapsed",
+            width=256
         )
-        if st.button('Show Details', key=f"details_{company.airtableId}"):
-            company_details(company)
-        
+    with signals_column:
+        st.info("No signals for this company.")
+
+    with button_column:
+        def update_company_id(company_id):
+            st.query_params.update({'company_id': company.airtableId})
+
+        st.link_button("View", url=f'/company_page?company_id={company.airtableId}')
 
     if isinstance(company.blurb, str):
-        blurb = company.blurb.replace('$', '\$')
+        blurb = safe_markdown(company.blurb)
         if len(blurb) > 1024:
             blurb = blurb[:1024] + "..."
         st.markdown(blurb)
 
     if new_status != str(company.status):
-        st.warning('Status update is not yet supported.')
+        with st.spinner("Updating..."):
+            _update_company_status(company, new_status)
+
+        st.rerun(scope='fragment')
 
 
-@st.fragment()
-def show_pipeline_tab(status):
-    companies = get_companies_v2({'status': str(status)}, [('createdAt', -1)])
+def show_pipeline_tab(statuses):
+    query = {
+        'status': {
+            '$in': [str(s) for s in statuses]
+        }
+    }
+    companies = get_companies_v2(query, [('createdAt', -1)])
 
     if not companies:
         st.info("No companies found for this stage yet.")
@@ -116,12 +122,11 @@ def show_pipeline_tab(status):
     # Render a compact card for each company
     for company in companies:
         with st.container(border=True):
-            _render_company_card_compact(company)
+            _render_company_card(company)
 
-
+@st.fragment()
 def pipeline_page():
-
     tabs = st.tabs(_PIPELINE_STATUES)
-    for tab, status in zip(tabs, _PIPELINE_STATUES):
+    for tab, (tab_name, statuses) in zip(tabs, _PIPELINE_STATUES.items()):
         with tab:
-            show_pipeline_tab(status)
+            show_pipeline_tab(statuses)

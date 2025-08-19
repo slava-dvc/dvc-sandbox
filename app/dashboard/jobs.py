@@ -1,6 +1,6 @@
 import streamlit as st
 from app.dashboard.data import get_jobs
-from app.dashboard.formatting import format_relative_time
+from app.dashboard.formatting import format_relative_time, safe_markdown
 
 __all__ = ['jobs_page']
 
@@ -40,7 +40,7 @@ def show_job_card(job):
             # Description
             description = job.get('description', 'No description available')
             st.markdown("**Description:**")
-            st.markdown(description)
+            st.markdown(safe_markdown(description))
             
             # Job highlights
             job_highlights = job.get('jobHighlights', [])

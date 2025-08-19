@@ -2,43 +2,183 @@ import pandas as pd
 
 import streamlit as st
 from dataclasses import fields
+
+from app.shared.company import Company, CompanyStatus
 from app.foundation.primitives import datetime
-from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview
-from app.dashboard.company_summary import CompanySummary, show_highlights, TractionMetric
-from app.dashboard.data import get_investments, get_companies, get_portfolio, get_updates, get_ask_to_task, get_people
+from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview, safe_markdown
+from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem, HIGHLIGHTS_DICT
+from app.dashboard.data import get_investments, get_portfolio, get_updates, get_ask_to_task, get_people, get_companies_v2
 
 __all__ = ['company_page']
 
 
-def show_company_basic_details(company: pd.Series, company_summary: CompanySummary):
-    logo_column, name_column = st.columns([1, 5], vertical_alignment="center", width=512 )
+def get_company_traction_metrics(company: Company) -> TractionMetrics:
+    """Extract traction metrics from Company object."""
+    if not company.spectrData or not company.spectrData.get('traction_metrics'):
+        return TractionMetrics()
+    return TractionMetrics.from_dict(company.spectrData['traction_metrics'])
+
+def get_company_news(company: Company) -> list[NewsItem]:
+    """Extract news items from Company object."""
+    if not company.spectrData or not company.spectrData.get('news'):
+        return []
+    return [NewsItem.from_dict(news_item) for news_item in company.spectrData['news']]
+
+
+def get_company_highlights(company: Company) -> list[str]:
+    """Extract highlights from Company object."""
+    if not company.spectrData:
+        return []
+    return company.spectrData.get('new_highlights', [])
+
+
+def get_company_financial_data(company: Company) -> dict:
+    """Extract financial data from Company object."""
+    our_data = company.ourData or {}
+    return {
+        'runway': our_data.get('runway'),
+        'revenue': our_data.get('revenue'),
+        'burnrate': our_data.get('burnRate'),
+        'customers_cnt': our_data.get('customerCount'),
+        'expected_performance': our_data.get('performanceOutlook')
+    }
+
+def show_key_value_row(key: str, value: str | None):
+    """Helper function to display a key-value pair in two columns with proper formatting."""
+    col1, col2 = st.columns([3, 7])
+    with col1:
+        st.markdown(f"**{key}**")
+    with col2:
+        if value and isinstance(value, str) and value.strip():
+            st.markdown(safe_markdown(value))
+        else:
+            st.markdown("—")
+
+def show_financial(company: Company):
+    """Display financial information in a structured format."""
+    
+    # Revenue Model Type
+    revenue_model = company.ourData.get('revenueModelType') if company.ourData else None
+    revenue_model_value = ', '.join(revenue_model) if revenue_model and isinstance(revenue_model, list) else None
+    show_key_value_row("Revenue Model Type", revenue_model_value)
+    
+    # Revenue
+    revenue = company.ourData.get('revenue') if company.ourData else None
+    show_key_value_row("Revenue", format_as_dollars(revenue) if revenue else None)
+    
+    # Total Funding
+    total_funding = company.spectrData.get('funding', {}).get('total_funding_usd') if company.spectrData else None
+    show_key_value_row("Total Funding", format_as_dollars(total_funding) if total_funding else None)
+    
+    # Round Size - Not clear from data structure
+    show_key_value_row("Round Size", "Not implemented yet.")
+    
+    # Valuation - use latest valuation
+    valuation = company.ourData.get('latestValuation') if company.ourData else None
+    if valuation and isinstance(valuation, list) and valuation:
+        valuation_value = format_as_dollars(valuation[0])
+    else:
+        valuation_value = None
+    show_key_value_row("Valuation", valuation_value)
+    
+    # Burnrate
+    burnrate = company.ourData.get('burnRate') if company.ourData else None
+    show_key_value_row("Burnrate", format_as_dollars(burnrate) if burnrate else None)
+    
+    # Last Financing Date
+    last_funding_date = company.spectrData.get('funding', {}).get('last_funding_date') if company.spectrData else None
+    show_key_value_row("Last Financing Date", last_funding_date)
+    
+    # Instrument - Not clear from data structure
+    show_key_value_row("Instrument", "Not implemented yet.")
+    
+    # Business Model
+    business_model = company.ourData.get('businessModelType') if company.ourData else None
+    if business_model and isinstance(business_model, list) and business_model:
+        business_model_value = business_model[0]  # Take first item as it's long text
+    else:
+        business_model_value = None
+    show_key_value_row("Business Model", business_model_value)
+    
+    # Co-Investors - Not clear from data structure
+    show_key_value_row("Co-Investors", "Not implemented yet.")
+
+def show_traction_content(company: Company):
+    """Display detailed traction information from ourData.traction."""
+    traction = company.ourData.get('traction') if company.ourData else None
+    
+    if traction and isinstance(traction, str) and traction.strip():
+        st.markdown(safe_markdown(traction))
+    else:
+        st.info("No traction information available for this company.")
+
+def show_overview(company: Company):
+    """Display company overview information in a structured format."""
+    
+    # Main Industry
+    main_industry = company.ourData.get('mainIndustry') if company.ourData else None
+    industry_value = ', '.join(main_industry) if main_industry and isinstance(main_industry, list) else None
+    show_key_value_row("Main Industry", industry_value)
+
+    # Summary - prefer ourData.summary over blurb
+    summary = company.ourData.get('summary') if company.ourData else None
+    if not summary:
+        summary = company.blurb
+    show_key_value_row("Summary", summary)
+    
+    # Problem
+    problem = company.ourData.get('problem') if company.ourData else None
+    show_key_value_row("Problem", problem)
+    
+    # Solution
+    solution = company.spectrData.get('description') if company.spectrData else None
+    show_key_value_row("Solution", solution)
+    
+    # Why we're excited (skip for now)
+    show_key_value_row("Why we're excited", "Not implemented yet.")
+    
+    # Market Size
+    market_size = company.ourData.get('marketSize') if company.ourData else None
+    show_key_value_row("Market Size", market_size)
+
+    show_key_value_row("Concerns", "Not implemented yet.")
+
+    # Target Market
+    target_market = company.ourData.get('targetMarket') if company.ourData else None
+    show_key_value_row("Target Market", target_market)
+
+
+def show_company_basic_details(company: Company):
+    logo_column, name_column, pitch_deck_column = st.columns([1, 5, 1], vertical_alignment="center")
+
     with logo_column:
-        fallback_url = f'https://placehold.co/128x128?text={company_summary.name}'
-        st.image(fallback_url)
-        #
-        # if company_summary.logo_url:
-        #     try:
-        #         st.image(company_summary.logo_url, width=64)
-        #     except Exception:
-        #         st.write("📊")
-        # else:
-        #     st.write("📊")
+        fallback_url = f'https://placehold.co/128x128?text={company.name}'
+        st.image(fallback_url, width=128)
+
     with name_column:
-        st.header(company_summary.name)
-        st.write(company_summary.status)
-    if company_summary.website and isinstance(company_summary.website, str):
-        st.write(company_summary.website)
-    else:
-        st.caption("No URL provided.")
-    if isinstance(company_summary.blurb, str):
-        st.markdown(company_summary.blurb.replace('$', '\$'))
-    else:
-        st.caption("No blurb provided.")
+        st.header(company.name)
+        st.write(company.status.value if company.status else "Unknown")
+        if company.website and isinstance(company.website, str):
+            st.write(company.website)
+        else:
+            st.caption("No URL provided.")
+        if company.blurb and isinstance(company.blurb, str):
+            st.markdown(safe_markdown(company.blurb))
+        else:
+            st.caption("No blurb provided.")
+
+    with pitch_deck_column:
+        pitch_deck_url = company.ourData.get('linkToDeck') if company.ourData else None
+        if pitch_deck_url and isinstance(pitch_deck_url, str):
+            st.link_button("Pitchdeck", pitch_deck_url)
+        
+        if st.button("Update Data"):
+            st.info("Update Data functionality is not implemented yet.")
 
 
-def show_company_investment_details(company: pd.Series, investments: pd.DataFrame, portfolio: pd.DataFrame):
+def show_company_investment_details(company: Company, investments: pd.DataFrame, portfolio: pd.DataFrame):
     col1, col2, col3, col4 = st.columns(4)
-    company_id = company.name
+    company_id = company.airtableId
     company_investments = investments[investments['Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)]
     portfolio_index = portfolio['Companies'].apply(lambda x: company_id in x if isinstance(x, list) else False)
     company_in_portfolio = None
@@ -81,9 +221,11 @@ def show_company_investment_details(company: pd.Series, investments: pd.DataFram
         st.metric("MOIC", f"{moic:0.2f}" if is_valid_number(moic) else "—")
 
 
-def show_asks(company: pd.Series):
-    company_id = company.name
-    asks = get_ask_to_task()
+def show_asks(company: Company):
+    company_id = company.airtableId
+    with st.spinner("Loading..."):
+        asks = get_ask_to_task()
+
     filtered_index = asks['Companies'].apply(lambda x: company_id in x if isinstance(x, list) else False)
     filtered_asks = asks[filtered_index & (asks['Status'] != 'Done')]
     if len(filtered_asks) == 0:
@@ -93,9 +235,9 @@ def show_asks(company: pd.Series):
         st.dataframe(filtered_asks[columns], hide_index=True, use_container_width=True)
 
 
-def show_last_updates_and_news(company_summary: CompanySummary, updates):
+def show_last_updates_and_news(company: Company, updates):
     rows = []
-    relevant_updates = updates['Company Name'].apply(lambda x: company_summary.company_id in x if isinstance(x, list) else False)
+    relevant_updates = updates['Company Name'].apply(lambda x: company.airtableId in x if isinstance(x, list) else False)
     company_updates = updates[relevant_updates].copy()
     company_updates.rename(columns={'Please provide any comments/questions': "Comment"}, inplace=True)
     for company_update in company_updates.itertuples():
@@ -107,7 +249,8 @@ def show_last_updates_and_news(company_summary: CompanySummary, updates):
             'title': company_update.Comment,
         })
     news_after = datetime.now() - datetime.timedelta(days=90)
-    for company_news_item in company_summary.news:
+    company_news = get_company_news(company)
+    for company_news_item in company_news:
         if company_news_item.date < news_after:
             continue
         rows.append({
@@ -128,7 +271,7 @@ def show_last_updates_and_news(company_summary: CompanySummary, updates):
                 title = row['title']
                 if not isinstance(title, str):
                     title = "—"
-                st.markdown(f"**{row['publisher']}**: {title.replace('$', '\$')}".format(row=row))
+                st.markdown(f"**{row['publisher']}**: {safe_markdown(title)}".format(row=row))
             with date_column:
                 st.write(row['date'].strftime('%d %b %Y'))
             if row['type'] == 'news':
@@ -137,10 +280,10 @@ def show_last_updates_and_news(company_summary: CompanySummary, updates):
         pass
 
 
-def show_team(company: pd.Series):
-    company_id = company.name
-    people = get_people()
-    filtered_index = people['Founder of Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)
+def show_team(company: Company):
+    with st.spinner("Loading..."):
+        people = get_people()
+    filtered_index = people['Founder of Company'].apply(lambda x: company.airtableId in x if isinstance(x, list) else False)
     founders = people[filtered_index]
     if len(founders) == 0:
         st.info("No founders for this company.")
@@ -149,25 +292,36 @@ def show_team(company: pd.Series):
         image_column, col1, col2, col3 = st.columns([1, 2, 3, 1], gap='small', vertical_alignment='center')
         photo_url = get_preview(founder.Photo)
         if photo_url:
-
             image_column.image(photo_url)
 
         col1.subheader(founder.Name)
         col1.write(founder.Email)
         col2.write(founder.Bio)
-        col3.link_button("Contact", founder.LinkedIn)
+        if founder.LinkedIn and isinstance(founder.LinkedIn, str):
+            col3.link_button("Contact", founder.LinkedIn)
+        else:
+            col3.write("No LinkedIn")
 
 
-def show_signals(company_summary: CompanySummary):
+def show_signals(company: Company):
     c1, c2, c3 = st.columns(3)
+    financial_data = get_company_financial_data(company)
+    traction_metrics = get_company_traction_metrics(company)
+    highlights = get_company_highlights(company)
+    
     with c1:
-        st.metric("Runway", company_summary.runway)
-        st.metric("Revenue", format_as_dollars(company_summary.revenue))
+        st.metric("Runway", financial_data['runway'])
+        st.metric("Revenue", format_as_dollars(financial_data['revenue']))
     with c2:
-        st.metric("Burnrate", company_summary.burnrate)
-        st.metric("Customers Cnt", company_summary.customers_cnt)
+        st.metric("Burnrate", financial_data['burnrate'])
+        st.metric("Customers Cnt", financial_data['customers_cnt'])
     with c3:
-        highlights_cnt = show_highlights(company_summary)
+        # Create a mock object with required attributes for show_highlights
+        mock_summary = type('MockSummary', (), {
+            'new_highlights': highlights,
+            'traction_metrics': traction_metrics
+        })()
+        highlights_cnt = show_highlights(mock_summary)
         if not highlights_cnt:
             st.info("No signals for this company.")
 
@@ -211,8 +365,8 @@ def show_traction_graph(traction_metric: TractionMetric, label=None):
     )
 
 
-def show_traction_graph_with_combo(company_summary: CompanySummary, selected=None):
-    traction_metrics = company_summary.traction_metrics
+def show_traction_graph_with_combo(company: Company, selected=None):
+    traction_metrics = get_company_traction_metrics(company)
     traction_metrics_fields = fields(traction_metrics)
     # Dictionary mapping internal field names to human-readable display names
     metric_display_names = {
@@ -263,58 +417,80 @@ def show_traction_graph_with_combo(company_summary: CompanySummary, selected=Non
             st.warning("Please select a metric.")
 
 
-def company_page():
-    with st.spinner("Loading investments..."):
-        investments = get_investments()
-
-    with st.spinner("Loading companies..."):
-        companies = get_companies()
-        companies = companies[companies['investingFund'].notna()]
-
-    with st.spinner("Loading updates..."):
-        updates = get_updates()
-
-    with st.spinner("Loading portfolio..."):
-        portfolio = get_portfolio()
-
-    def reset_company_id():
-        st.query_params.pop('company_id', None)
-
-    company_id =st.query_params.get('company_id', None)
-    companies_in_portfolio = companies.sort_values(by='name')
+def get_selected_company():
+    active_companies_query = {
+        'status': {'$in': [s for s in CompanyStatus if s not in {CompanyStatus.PASSED}]}
+    }
+    companies = {
+        c.airtableId: c.name for c in
+        get_companies_v2(query=active_companies_query, projection=['name', 'airtableId'])
+    }
+    ids = sorted(companies.keys(), key=lambda x: companies[x])
+    company_id = st.query_params.get('company_id', None)
     selected_company_id = st.selectbox(
         "Pick the company",
-        options=companies_in_portfolio.index,
-        index=companies_in_portfolio.index.get_loc(company_id) if company_id in companies_in_portfolio.index else None,
+        options=ids,
+        index=ids.index(company_id) if company_id and company_id in ids else None,
         placeholder="Select company...",
-        format_func=lambda x: companies_in_portfolio.loc[x]['name'],
+        format_func=lambda x: companies.get(x),
         label_visibility='hidden'
     )
+    return selected_company_id
 
-    if selected_company_id:
-        st.query_params.update({'company_id': selected_company_id})
-        selected_company = companies_in_portfolio.loc[selected_company_id]
-        company_summary = CompanySummary.from_dict(selected_company, selected_company_id)
-        show_company_basic_details(selected_company, company_summary)
-        st.divider()
-        show_company_investment_details(selected_company, investments, portfolio)
-        st.divider()
-        st.subheader("Asks")
-        show_asks(selected_company)
-        st.divider()
+
+def company_page():
+    selected_company_id = get_selected_company()
+    if not selected_company_id:
+        st.info("Please select a company.")
+        return
+
+    st.query_params.update({'company_id': selected_company_id})
+    companies = get_companies_v2(query={'airtableId': selected_company_id})
+    if len(companies) != 1:
+        st.warning("Company not found.")
+        return
+
+    company = companies[0]
+    show_company_basic_details(company)
+    st.divider()
+
+    names = ["Overview", "Team", "Financial", "Traction", "Signals", "investments", "Asks", "Updates"]
+    tabs = st.tabs(names)
+
+    with tabs[0]:
+        show_overview(company)
+
+    with tabs[1]:
+        show_team(company)
+
+    with tabs[2]:
+        show_financial(company)
+
+    with tabs[3]:
+        show_traction_content(company)
+
+
+    with tabs[4]:
+        show_signals(company)
+
         c1, c2 = st.columns(2)
         with c1:
-            show_traction_graph_with_combo(company_summary, 'web_visits')
+            show_traction_graph_with_combo(company, 'web_visits')
         with c2:
-            show_traction_graph_with_combo(company_summary, 'employee_count')
-        st.divider()
-        st.subheader("Signals")
-        show_signals(company_summary)
-        st.divider()
-        st.subheader("Last Updates and News")
-        show_last_updates_and_news(company_summary, updates)
-        st.divider()
-        st.subheader("Team")
-        show_team(selected_company)
-    else:
-        st.warning("Please select a company.")
+            show_traction_graph_with_combo(company, 'employee_count')
+
+    with tabs[5]:
+        with st.spinner("Loading ..."):
+            investments = get_investments()
+
+        with st.spinner("Loading ..."):
+            portfolio = get_portfolio()
+        show_company_investment_details(company, investments, portfolio)
+
+    with tabs[6]:
+        show_asks(company)
+
+    with tabs[7]:
+        with st.spinner("Loading ..."):
+            updates = get_updates()
+        show_last_updates_and_news(company, updates)
