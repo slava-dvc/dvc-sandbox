@@ -7,7 +7,7 @@ from app.dashboard.formatting import format_relative_time
 
 _PIPELINE_STATUES = [
     CompanyStatus.NEW_COMPANY,
-    CompanyStatus.IN_PROGRESS,
+    # CompanyStatus.IN_PROGRESS,
     CompanyStatus.DILIGENCE,
     CompanyStatus.OFFERED_TO_INVEST,
     CompanyStatus.GOING_TO_PASS
