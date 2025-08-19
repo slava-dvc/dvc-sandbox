@@ -54,6 +54,15 @@ def show_overview_row(key: str, value: str | None):
         else:
             st.markdown("—")
 
+def show_traction_content(company: Company):
+    """Display detailed traction information from ourData.traction."""
+    traction = company.ourData.get('traction') if company.ourData else None
+    
+    if traction and isinstance(traction, str) and traction.strip():
+        st.markdown(traction.replace('$', '\$'))
+    else:
+        st.info("No traction information available for this company.")
+
 def show_overview(company: Company):
     """Display company overview information in a structured format."""
     
@@ -62,8 +71,11 @@ def show_overview(company: Company):
     industry_value = ', '.join(main_industry) if main_industry and isinstance(main_industry, list) else None
     show_overview_row("Main Industry", industry_value)
 
-    # Summary
-    show_overview_row("Summary", company.blurb)
+    # Summary - prefer ourData.summary over blurb
+    summary = company.ourData.get('summary') if company.ourData else None
+    if not summary:
+        summary = company.blurb
+    show_overview_row("Summary", summary)
     
     # Problem
     problem = company.ourData.get('problem') if company.ourData else None
@@ -76,8 +88,9 @@ def show_overview(company: Company):
     # Why we're excited (skip for now)
     show_overview_row("Why we're excited", "Not implemented yet.")
     
-    # Market Size (not available)
-    show_overview_row("Market Size", "Not implemented yet.")
+    # Market Size
+    market_size = company.ourData.get('marketSize') if company.ourData else None
+    show_overview_row("Market Size", market_size)
 
     show_overview_row("Concerns", "Not implemented yet.")
 
@@ -402,7 +415,7 @@ def company_page():
         st.text("TBD")
 
     with tabs[3]:
-        st.text("TBD")
+        show_traction_content(company)
 
 
     with tabs[4]:
