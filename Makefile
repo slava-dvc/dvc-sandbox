@@ -28,8 +28,12 @@ test-backend-dry-run:
 test-job-dry-run:
 	python -m app.job --dry-run
 
+.PHONY: test-public-dry-run
+test-public-dry-run:
+	python -m app.public --dry-run
+
 .PHONY: ci
-ci: test test-backend-dry-run test-job-dry-run
+ci: test test-backend-dry-run test-job-dry-run test-public-dry-run
 
 # Docker targets
 .PHONY: docker-build

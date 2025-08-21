@@ -10,8 +10,14 @@ router = APIRouter(
     prefix="/jobs",
 )
 
+public_router = APIRouter(
+    prefix="/jobs",
+    tags=["public"]
+)
+
 
 @router.get("")
+@public_router.get("")
 async def get_jobs(
     format: str | None = Query(None, description="Output format (markdown)"),
     database: AsyncDatabase = Depends(dependencies.get_default_database),

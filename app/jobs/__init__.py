@@ -1,3 +1,3 @@
-from .routes import router
+from .routes import router, public_router
 
-__all__ = ['router']
+__all__ = ['router', 'public_router']

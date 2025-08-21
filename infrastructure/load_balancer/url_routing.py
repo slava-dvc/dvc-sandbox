@@ -6,6 +6,7 @@ from .ip_addresses import external_ipv4_address, external_ipv6_address
 from .ssl import ssl_certificate
 from .backend_service import (
     synapse_compute_backend,
+    public_compute_backend,
     dealflow_compute_backend,
     web_app_bucket_backend,
     portfolio_compute_backend,
@@ -56,6 +57,10 @@ api_urlmap_matcher = gcp.compute.URLMapPathMatcherArgs(
         gcp.compute.URLMapPathMatcherPathRuleArgs(
             paths=["/v1/*"],
             service=synapse_compute_backend.self_link,
+        ),
+        gcp.compute.URLMapPathMatcherPathRuleArgs(
+            paths=["/api/*"],
+            service=public_compute_backend.self_link,
         ),
         gcp.compute.URLMapPathMatcherPathRuleArgs(
             paths=["/pitch_decks/*", "/media/*"],

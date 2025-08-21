@@ -12,6 +12,8 @@ if [ "$command" = 'backend' ]; then
     exec python -m app.backend "$@"
 elif [ "$command" = 'job' ]; then
     exec python -m app.job "$@"
+elif [ "$command" = 'public' ]; then
+    exec python -m app.public "$@"
 elif [ "$command" = "portfolio" ]; then
     mkdir -p .streamlit
     python3 infrastructure/generate_streamlit_secrets.py > .streamlit/secrets.toml
