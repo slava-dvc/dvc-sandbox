@@ -7,6 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from httpx import HTTPStatusError, StreamError, ReadError, ConnectError
+from pydantic import ValidationError
 from starlette.requests import ClientDisconnect
 
 from .config import AppConfig
@@ -98,6 +99,18 @@ async def runtime_exception_handler(request: Request, exc: Exception):
             }
         },
         status_code=code
+    )
+
+
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    logger = get_logger(request)
+    logger.error("Pydantic validation error", exc_info=exc, labels={
+        "errors": jsonable_encoder(exc.errors())
+    })
+
+    return JSONResponse(
+        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+        content={"detail": str(exc)},
     )
 
 

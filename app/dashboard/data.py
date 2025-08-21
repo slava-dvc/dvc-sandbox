@@ -6,6 +6,7 @@ import pandas as pd
 from pyairtable import Api
 from pymongo import MongoClient
 from app.shared.company import Company
+from app.foundation.primitives import datetime
 
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
 
@@ -22,7 +23,7 @@ def mongodb_client():
 def mongo_database():
     return mongodb_client().get_default_database('fund')
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=datetime.timedelta(minutes=5))
 def fetch_airtable_as_rows(table_name: str, **options) -> typing.List[dict]:
     api = airtable_api_client()
     return api.table( AIRTABLE_BASE_ID, table_name).all(**options)
@@ -89,7 +90,7 @@ def get_portfolio(**options):
     return fetch_airtable_as_df('tblxeUBhlLFnoG6QC', **options)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=datetime.timedelta(minutes=5))
 def get_jobs(**options):
     """Fetch jobs from MongoDB jobs collection"""
     from app.foundation.primitives import datetime
@@ -106,14 +107,3 @@ def get_jobs(**options):
     
     jobs = list(jobs_collection.find(query).sort('updatedAt', -1))
     return jobs
-
-
-@st.cache_data(show_spinner=False)
-def fetch_tables_config() -> dict:
-    url = f"https://api.airtable.com/v0/meta/bases/{AIRTABLE_BASE_ID}/tables"
-    headers = {
-        'Authorization': f"Bearer {os.environ['AIRTABLE_API_KEY']}"
-    }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return {table['id']: table for table in response.json()['tables']}

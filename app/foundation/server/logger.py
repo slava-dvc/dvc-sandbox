@@ -111,7 +111,6 @@ class LocalLogger(Logger):
 
     def _make_log_data(self, msg: str, labels: dict = None):
         labels = self._labels | jsonable_encoder(labels or {})
-        
         return '\n'.join([
             msg,
             json.dumps(labels)

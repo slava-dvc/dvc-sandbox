@@ -6,6 +6,7 @@ from typing import Dict, Any, AnyStr as Str
 import httpx
 import uvicorn
 from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
@@ -93,10 +94,8 @@ class FastAPIServer(AsyncServer):
         self.publisher_client.transport.close()
 
     def setup_exception_handlers(self, app: FastAPI):
-        for exception_class in [
-            RequestValidationError
-        ]:
-            app.add_exception_handler(exception_class, request_validation_exception_handler)
+        app.add_exception_handler(RequestValidationError, request_validation_exception_handler)
+        app.add_exception_handler(ValidationError, request_validation_exception_handler)
 
         for exception_class in [
             ArithmeticError, AssertionError, AttributeError, LookupError, ImportError, MemoryError,

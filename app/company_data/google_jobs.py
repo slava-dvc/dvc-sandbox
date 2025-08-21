@@ -1,4 +1,5 @@
 import json
+import bson
 from typing import Dict
 from urllib.parse import urlparse
 
@@ -52,7 +53,10 @@ class GoogleJobsDataSyncer(DataSyncer):
         for job in googleJobsData:
             result = await jobs_collection.update_one(
                 filter={
-                    'companyId': company.id,
+                    '$or': [
+                        company.id,
+                        bson.ObjectId(company.id)
+                    ],
                     'title': job.get('title'),
                     'location': job.get('location')
                 },
@@ -60,7 +64,7 @@ class GoogleJobsDataSyncer(DataSyncer):
                     '$set': {
                         'updatedAt': datetime.now(),
                         'applyOptions': job.get('apply_options'),
-                        'companyId': company.id,
+                        'companyId': bson.ObjectId(company.id),
                         'companyName': company.name,
                         'description': job.get('description'),
                         'extensions': job.get('extensions'),
