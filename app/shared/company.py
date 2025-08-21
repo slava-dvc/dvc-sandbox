@@ -31,7 +31,7 @@ class CompanyStatus(StrEnum):
 class Company(BaseModel):
 
     DATA_FIELDS: ClassVar[Set[str]] = {
-        "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData", "blurb"
+        "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData"
     }
 
     id: str | None = Field(..., validation_alias=AliasChoices("_id", 'id'))
@@ -72,7 +72,7 @@ class Company(BaseModel):
     googleJobsUpdatedAt: datetime.datetime | None = None
 
     def model_dump_for_logs(self):
-        return self.model_dump(exclude_none=True, exclude=self.DATA_FIELDS)
+        return self.model_dump(exclude_none=True, exclude=self.DATA_FIELDS + ["blurb"])
 
     def has_valid_website(self):
         if not self.website:
