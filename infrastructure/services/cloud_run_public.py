@@ -31,11 +31,19 @@ public_cloud_run = gcp.cloudrunv2.Service(
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
-                        "cpu": "0.5",  # Lower resources for public API
-                        "memory": "256Mi",
+                        "cpu": "1",  # Lower resources for public API
+                        "memory": "512Mi",
                     }
                 ),
             )
         ]
     }),
+)
+
+allow_unauthenticated = gcp.cloudrun.IamMember(
+    "allow-unauthenticated-public-cloud-run-service",
+    service=public_cloud_run.name,
+    location=public_cloud_run.location,
+    role="roles/run.invoker",
+    member="allUsers"
 )

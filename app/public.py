@@ -8,9 +8,10 @@ class PublicServer(server.FastAPIServer):
     def setup_routes(self, app: FastAPI):
         super().setup_routes(app)
 
-        from app import jobs
+        from app import jobs, companies
 
         app.include_router(jobs.public_router, prefix='/api')
+        app.include_router(companies.public_router, prefix='/api')
 
     async def __aenter__(self) -> Dict[Str, Any]:
         state = await super().__aenter__()

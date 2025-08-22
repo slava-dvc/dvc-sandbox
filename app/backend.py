@@ -10,11 +10,12 @@ class BackendServer(server.FastAPIServer):
     def setup_routes(self, app: FastAPI):
         super().setup_routes(app)
 
-        from app import integrations, company_data, jobs
+        from app import integrations, company_data, jobs, companies
 
         app.include_router(integrations.router, prefix='/v1')
         app.include_router(company_data.router, prefix='/v1')
         app.include_router(jobs.router, prefix='/v1')
+        app.include_router(companies.router, prefix='/v1')
 
     @cached_property
     def genai_client(self):
