@@ -25,7 +25,8 @@ class Job(BaseModel):
     apply_options: List[ApplyOption] = Field(default_factory=list, alias="applyOptions")
     created_at: datetime | None = Field(None, alias="createdAt")
     updated_at: datetime | None = Field(None, alias="updatedAt")
-    
+    via: str | None = None
+
     @field_validator('id', mode='before')
     @classmethod
     def validate_object_id(cls, v):

@@ -1,4 +1,5 @@
 from typing import List
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from app.jobs.models import Job
 
 
@@ -39,9 +40,30 @@ class JobsFormatter:
         
         if job.extensions:
             lines.append(f"\nJob Type: {', '.join(job.extensions)}")
+        apply_link = None
+        for apply_option in job.apply_options:
+            if apply_option.title == job.via:
+                apply_link = self._format_url(apply_option.link)
+                break
 
+        lines.append(f"\n## Application link\n{apply_link}")
         return '\n'.join(lines)
-    
+
+    def _format_url(self, url: str) -> str:
+        url = urlparse(url)
+        query_params = parse_qs(url.query)
+        # Remove UTM parameters
+        query_params = {k: v for k, v in query_params.items() if not k.startswith('utm_')}
+        # Rebuild URL without UTM parameters
+        return urlunparse((
+            url.scheme,
+            url.netloc,
+            url.path,
+            url.params,
+            urlencode(query_params, doseq=True),
+            url.fragment
+        ))
+
     def as_markdown(self) -> str:
         """Format jobs list as markdown document"""
         if not self.jobs:
@@ -54,4 +76,4 @@ class JobsFormatter:
         for job in self.jobs:
             lines.append(self._format_job(job))
         
-        return "\n---\n".join(lines)
+        return "\n\n---\n\n".join(lines)
