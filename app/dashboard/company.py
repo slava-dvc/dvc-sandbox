@@ -2,14 +2,27 @@ import pandas as pd
 import requests
 import streamlit as st
 from dataclasses import fields
+from typing import List
+
+from bson import ObjectId
 
 from app.shared.company import Company, CompanyStatus
 from app.foundation.primitives import datetime
-from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview, safe_markdown
+from app.dashboard.formatting import (
+    format_as_dollars, format_as_percent, is_valid_number, get_preview,
+    safe_markdown, format_relative_time
+)
 from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem, HIGHLIGHTS_DICT
-from app.dashboard.data import get_investments, get_portfolio, get_updates, get_ask_to_task, get_people, get_companies_v2, app_config
+from app.dashboard.data import (
+    get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
+    get_companies_v2, app_config
+)
+from dashboard.data import update_company
+from shared.company import Comment
+from shared.user import User
 
 __all__ = ['company_page']
+
 
 
 def get_company_traction_metrics(company: Company) -> TractionMetrics:
@@ -309,7 +322,7 @@ def show_last_updates_and_news(company: Company):
                 st.write(row['date'].strftime('%d %b %Y'))
             if row['type'] == 'news':
                 with button_column:
-                    st.link_button("Read more", row['url'])
+                    st.link_button("Read more", row['url'], width=192)
         pass
 
 
@@ -481,6 +494,39 @@ def show_signlas_and_traction(company: Company):
         show_traction_graph_with_combo(company, 'employee_count')
 
 
+@st.fragment
+def show_comments(company: Company):
+    company = get_companies_v2({'_id': ObjectId(company.id)}, projection=['comments', 'airtableId', 'name'])[0]
+    comments = company.comments or []
+    comments.sort(key=lambda x: x.createdAt, reverse=True)
+    if not comments:
+        st.info("No comments for this company.")
+
+    for comment in comments:
+        with st.container(border=True):
+            photo_column, text_column = st.columns([1, 12], vertical_alignment='center', width=512)
+            if comment.user.picture:
+                with photo_column:
+                    st.image(comment.user.picture, width=32)
+
+            with text_column:
+                st.markdown(f"**{comment.user.name}** • {format_relative_time(comment.createdAt)} ")
+
+            st.write(safe_markdown(comment.text))
+    if not comments:
+        text = st.chat_input("Add a first comment")
+    else:
+        text = st.chat_input("Add a new comment")
+    if text:
+        user = User.model_validate(dict(st.user))
+        comments.append(Comment(text=text, user=user))
+        update_company(
+            company_id=company.id,
+            fields={'comments': [c.model_dump() for c in comments]}
+        )
+        st.rerun(scope='fragment')
+
+
 def show_memorandum(company:Company):
     st.markdown(safe_markdown(company.memorandum))
 
@@ -509,7 +555,8 @@ def company_page():
         "Investments": show_company_investment_details,
         "Asks": show_asks,
         "Updates": show_last_updates_and_news,
-        "Memorandum": show_memorandum
+        "Memorandum": show_memorandum,
+        "Comments": show_comments,
     }
 
     names = ["Overview", "Team", "Financial"]
@@ -521,6 +568,7 @@ def company_page():
         names.append("Signals")
     if company.status == CompanyStatus.INVESTED:
         names.extend(["Investments", "Asks", "Updates"])
+    names.append('Comments')
     for t, n in zip(st.tabs(names), names):
         with t:
             tabs_config[n](company)

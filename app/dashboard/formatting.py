@@ -140,8 +140,11 @@ def format_relative_time(date: str | datetime.datetime):
 
         now = datetime.now()
         delta = now - date
-
-        if delta.days <1:
+        if delta.total_seconds() < 60*5:
+            return "Just now"
+        elif delta.total_seconds() < 60*60:
+            return f"{delta.min} minutes ago"
+        elif delta.days <1:
             return "Today"
         elif delta.days == 1:
             return "Yesterday"
@@ -150,7 +153,7 @@ def format_relative_time(date: str | datetime.datetime):
         else:
             return f"{delta.days // 7} weeks ago"
     except Exception as e:
-        return "Unknown"
+        return f"Unknown: {e}"
 
 
 def safe_markdown(text: str | None) -> str:

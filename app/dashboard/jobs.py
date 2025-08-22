@@ -31,9 +31,9 @@ def show_job_card(job):
         with col2:
             if first_apply_option:
                 apply_link = first_apply_option.get('link', '#')
-                st.link_button("Apply", apply_link, use_container_width=True)
+                st.link_button("Apply", apply_link, width=192)
             else:
-                st.button("Apply", disabled=True, use_container_width=True)
+                st.button("Apply", disabled=True, width=192)
 
         # Collapsible details
         with st.expander("View Details"):

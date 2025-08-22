@@ -1,3 +1,4 @@
+import uuid
 from enum import StrEnum
 from typing import Optional, List, ClassVar, Set, Any
 from urllib.parse import urlparse
@@ -5,7 +6,7 @@ from bson import ObjectId
 
 from pydantic import BaseModel, Field, AliasChoices, field_validator
 from app.foundation.primitives import datetime
-
+from .user import User
 
 __all__ = ["Company", "CompanyStatus"]
 
@@ -28,10 +29,17 @@ class CompanyStatus(StrEnum):
     WRITE_OFF = "Write-off"
 
 
+class Comment(BaseModel):
+    text: str
+    user: User
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    createdAt: datetime.datetime = Field(default_factory=datetime.now)
+
+
 class Company(BaseModel):
 
     DATA_FIELDS: ClassVar[Set[str]] = {
-        "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData"
+        "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData", "comments"
     }
 
     id: str | None = Field(..., validation_alias=AliasChoices("_id", 'id'))
@@ -50,6 +58,7 @@ class Company(BaseModel):
     ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")
     blurb: str | None = Field(None, description="Company blurb")
     memorandum: str | None = Field(None, description="Company memorandum")
+    comments: List[Comment] | None= Field(default_factory=list)
 
     createdAt: datetime.datetime | None = None
     updatedAt: datetime.datetime | None = None

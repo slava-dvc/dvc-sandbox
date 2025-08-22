@@ -92,13 +92,15 @@ def _render_company_card(company: Company):
         def update_company_id(company_id):
             st.query_params.update({'company_id': company.airtableId})
 
-        st.link_button("View", url=f'/company_page?company_id={company.airtableId}')
+        st.link_button("View", url=f'/company_page?company_id={company.airtableId}', width=192)
 
-    if isinstance(company.blurb, str):
+    if isinstance(company.blurb, str) and company.blurb:
         blurb = safe_markdown(company.blurb)
         if len(blurb) > 1024:
             blurb = blurb[:1024] + "..."
         st.markdown(blurb)
+    else:
+        st.caption("No blurb provided.")
 
     if new_status != str(company.status):
         with st.spinner("Updating..."):

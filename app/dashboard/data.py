@@ -3,6 +3,7 @@ import requests
 import streamlit as st
 import os
 import pandas as pd
+from bson import ObjectId
 from pyairtable import Api
 from pymongo import MongoClient
 from app.shared.company import Company
@@ -80,6 +81,15 @@ def get_companies_v2(query: dict = None, sort: typing.List[typing.Tuple[str, int
     return [
         Company.model_validate(company) for company in companies
     ]
+
+
+def update_company(company_id: str, fields: dict):
+    db = mongo_database()
+    companies_collection = db.get_collection('companies')
+    companies_collection.update_one(
+        {'_id': ObjectId(company_id)},
+        {'$set': fields}
+    )
 
 
 def get_ask_to_task(**options):
