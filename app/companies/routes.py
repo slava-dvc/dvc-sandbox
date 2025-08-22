@@ -33,17 +33,17 @@ async def update_company(
     
     return company.model_dump(by_alias=True)
 
-
+@router.post("/{company_id}/memorandum")
 @public_router.post("/{company_id}/memorandum")
 async def update_memorandum_webhook(
     company_id: str,
-    body: str,
+    request: Request,
     database: AsyncDatabase = Depends(dependencies.get_default_database),
     logger: Logger = Depends(dependencies.get_logger),
 ):
     """Webhook endpoint to update company memorandum with plain text"""
     crud = Crud(database)
-
+    body = (await request.body()).decode("utf-8")
     update_request = CompanyUpdateRequest(memorandum=body)
     
     company = await crud.update_company(company_id, update_request)
