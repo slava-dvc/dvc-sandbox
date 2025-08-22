@@ -59,6 +59,7 @@ class Company(BaseModel):
     blurb: str | None = Field(None, description="Company blurb")
     memorandum: str | None = Field(None, description="Company memorandum")
     comments: List[Comment] | None= Field(default_factory=list)
+    concerns: List[str] | None = Field(default_factory=list)
 
     createdAt: datetime.datetime | None = None
     updatedAt: datetime.datetime | None = None

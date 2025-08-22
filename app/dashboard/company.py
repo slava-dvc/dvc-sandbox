@@ -130,7 +130,37 @@ def show_traction_content(company: Company):
 
 def show_overview(company: Company):
     """Display company overview information in a structured format."""
-    
+    # show_key_value_row("Concerns", "Not implemented yet.")
+    valid_concerns = [
+        "Non repeat founder(s)",
+        "The market is too small",
+        "The market is too red",
+        "Weird Captable",
+        "Valuation is too high",
+        "Strong Competitors",
+        "Not a VC Story",
+        "Conflict of interest",
+        "Hardware",
+        "Tokenomics",
+        "No Unique Value",
+        "No Contact",
+        "Too early for us",
+        "Not in our focus",
+        "No moat/unique value",
+        "Round is too slow, ability to raise",
+        "Not the US based",
+        "Focusing on EU market"
+    ]
+    concerns = st.multiselect(
+        label="Concerns",
+        options=valid_concerns,
+        default=company.concerns,
+        placeholder="Add concerns...",
+        label_visibility='collapsed'
+    )
+    if set(concerns) != set(company.concerns):
+        update_company(company.id, {'concerns': list(concerns)})
+
     # Main Industry
     main_industry = company.ourData.get('mainIndustry') if company.ourData else None
     industry_value = ', '.join(main_industry) if main_industry and isinstance(main_industry, list) else None
@@ -149,15 +179,11 @@ def show_overview(company: Company):
     # Solution
     solution = company.spectrData.get('description') if company.spectrData else None
     show_key_value_row("Solution", solution)
-    
-    # Why we're excited (skip for now)
-    show_key_value_row("Why we're excited", "Not implemented yet.")
+
     
     # Market Size
     market_size = company.ourData.get('marketSize') if company.ourData else None
     show_key_value_row("Market Size", market_size)
-
-    show_key_value_row("Concerns", "Not implemented yet.")
 
     # Target Market
     target_market = company.ourData.get('targetMarket') if company.ourData else None
