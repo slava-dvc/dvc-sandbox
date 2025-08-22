@@ -1,5 +1,5 @@
 import pandas as pd
-
+import requests
 import streamlit as st
 from dataclasses import fields
 
@@ -7,7 +7,7 @@ from app.shared.company import Company, CompanyStatus
 from app.foundation.primitives import datetime
 from app.dashboard.formatting import format_as_dollars, format_as_percent, is_valid_number, get_preview, safe_markdown
 from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem, HIGHLIGHTS_DICT
-from app.dashboard.data import get_investments, get_portfolio, get_updates, get_ask_to_task, get_people, get_companies_v2
+from app.dashboard.data import get_investments, get_portfolio, get_updates, get_ask_to_task, get_people, get_companies_v2, app_config
 
 __all__ = ['company_page']
 
@@ -43,6 +43,7 @@ def get_company_financial_data(company: Company) -> dict:
         'expected_performance': our_data.get('performanceOutlook')
     }
 
+
 def show_key_value_row(key: str, value: str | None):
     """Helper function to display a key-value pair in two columns with proper formatting."""
     col1, col2 = st.columns([3, 7])
@@ -53,6 +54,7 @@ def show_key_value_row(key: str, value: str | None):
             st.markdown(safe_markdown(value))
         else:
             st.markdown("—")
+
 
 def show_financial(company: Company):
     """Display financial information in a structured format."""
@@ -103,6 +105,7 @@ def show_financial(company: Company):
     # Co-Investors - Not clear from data structure
     show_key_value_row("Co-Investors", "Not implemented yet.")
 
+
 def show_traction_content(company: Company):
     """Display detailed traction information from ourData.traction."""
     traction = company.ourData.get('traction') if company.ourData else None
@@ -111,6 +114,7 @@ def show_traction_content(company: Company):
         st.markdown(safe_markdown(traction))
     else:
         st.info("No traction information available for this company.")
+
 
 def show_overview(company: Company):
     """Display company overview information in a structured format."""
@@ -149,7 +153,7 @@ def show_overview(company: Company):
 
 
 def show_company_basic_details(company: Company):
-    logo_column, name_column, pitch_deck_column = st.columns([1, 5, 1], vertical_alignment="center")
+    logo_column, name_column, buttons_column = st.columns([1, 5, 1], vertical_alignment="center")
 
     with logo_column:
         fallback_url = f'https://placehold.co/128x128?text={company.name}'
@@ -167,13 +171,34 @@ def show_company_basic_details(company: Company):
         else:
             st.caption("No blurb provided.")
 
-    with pitch_deck_column:
+    with buttons_column:
         pitch_deck_url = company.ourData.get('linkToDeck') if company.ourData else None
         if pitch_deck_url and isinstance(pitch_deck_url, str):
-            st.link_button("Pitchdeck", pitch_deck_url)
+            st.link_button("Pitchdeck", pitch_deck_url, width=192)
         
-        if st.button("Update Data"):
+        if st.button("Update Signals", width=192):
             st.info("Update Data functionality is not implemented yet.")
+
+        memorandum_is_creating = False
+        if st.button("Generate Memo", width=192):
+            config = app_config()
+            response = requests.post(
+                url=config.lindy.memorandum.url,
+                headers={
+                    'Authorization': f'Bearer {config.lindy.memorandum.api_key}',
+                },
+                json={
+                    'callbackURL': f'https://api.dvcagent.com/api/companies/{company.id}/memorandum',
+                    'companyName': company.name,
+                    'companyWebsite': company.website,
+                    'companyBlurb': company.blurb
+                }
+            )
+            response.raise_for_status()
+            memorandum_is_creating = True
+
+    if memorandum_is_creating:
+        st.info("Memorandum creation is triggered.", icon="️⏲️")
 
 
 def show_company_investment_details(company: Company):
@@ -456,12 +481,14 @@ def show_signlas_and_traction(company: Company):
         show_traction_graph_with_combo(company, 'employee_count')
 
 
+def show_memorandum(company:Company):
+    st.markdown(safe_markdown(company.memorandum))
+
 def company_page():
     selected_company_id = get_selected_company()
     if not selected_company_id:
         st.info("Please select a company.")
         return
-
     st.query_params.update({'company_id': selected_company_id})
     companies = get_companies_v2(query={'airtableId': selected_company_id})
     if len(companies) != 1:
@@ -469,6 +496,7 @@ def company_page():
         return
 
     company = companies[0]
+
     show_company_basic_details(company)
     st.divider()
 
@@ -481,9 +509,12 @@ def company_page():
         "Investments": show_company_investment_details,
         "Asks": show_asks,
         "Updates": show_last_updates_and_news,
+        "Memorandum": show_memorandum
     }
 
     names = ["Overview", "Team", "Financial"]
+    if company.memorandum:
+        names.append("Memorandum")
     if company.ourData.get('traction'):
         names.append("Traction")
     if company.spectrData:

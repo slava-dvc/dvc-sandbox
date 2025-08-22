@@ -61,6 +61,8 @@ class AppConfig(metaclass=Singleton):
 
     def __init__(self, *args, **kwargs):
         self._cfg = Config(*args, **kwargs)
+        self.yml_loaded = False
+        self.db_loaded = False
 
     def load_yml(self, file_path):
         file_path = Path(file_path)
@@ -69,6 +71,7 @@ class AppConfig(metaclass=Singleton):
         with file_path.open() as config:
             data = yaml.load(config, Loader=yaml.Loader)
             self._cfg = Config(data)
+        self.yml_loaded = True
         return self
 
     def load_db(self, db: firestore.Client):
@@ -80,6 +83,8 @@ class AppConfig(metaclass=Singleton):
                 if old != new:
                     changed = True
                 self[doc.id] = Config(data={**old, **new}, path=doc.id)
+            self.yml_loaded = True
+            self.db_loaded = True
         except PermissionDenied as e:
             logging.error(f'Failed to load config from Firestore: {e}')
         return changed

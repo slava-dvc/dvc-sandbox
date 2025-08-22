@@ -365,4 +365,4 @@ def show_company_summary(company_summary: CompanySummary):
             def update_company_id(company_id):
                 st.query_params.update({'company_id': company_id})
 
-            st.link_button("View", url=f'/company_page?company_id={company_id}')
+            st.link_button("View", url=f'/company_page?company_id={company_id}', width=192)

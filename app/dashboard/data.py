@@ -7,9 +7,17 @@ from pyairtable import Api
 from pymongo import MongoClient
 from app.shared.company import Company
 from app.foundation.primitives import datetime
+from foundation.server import AppConfig
+from google.cloud import firestore
 
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
 
+@st.cache_resource
+def app_config() -> AppConfig:
+    config = AppConfig()
+    if not config.db_loaded:
+        config.load_db(firestore.Client())
+    return config
 
 @st.cache_resource
 def airtable_api_client() -> Api:
