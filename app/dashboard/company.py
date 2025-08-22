@@ -2,7 +2,6 @@ import pandas as pd
 import requests
 import streamlit as st
 from dataclasses import fields
-from typing import List
 
 from bson import ObjectId
 
@@ -15,11 +14,11 @@ from app.dashboard.formatting import (
 from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem, HIGHLIGHTS_DICT
 from app.dashboard.data import (
     get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
-    get_companies_v2, app_config
+    get_companies_v2, app_config, update_company
 )
-from dashboard.data import update_company
-from shared.company import Comment
-from shared.user import User
+
+from app.shared.company import Comment
+from app.shared.user import User
 
 __all__ = ['company_page']
 
