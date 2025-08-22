@@ -12,7 +12,7 @@ router = APIRouter(
 
 
 public_router = APIRouter(
-    prefix="/jobs",
+    prefix="/companies",
     tags=["public"]
 )
 

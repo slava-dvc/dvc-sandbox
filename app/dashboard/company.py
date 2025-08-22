@@ -176,7 +176,13 @@ def show_company_basic_details(company: Company):
             st.info("Update Data functionality is not implemented yet.")
 
 
-def show_company_investment_details(company: Company, investments: pd.DataFrame, portfolio: pd.DataFrame):
+def show_company_investment_details(company: Company):
+    with st.spinner("Loading ..."):
+        investments = get_investments()
+
+    with st.spinner("Loading ..."):
+        portfolio = get_portfolio()
+
     col1, col2, col3, col4 = st.columns(4)
     company_id = company.airtableId
     company_investments = investments[investments['Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)]
@@ -235,7 +241,9 @@ def show_asks(company: Company):
         st.dataframe(filtered_asks[columns], hide_index=True, use_container_width=True)
 
 
-def show_last_updates_and_news(company: Company, updates):
+def show_last_updates_and_news(company: Company):
+    with st.spinner("Loading ..."):
+        updates = get_updates()
     rows = []
     relevant_updates = updates['Company Name'].apply(lambda x: company.airtableId in x if isinstance(x, list) else False)
     company_updates = updates[relevant_updates].copy()
@@ -243,7 +251,7 @@ def show_last_updates_and_news(company: Company, updates):
     for company_update in company_updates.itertuples():
         rows.append({
             'type': 'update',
-            'publisher': 'Team',
+            'publisher': 'Team update:',
             'url': None,
             'date': datetime.any_to_datetime(company_update.Created),
             'title': company_update.Comment,
@@ -270,7 +278,7 @@ def show_last_updates_and_news(company: Company, updates):
             with text_column:
                 title = row['title']
                 if not isinstance(title, str):
-                    title = "—"
+                    title = "No text available."
                 st.markdown(f"**{row['publisher']}**: {safe_markdown(title)}".format(row=row))
             with date_column:
                 st.write(row['date'].strftime('%d %b %Y'))
@@ -438,6 +446,16 @@ def get_selected_company():
     return selected_company_id
 
 
+def show_signlas_and_traction(company: Company):
+    show_signals(company)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        show_traction_graph_with_combo(company, 'web_visits')
+    with c2:
+        show_traction_graph_with_combo(company, 'employee_count')
+
+
 def company_page():
     selected_company_id = get_selected_company()
     if not selected_company_id:
@@ -454,43 +472,24 @@ def company_page():
     show_company_basic_details(company)
     st.divider()
 
-    names = ["Overview", "Team", "Financial", "Traction", "Signals", "investments", "Asks", "Updates"]
-    tabs = st.tabs(names)
+    tabs_config: dict = {
+        "Overview": show_overview,
+        "Team": show_team,
+        "Financial": show_financial,
+        "Traction": show_traction_content,
+        "Signals": show_signlas_and_traction,
+        "Investments": show_company_investment_details,
+        "Asks": show_asks,
+        "Updates": show_last_updates_and_news,
+    }
 
-    with tabs[0]:
-        show_overview(company)
-
-    with tabs[1]:
-        show_team(company)
-
-    with tabs[2]:
-        show_financial(company)
-
-    with tabs[3]:
-        show_traction_content(company)
-
-
-    with tabs[4]:
-        show_signals(company)
-
-        c1, c2 = st.columns(2)
-        with c1:
-            show_traction_graph_with_combo(company, 'web_visits')
-        with c2:
-            show_traction_graph_with_combo(company, 'employee_count')
-
-    with tabs[5]:
-        with st.spinner("Loading ..."):
-            investments = get_investments()
-
-        with st.spinner("Loading ..."):
-            portfolio = get_portfolio()
-        show_company_investment_details(company, investments, portfolio)
-
-    with tabs[6]:
-        show_asks(company)
-
-    with tabs[7]:
-        with st.spinner("Loading ..."):
-            updates = get_updates()
-        show_last_updates_and_news(company, updates)
+    names = ["Overview", "Team", "Financial"]
+    if company.ourData.get('traction'):
+        names.append("Traction")
+    if company.spectrData:
+        names.append("Signals")
+    if company.status == CompanyStatus.INVESTED:
+        names.extend(["Investments", "Asks", "Updates"])
+    for t, n in zip(st.tabs(names), names):
+        with t:
+            tabs_config[n](company)
