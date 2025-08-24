@@ -31,7 +31,7 @@ ACTIVE_COMPANY_STATUSES = [
     CompanyStatus.MEETING,
     CompanyStatus.CHECKIN,
     CompanyStatus.DOCS_SENT,
-    # CompanyStatus.RADAR
+    CompanyStatus.RADAR
 ]
 
 

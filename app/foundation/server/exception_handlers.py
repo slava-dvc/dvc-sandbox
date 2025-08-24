@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from http import HTTPStatus
 from json import JSONDecodeError
 
@@ -8,7 +9,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from httpx import HTTPStatusError, StreamError, ReadError, ConnectError
 from pydantic import ValidationError
-from starlette.requests import ClientDisconnect
 
 from .config import AppConfig
 from .dependencies import get_logger
@@ -17,6 +17,20 @@ __all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_excep
            'http_connection_exception_handler', 'request_validation_exception_handler']
 
 
+async def request_body(request: Request):
+    body = None
+    if request.method in ['POST', 'PUT', 'PATCH']:
+        try:
+            body = await request.json()
+        except JSONDecodeError:
+            body = await request.body()
+            if body:
+                body = body.decode("utf-8")
+        except ValueError:
+            pass
+    if body and isinstance(body, (dict, str)) and sys.getsizeof(body) < 1024 * 1024:
+        return body
+    return None
 
 
 def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
@@ -33,12 +47,15 @@ def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
     )
 
 
-def http_exception_handler(request: Request, exc: HTTPStatusError):
+async def http_exception_handler(request: Request, exc: HTTPStatusError):
     config: AppConfig = request.state.config
     logger = get_logger(request)
     logger.warning("Downstream HTTP error", labels={
-        "status_code": exc.response.status_code,
-        "content": exc.response.content
+        "downstream": {
+            "status_code": exc.response.status_code,
+            "content": exc.response.content
+        },
+        "body": await request_body(request),
     })
     if config.debug:
         try:
@@ -61,13 +78,13 @@ def http_exception_handler(request: Request, exc: HTTPStatusError):
     )
 
 
-def http_connection_exception_handler(request: Request, exc: (ReadError | ConnectError)):
+def http_connection_exception_handler(request: Request, exc: ReadError | ConnectError):
     logger = get_logger(request)
     logger.warning("Downstream HTTP connection error", labels={
         "exceptionType": type(exc).__name__,
         "exception": str(exc)
     })
-    
+
     return JSONResponse(
         content={
             "error": {
@@ -82,14 +99,8 @@ def http_connection_exception_handler(request: Request, exc: (ReadError | Connec
 async def runtime_exception_handler(request: Request, exc: Exception):
     code = HTTPStatus.INTERNAL_SERVER_ERROR
     logger = get_logger(request)
-    body = None
-    try:
-        body = await request.json()
-    except ValueError:
-        pass
     logger.error("Runtime exception", labels={
-        "exception": str(exc),
-        "body": body
+        "body": await request_body(request),
     }, exc_info=exc)
     return JSONResponse(
         content={
@@ -105,7 +116,8 @@ async def runtime_exception_handler(request: Request, exc: Exception):
 async def validation_exception_handler(request: Request, exc: ValidationError):
     logger = get_logger(request)
     logger.error("Pydantic validation error", exc_info=exc, labels={
-        "errors": jsonable_encoder(exc.errors())
+        "errors": jsonable_encoder(exc.errors()),
+        "body": await request_body(request),
     })
 
     return JSONResponse(
@@ -117,21 +129,11 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
     logger = get_logger(request)
 
-    try:
-        try:
-            body = await request.json()
-        except JSONDecodeError:
-            body = await request.body()
-            body = body.decode("utf-8")
-    except (AttributeError, TypeError, ValueError, ClientDisconnect) as e:
-        body = f"Unable to decode body: {e}"
-
     logger.warning("Validation error occurred", labels={
-        "body": body,
+        "body": await request_body(request),
         "errors": jsonable_encoder(exc.errors())
     })
     return JSONResponse(
         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
         content={"detail": jsonable_encoder(exc.errors())},
     )
-
