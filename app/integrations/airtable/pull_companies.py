@@ -5,6 +5,8 @@ from pymongo.asynchronous.collection import AsyncCollection
 from app.shared import Company, CompanyStatus, AirTableClient
 from app.foundation.server import Logger
 from app.foundation.primitives import datetime
+from app.company_data.job_dispatcher import JobDispatcher
+
 
 _STATUS_MAP = {
     "Invested": CompanyStatus.INVESTED,
@@ -34,7 +36,7 @@ def _unwrap_single_item(value):
     return value
 
 
-async def _process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger) -> None:
+async def _process_company_record(record: Dict[str, Any], companies_collection: AsyncCollection, logger: Logger, job_dispatcher: JobDispatcher) -> None:
     """
     Process an individual Airtable record and store it in MongoDB.
 
@@ -99,6 +101,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
     )
 
     if result.upserted_id:
+        company.id = str(result.upserted_id)
         logger.info(
             "Company inserted",
             labels={
@@ -107,6 +110,18 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
                 "airtableId": company.airtableId
             }
         )
+        # Trigger Spectr update if company has valid website
+        if company.has_valid_website():
+            try:
+                await job_dispatcher.trigger_one(company, "spectr")
+            except Exception as e:
+                logger.error(
+                    "Failed to trigger Spectr update",
+                    exc_info=e,
+                    labels={
+                        "company": company.model_dump_for_logs(),
+                    }
+                )
     else:
         logger.info(
             "Company updated", 
@@ -118,6 +133,9 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
                 "modifiedCount": result.modified_count
             }
         )
+    
+
+    
     return True
 
 
@@ -126,6 +144,7 @@ async def pull_companies_from_airtable(
     mongo_client: AsyncMongoClient,
     table_id: str,
     logger: Logger,
+    job_dispatcher: JobDispatcher,
 ) -> int:
     """
     Pull companies from Airtable and store them in MongoDB.
@@ -188,7 +207,7 @@ async def pull_companies_from_airtable(
             skipped_count += 1
             continue
 
-        await _process_company_record(record, companies_collection, logger)
+        await _process_company_record(record, companies_collection, logger, job_dispatcher)
         processed_count += 1
 
     # Summary logging

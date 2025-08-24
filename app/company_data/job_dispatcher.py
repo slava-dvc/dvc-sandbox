@@ -11,6 +11,7 @@ __all__ = ["JobDispatcher"]
 
 
 class JobDispatcher(object):
+
     def __init__(
             self,
             database: AsyncDatabase,
@@ -32,13 +33,13 @@ class JobDispatcher(object):
     def is_supported(self, source: Str) -> bool:
         return source in self._source_to_topic_mapping
 
-    async def trigger_many(self, max_items: int, sources: List[Str]) -> int:
+    async def trigger_many(self, max_items: int, sources: List[Str], statuses: List[Str] | None = None) -> int:
         supported_sources = [source for source in sources if self.is_supported(source)]
         if not supported_sources:
             self._logger.warning("No supported sources", labels={
                 "sources": sources,
             })
-            return count
+            return 0
         if len(supported_sources) != len(sources):
             self._logger.warning("Some sources are not supported", labels={
                 "sources": sources,
@@ -48,7 +49,7 @@ class JobDispatcher(object):
 
         companies_collection = self._database["companies"]
         projection = {f: 0 for f in Company.DATA_FIELDS}
-        query = {'status': str(CompanyStatus.INVESTED)}
+        query = {'status': {'$in': [str(status) for status in statuses]}} if statuses else {'status': str(CompanyStatus.INVESTED)}
         cursor = companies_collection.find(query, projection=projection).limit(max_items)
         count = 0
         async for company_data in cursor:

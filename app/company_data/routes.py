@@ -2,12 +2,12 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Body, Depends, Query
 from google.cloud import pubsub, storage
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.foundation.server import dependencies, Logger
 from app.foundation.server.config import AppConfig
-from app.shared import Company
+from app.shared import Company, CompanyStatus
 from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client, get_genai_client, get_spectr_client
 from .job_dispatcher import JobDispatcher
 from .data_syncer import DataSyncer
@@ -21,10 +21,24 @@ router = APIRouter(
     prefix="/company_data",
 )
 
+ACTIVE_COMPANY_STATUSES = [
+    CompanyStatus.INVESTED,
+    CompanyStatus.NEW_COMPANY,
+    CompanyStatus.OFFERED_TO_INVEST,
+    CompanyStatus.SUBMITTED_AL,
+    CompanyStatus.DILIGENCE,
+    CompanyStatus.CONTACTED,
+    CompanyStatus.MEETING,
+    CompanyStatus.CHECKIN,
+    CompanyStatus.DOCS_SENT,
+    # CompanyStatus.RADAR
+]
+
 
 class SyncRequest(BaseModel):
     sources: list[str]
     max_items: int = 100000
+    statuses: list[str] | None = Field(default_factory=lambda: ACTIVE_COMPANY_STATUSES)
 
 
 @router.post('/pull', status_code=HTTPStatus.ACCEPTED)
@@ -44,8 +58,9 @@ async def trigger_sync(
     logger.info(f"Starting company data pull", labels={
         "sources": data.sources,
         "max_items": data.max_items,
+        "statuses": data.statuses,
     })
-    cnt = await job_dispatcher.trigger_many(max_items=data.max_items, sources=data.sources)
+    cnt = await job_dispatcher.trigger_many(max_items=data.max_items, sources=data.sources, statuses=data.statuses)
     if cnt:
         logger.info(f"Finished company data pull", labels={
             "sources": data.sources,

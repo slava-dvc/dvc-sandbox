@@ -2,11 +2,13 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Body, Depends, Response, Query
 from pymongo import MongoClient
+from google.cloud import pubsub
 from .http_models import SyncDealRequest
 from .airtable import push_deal_to_airtable, AirTableConfig, pull_companies_from_airtable, AirTableClient
 from ..foundation import get_env
 from ..shared import dependencies
-from ..foundation.server.dependencies import get_mongo_client, get_logger, get_http_client
+from ..foundation.server.dependencies import get_mongo_client, get_logger, get_http_client, get_publisher_client, get_config
+from ..company_data.job_dispatcher import JobDispatcher
 
 __all__ = ['router']
 
@@ -52,7 +54,9 @@ async def push_deal(
 async def airtable_pull_companies(
         http_client = Depends(get_http_client),
         mongo_client: MongoClient = Depends(get_mongo_client),
+        publisher_client: pubsub.PublisherClient = Depends(get_publisher_client),
         logger = Depends(get_logger),
+        config = Depends(get_config),
 ):
     """
     Pull companies from Airtable and store them to MongoDB.
@@ -63,12 +67,20 @@ async def airtable_pull_companies(
         base_id='appRfyOgGDu7UKmeD',
         http_client=http_client
     )
+    
+    job_dispatcher = JobDispatcher(
+        database=mongo_client.get_default_database(),
+        publisher_client=publisher_client,
+        project_id=config.project_id,
+        logger=logger
+    )
 
     await pull_companies_from_airtable(
         airtable_client=airtable_client,
         mongo_client=mongo_client,
         table_id='tblJL5aEsZFa0x6zY',
-        logger=logger
+        logger=logger,
+        job_dispatcher=job_dispatcher
     )
 
 
