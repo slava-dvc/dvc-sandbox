@@ -4,7 +4,6 @@ from json import JSONDecodeError
 from pathlib import Path
 
 import pytz
-from dateutil.parser import parse
 
 from .datetime import as_utc
 
@@ -57,6 +56,7 @@ date_formats = {
 
 
 def datetime_hook(doc, add_tz=False):
+    # This one is inconsistent size it may convert to native datetime
     for k, v in doc.items():
         if not isinstance(v, str):
             continue

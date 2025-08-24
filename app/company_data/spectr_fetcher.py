@@ -23,7 +23,7 @@ class SpectrFetcher(DataFetcher):
 
     def should_update(self, company: Company):
         return company.spectrUpdatedAt is None or (
-            company.spectrUpdatedAt < datetime.now() - datetime.timedelta(days=3)
+            company.spectrUpdatedAt < datetime.now() - datetime.timedelta(days=14)
         )
 
     async def fetch_company_data(self, company: Company) -> FetchResult:
@@ -47,12 +47,7 @@ class SpectrFetcher(DataFetcher):
                             'reason': 'website_not_found_in_spectr_database'
                         }
                     )
-                    return FetchResult(
-                        raw_data={},
-                        remote_id=None,
-                        db_update_fields={},
-                        updated_at=datetime.now()
-                    )
+                    return FetchResult()
                 raise
         
         if not enrichment_result or not isinstance(enrichment_result, list) or len(enrichment_result) != 1:
@@ -65,25 +60,20 @@ class SpectrFetcher(DataFetcher):
                     'reason': 'empty_result_or_multiple_matches_or_invalid_format'
                 }
             )
-            return FetchResult(
-                raw_data=enrichment_result,
-                remote_id=None,
-                db_update_fields={},
-                updated_at=datetime.now()
-            )
+            return FetchResult(raw_data=enrichment_result)
 
         spectr_company = enrichment_result[0]
-        updated_at = datetime.now()
+        last_updated = datetime.any_to_datetime(spectr_company.get("last_updated"))
         
         return FetchResult(
             raw_data=spectr_company,
             remote_id=spectr_company['id'],
             db_update_fields={
                 'spectrId': spectr_company['id'],
-                'spectrUpdatedAt': updated_at,
+                'spectrUpdatedAt': datetime.now(),
                 'spectrData': spectr_company
             },
-            updated_at=updated_at
+            updated_at=last_updated
         )
 
     async def _update_company(self, company: Company) -> FetchResult:
@@ -119,15 +109,14 @@ class SpectrFetcher(DataFetcher):
                 db_update_fields={},
                 updated_at=datetime.now()
             )
-
-        updated_at = datetime.now()
+        last_updated = datetime.any_to_datetime(spectr_company.get("last_updated"))
 
         return FetchResult(
             raw_data=spectr_company,
             remote_id=company.spectrId,
             db_update_fields={
-                'spectrUpdatedAt': updated_at,
+                'spectrUpdatedAt': datetime.now(),
                 'spectrData': spectr_company
             },
-            updated_at=updated_at
+            updated_at=last_updated
         )

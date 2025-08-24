@@ -1,6 +1,6 @@
 import gzip
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict
 
 from bson import ObjectId
@@ -15,10 +15,10 @@ from app.shared import Company
 
 @dataclass
 class FetchResult:
-    raw_data: Dict
-    remote_id: str
-    db_update_fields: Dict
-    updated_at: datetime.datetime
+    remote_id: str = None
+    raw_data: Dict = field(default_factory=dict)
+    db_update_fields: Dict = field(default_factory=dict)
+    updated_at: datetime.datetime = field(default_factory=datetime.now)
 
 
 class DataFetcher(metaclass=ABCMeta):

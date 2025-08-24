@@ -62,7 +62,7 @@ def any_to_datetime(v, default=None):
     if isinstance(v, str):
         try:
             d = parse(v)
-            if d.tzinfo is None:
+            if d.tzinfo is None: # it is unclear why in this case we prefer UTC.
                 d = pytz.UTC.localize(d)
             return d
         except ValueError:
