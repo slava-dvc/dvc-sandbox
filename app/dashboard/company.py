@@ -213,9 +213,6 @@ def show_company_basic_details(company: Company):
         pitch_deck_url = company.ourData.get('linkToDeck') if company.ourData else None
         if pitch_deck_url and isinstance(pitch_deck_url, str):
             st.link_button("Pitchdeck", pitch_deck_url, width=192)
-        
-        if st.button("Update Signals", width=192):
-            st.info("Update Data functionality is not implemented yet.")
 
         memorandum_is_creating = False
         if st.button("Generate Memo", width=192):
@@ -597,3 +594,25 @@ def company_page():
     for t, n in zip(st.tabs(names), names):
         with t:
             tabs_config[n](company)
+    
+    # Show last update timestamps
+    update_parts = []
+
+    timestamps = [
+        ("Created", company.createdAt),
+        ("Updated", company.updatedAt), 
+        ("LinkedIn", company.linkedInUpdatedAt),
+        ("Spectr", company.spectrUpdatedAt),
+        ("Google Play", company.googlePlayUpdatedAt),
+        ("App Store", company.appStoreUpdatedAt),
+        ("Google Jobs", company.googleJobsUpdatedAt)
+    ]
+    
+    for label, timestamp in timestamps:
+        if timestamp:
+            formatted_time = format_relative_time(timestamp)
+            if formatted_time:
+                update_parts.append(f"{label} {formatted_time}")
+    
+    if update_parts:
+        st.caption(" • ".join(update_parts))

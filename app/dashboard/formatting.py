@@ -143,7 +143,7 @@ def format_relative_time(date: str | datetime.datetime):
         if delta.total_seconds() < 60*5:
             return "Just now"
         elif delta.total_seconds() < 60*60:
-            return f"{delta.min} minutes ago"
+            return f"{int(delta.total_seconds() / 60)} minutes ago"
         elif delta.days <1:
             return "Today"
         elif delta.days == 1:
