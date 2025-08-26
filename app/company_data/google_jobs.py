@@ -54,8 +54,8 @@ class GoogleJobsDataSyncer(DataSyncer):
             result = await jobs_collection.update_one(
                 filter={
                     '$or': [
-                        company.id,
-                        bson.ObjectId(company.id)
+                        {'companyId': company.id},
+                        {'companyId': bson.ObjectId(company.id)}
                     ],
                     'title': job.get('title'),
                     'location': job.get('location')
