@@ -161,6 +161,7 @@ class CompanySummary:
     burnrate: int | None = None
     customers_cnt: int | None = None
     news: List[NewsItem] = field(default_factory=list)
+    linkedInData: dict = field(default_factory=dict)
 
     def __lt__(self, other):
         status_map = {"Invested": 0, "Exit": -2, "Offered To Invest": 2, "Write-off": -1, }
@@ -208,7 +209,8 @@ class CompanySummary:
             burnrate=cls._extract_value(company.get('burnRate')),
             customers_cnt=company.get('customerCount'),
             expected_performance=company.get('performanceOutlook'),
-            news=[NewsItem.from_dict(n) for n in news]
+            news=[NewsItem.from_dict(n) for n in news],
+            linkedInData=company.get('linkedInData', {})
         )
 
 
@@ -328,8 +330,9 @@ def show_company_summary(company_summary: CompanySummary):
         logo_column, info_column, signals_column, button_column = st.columns([1, 6, 4, 1], gap='small', vertical_alignment='center')
 
         with logo_column:
+            linedIn_url = company_summary.linkedInData.get('logo') if isinstance(company_summary.linkedInData, dict) else None
             fallback_url = f'https://placehold.co/128x128?text={company_name}'
-            st.image(fallback_url)
+            st.image(linedIn_url if linedIn_url else fallback_url, width=128)
 
         with info_column:
             header = []

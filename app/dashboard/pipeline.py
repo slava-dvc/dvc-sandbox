@@ -63,8 +63,9 @@ def _render_company_card(company: Company):
     logo_column, info_column, signals_column, button_column = st.columns([1, 7, 4, 1], gap='small', vertical_alignment='center')
 
     with logo_column:
-        fallback_url = f'https://placehold.co/128x128?text={company_name}'
-        st.image(fallback_url)
+        linedIn_url = company.linkedInData.get('logo') if isinstance(company.linkedInData, dict) else None
+        fallback_url = f'https://placehold.co/128x128?text={company.name}'
+        st.image(linedIn_url if linedIn_url else fallback_url, width=128)
 
     with info_column:
         header = []

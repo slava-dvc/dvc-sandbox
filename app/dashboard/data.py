@@ -52,7 +52,7 @@ def get_companies(query: dict = None):
         data = {'id': company['airtableId']}
         data |= {
             k: v for k, v in company.items()
-            if k in {'spectrId', 'spectrUpdatedAt', 'name', 'website', 'blurb', 'status'}
+            if k in {'spectrId', 'spectrUpdatedAt', 'name', 'website', 'blurb', 'status', 'linkedInData'}
         }
         data |= company.get('ourData')
         spectrData = company.get('spectrData')

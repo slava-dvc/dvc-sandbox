@@ -1,27 +1,24 @@
+from dataclasses import fields
+
 import pandas as pd
 import requests
 import streamlit as st
-from dataclasses import fields
-
 from bson import ObjectId
 
-from app.shared.company import Company, CompanyStatus
-from app.foundation.primitives import datetime
+from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem
+from app.dashboard.data import (
+    get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
+    get_companies_v2, app_config, update_company, mongo_database,
+)
 from app.dashboard.formatting import (
     format_as_dollars, format_as_percent, is_valid_number, get_preview,
     safe_markdown, format_relative_time
 )
-from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem, HIGHLIGHTS_DICT
-from app.dashboard.data import (
-    get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
-    get_companies_v2, app_config, update_company
-)
-
-from app.shared.company import Comment
+from app.foundation.primitives import datetime
+from app.shared.company import Comment, Company, CompanyStatus
 from app.shared.user import User
 
 __all__ = ['company_page']
-
 
 
 def get_company_traction_metrics(company: Company) -> TractionMetrics:
@@ -29,6 +26,7 @@ def get_company_traction_metrics(company: Company) -> TractionMetrics:
     if not company.spectrData or not company.spectrData.get('traction_metrics'):
         return TractionMetrics()
     return TractionMetrics.from_dict(company.spectrData['traction_metrics'])
+
 
 def get_company_news(company: Company) -> list[NewsItem]:
     """Extract news items from Company object."""
@@ -58,7 +56,7 @@ def get_company_financial_data(company: Company) -> dict:
 
 def show_key_value_row(key: str, value: str | None):
     """Helper function to display a key-value pair in two columns with proper formatting."""
-    col1, col2 = st.columns([3, 7])
+    col1, col2 = st.columns([1, 7], vertical_alignment="center")
     with col1:
         st.markdown(f"**{key}**")
     with col2:
@@ -70,23 +68,23 @@ def show_key_value_row(key: str, value: str | None):
 
 def show_financial(company: Company):
     """Display financial information in a structured format."""
-    
+
     # Revenue Model Type
     revenue_model = company.ourData.get('revenueModelType') if company.ourData else None
     revenue_model_value = ', '.join(revenue_model) if revenue_model and isinstance(revenue_model, list) else None
     show_key_value_row("Revenue Model Type", revenue_model_value)
-    
+
     # Revenue
     revenue = company.ourData.get('revenue') if company.ourData else None
     show_key_value_row("Revenue", format_as_dollars(revenue) if revenue else None)
-    
+
     # Total Funding
     total_funding = company.spectrData.get('funding', {}).get('total_funding_usd') if company.spectrData else None
     show_key_value_row("Total Funding", format_as_dollars(total_funding) if total_funding else None)
-    
+
     # Round Size - Not clear from data structure
     show_key_value_row("Round Size", "Not implemented yet.")
-    
+
     # Valuation - use latest valuation
     valuation = company.ourData.get('latestValuation') if company.ourData else None
     if valuation and isinstance(valuation, list) and valuation:
@@ -94,18 +92,18 @@ def show_financial(company: Company):
     else:
         valuation_value = None
     show_key_value_row("Valuation", valuation_value)
-    
+
     # Burnrate
     burnrate = company.ourData.get('burnRate') if company.ourData else None
     show_key_value_row("Burnrate", format_as_dollars(burnrate) if burnrate else None)
-    
+
     # Last Financing Date
     last_funding_date = company.spectrData.get('funding', {}).get('last_funding_date') if company.spectrData else None
     show_key_value_row("Last Financing Date", last_funding_date)
-    
+
     # Instrument - Not clear from data structure
     show_key_value_row("Instrument", "Not implemented yet.")
-    
+
     # Business Model
     business_model = company.ourData.get('businessModelType') if company.ourData else None
     if business_model and isinstance(business_model, list) and business_model:
@@ -113,7 +111,7 @@ def show_financial(company: Company):
     else:
         business_model_value = None
     show_key_value_row("Business Model", business_model_value)
-    
+
     # Co-Investors - Not clear from data structure
     show_key_value_row("Co-Investors", "Not implemented yet.")
 
@@ -121,7 +119,7 @@ def show_financial(company: Company):
 def show_traction_content(company: Company):
     """Display detailed traction information from ourData.traction."""
     traction = company.ourData.get('traction') if company.ourData else None
-    
+
     if traction and isinstance(traction, str) and traction.strip():
         st.markdown(safe_markdown(traction))
     else:
@@ -156,7 +154,8 @@ def show_overview(company: Company):
         options=valid_concerns,
         default=company.concerns,
         placeholder="Add concerns...",
-        label_visibility='collapsed'
+        label_visibility='collapsed',
+        width=512
     )
     if set(concerns) != set(company.concerns):
         update_company(company.id, {'concerns': list(concerns)})
@@ -171,16 +170,15 @@ def show_overview(company: Company):
     if not summary:
         summary = company.blurb
     show_key_value_row("Summary", summary)
-    
+
     # Problem
     problem = company.ourData.get('problem') if company.ourData else None
     show_key_value_row("Problem", problem)
-    
+
     # Solution
     solution = company.spectrData.get('description') if company.spectrData else None
     show_key_value_row("Solution", solution)
 
-    
     # Market Size
     market_size = company.ourData.get('marketSize') if company.ourData else None
     show_key_value_row("Market Size", market_size)
@@ -194,8 +192,9 @@ def show_company_basic_details(company: Company):
     logo_column, name_column, buttons_column = st.columns([1, 5, 1], vertical_alignment="center")
 
     with logo_column:
+        linedIn_url = company.linkedInData.get('logo') if isinstance(company.linkedInData, dict) else None
         fallback_url = f'https://placehold.co/128x128?text={company.name}'
-        st.image(fallback_url, width=128)
+        st.image(linedIn_url if linedIn_url else fallback_url, width=128)
 
     with name_column:
         st.header(company.name)
@@ -210,27 +209,49 @@ def show_company_basic_details(company: Company):
             st.caption("No blurb provided.")
 
     with buttons_column:
+        lindy_data = {
+            'callbackURL': f'https://api.dvcagent.com/api/companies/{company.id}/memorandum',
+            'companyName': company.name,
+            'companyWebsite': company.website,
+            'companyBlurb': company.blurb,
+            'concerns': company.concerns,
+        }
         pitch_deck_url = company.ourData.get('linkToDeck') if company.ourData else None
         if pitch_deck_url and isinstance(pitch_deck_url, str):
             st.link_button("Pitchdeck", pitch_deck_url, width=192)
 
         memorandum_is_creating = False
-        if st.button("Generate Memo", width=192):
+        company_passed = False
+        if st.button("Generate memo" if not company.memorandum else "(Re)generate memo", width=192):
             config = app_config()
             response = requests.post(
                 url=config.lindy.memorandum.url,
                 headers={
                     'Authorization': f'Bearer {config.lindy.memorandum.api_key}',
                 },
-                json={
-                    'callbackURL': f'https://api.dvcagent.com/api/companies/{company.id}/memorandum',
-                    'companyName': company.name,
-                    'companyWebsite': company.website,
-                    'companyBlurb': company.blurb
-                }
+                json=lindy_data
             )
             response.raise_for_status()
             memorandum_is_creating = True
+
+        if company.status == CompanyStatus.GOING_TO_PASS and st.button("Pass and archive", width=192):
+            config = app_config()
+            response = requests.post(
+                url=config.lindy.pass_company.url,
+                headers={
+                    'Authorization': f'Bearer {config.lindy.pass_company.api_key}',
+                },
+                json=lindy_data
+            )
+            response.raise_for_status()
+            mongo_database().companies.update_one(
+                {'_id': ObjectId(company.id)},
+                {'$set': {'status': str(CompanyStatus.PASSED)}}
+            )
+            company_passed=True
+
+    if company_passed:
+        st.info('Company status changed to Pass. Soon Founder(s) get email about our decision. You may close the window')
 
     if memorandum_is_creating:
         st.info("Memorandum creation is triggered.", icon="️⏲️")
@@ -245,7 +266,8 @@ def show_company_investment_details(company: Company):
 
     col1, col2, col3, col4 = st.columns(4)
     company_id = company.airtableId
-    company_investments = investments[investments['Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)]
+    company_investments = investments[
+        investments['Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)]
     portfolio_index = portfolio['Companies'].apply(lambda x: company_id in x if isinstance(x, list) else False)
     company_in_portfolio = None
     if sum(portfolio_index) == 1:
@@ -256,7 +278,7 @@ def show_company_investment_details(company: Company):
     total_nav = None
     moic = None
     initial_investment = None
-    total_investment=company_investments['Amount Invested'].sum()
+    total_investment = company_investments['Amount Invested'].sum()
     if company_in_portfolio is not None:
         last_valuation = company_in_portfolio['Last Valuation/cap']
         initial_investment = company_in_portfolio['Initial Investment']
@@ -265,11 +287,12 @@ def show_company_investment_details(company: Company):
         next_round_size = company_in_portfolio['Next round size?']
         dilution_estimate = 1 - (0 if next_round_size is None else next_round_size) / last_valuation
         follow_on_investment = company_in_portfolio['Follow on size'] or 0
-        current_ownership = initial_ownership*dilution_estimate + follow_on_investment / last_valuation
+        current_ownership = initial_ownership * dilution_estimate + follow_on_investment / last_valuation
         if current_ownership is None:
             current_ownership = initial_ownership
         total_nav = current_ownership * last_valuation
-        moic = float(total_nav) / float(total_investment) if is_valid_number(total_investment) and total_investment > 0 else None
+        moic = float(total_nav) / float(total_investment) if is_valid_number(
+            total_investment) and total_investment > 0 else None
 
     with col1:
         st.metric("Invested", format_as_dollars(initial_investment))
@@ -305,7 +328,8 @@ def show_last_updates_and_news(company: Company):
     with st.spinner("Loading ..."):
         updates = get_updates()
     rows = []
-    relevant_updates = updates['Company Name'].apply(lambda x: company.airtableId in x if isinstance(x, list) else False)
+    relevant_updates = updates['Company Name'].apply(
+        lambda x: company.airtableId in x if isinstance(x, list) else False)
     company_updates = updates[relevant_updates].copy()
     company_updates.rename(columns={'Please provide any comments/questions': "Comment"}, inplace=True)
     for company_update in company_updates.itertuples():
@@ -351,7 +375,8 @@ def show_last_updates_and_news(company: Company):
 def show_team(company: Company):
     with st.spinner("Loading..."):
         people = get_people()
-    filtered_index = people['Founder of Company'].apply(lambda x: company.airtableId in x if isinstance(x, list) else False)
+    filtered_index = people['Founder of Company'].apply(
+        lambda x: company.airtableId in x if isinstance(x, list) else False)
     founders = people[filtered_index]
     if len(founders) == 0:
         st.info("No founders for this company.")
@@ -372,19 +397,29 @@ def show_team(company: Company):
 
 
 def show_signals(company: Company):
-    c1, c2, c3 = st.columns(3)
-    financial_data = get_company_financial_data(company)
-    traction_metrics = get_company_traction_metrics(company)
     highlights = get_company_highlights(company)
-    
-    with c1:
-        st.metric("Runway", financial_data['runway'])
-        st.metric("Revenue", format_as_dollars(financial_data['revenue']))
-    with c2:
-        st.metric("Burnrate", financial_data['burnrate'])
-        st.metric("Customers Cnt", financial_data['customers_cnt'])
-    with c3:
-        # Create a mock object with required attributes for show_highlights
+    traction_metrics = get_company_traction_metrics(company)
+
+    if company.status == CompanyStatus.INVESTED:
+        c1, c2, c3 = st.columns(3)
+        financial_data = get_company_financial_data(company)
+
+        with c1:
+            st.metric("Runway", financial_data['runway'])
+            st.metric("Revenue", format_as_dollars(financial_data['revenue']))
+        with c2:
+            st.metric("Burnrate", financial_data['burnrate'])
+            st.metric("Customers Cnt", financial_data['customers_cnt'])
+        with c3:
+            # Create a mock object with required attributes for show_highlights
+            mock_summary = type('MockSummary', (), {
+                'new_highlights': highlights,
+                'traction_metrics': traction_metrics
+            })()
+            highlights_cnt = show_highlights(mock_summary)
+            if not highlights_cnt:
+                st.info("No signals for this company.")
+    else:
         mock_summary = type('MockSummary', (), {
             'new_highlights': highlights,
             'traction_metrics': traction_metrics
@@ -417,7 +452,7 @@ def show_traction_graph(traction_metric: TractionMetric, label=None):
             value = traction_value.value
             if isinstance(value, (float, int)):
                 values.append((date, value))
-    
+
     if not values:
         st.info("No data available for this metric.")
         return
@@ -428,8 +463,8 @@ def show_traction_graph(traction_metric: TractionMetric, label=None):
     st.line_chart(
         df.set_index('date')['value'],
         use_container_width=True,
-        y_label = label,
-        x_label = "Date",
+        y_label=label,
+        x_label="Date",
     )
 
 
@@ -452,10 +487,10 @@ def show_traction_graph_with_combo(company: Company, selected=None):
         "chrome_extensions_reviews": "Chrome Extension Reviews",
         "chrome_extensions_users": "Chrome Extension Users"
     }
-    
+
     # Get available metrics that have data
     available_metrics = list(sorted([f.name for f in traction_metrics_fields if getattr(traction_metrics, f.name)]))
-    
+
     if not available_metrics:
         st.info("No traction metrics available for this company.")
         return
@@ -549,8 +584,9 @@ def show_comments(company: Company):
         st.rerun(scope='fragment')
 
 
-def show_memorandum(company:Company):
+def show_memorandum(company: Company):
     st.markdown(safe_markdown(company.memorandum))
+
 
 def company_page():
     selected_company_id = get_selected_company()
@@ -594,25 +630,25 @@ def company_page():
     for t, n in zip(st.tabs(names), names):
         with t:
             tabs_config[n](company)
-    
+
     # Show last update timestamps
     update_parts = []
 
     timestamps = [
         ("Created", company.createdAt),
-        ("Updated", company.updatedAt), 
+        ("Updated", company.updatedAt),
         ("LinkedIn", company.linkedInUpdatedAt),
         ("Spectr", company.spectrUpdatedAt),
         ("Google Play", company.googlePlayUpdatedAt),
         ("App Store", company.appStoreUpdatedAt),
         ("Google Jobs", company.googleJobsUpdatedAt)
     ]
-    
+
     for label, timestamp in timestamps:
         if timestamp:
             formatted_time = format_relative_time(timestamp)
             if formatted_time:
                 update_parts.append(f"{label} {formatted_time}")
-    
+
     if update_parts:
         st.caption(" • ".join(update_parts))
