@@ -4,6 +4,7 @@ import pandas as pd
 import requests
 import streamlit as st
 from bson import ObjectId
+from fastapi.encoders import jsonable_encoder
 
 from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem
 from app.dashboard.data import (
@@ -212,9 +213,11 @@ def show_company_basic_details(company: Company):
         lindy_data = {
             'callbackURL': f'https://api.dvcagent.com/api/companies/{company.id}/memorandum',
             'companyName': company.name,
+            'airtableId': company.airtableId,
             'companyWebsite': company.website,
             'companyBlurb': company.blurb,
             'concerns': company.concerns,
+            'comments': company.comments,
         }
         pitch_deck_url = company.ourData.get('linkToDeck') if company.ourData else None
         if pitch_deck_url and isinstance(pitch_deck_url, str):
@@ -224,12 +227,13 @@ def show_company_basic_details(company: Company):
         company_passed = False
         if st.button("Generate memo" if not company.memorandum else "(Re)generate memo", width=192):
             config = app_config()
+            lindy_data |= {'linkedin': company.linkedInData, 'data': company.ourData, 'spectr': company.spectrData}
             response = requests.post(
                 url=config.lindy.memorandum.url,
                 headers={
                     'Authorization': f'Bearer {config.lindy.memorandum.api_key}',
                 },
-                json=lindy_data
+                json=jsonable_encoder(lindy_data)
             )
             response.raise_for_status()
             memorandum_is_creating = True
@@ -241,7 +245,7 @@ def show_company_basic_details(company: Company):
                 headers={
                     'Authorization': f'Bearer {config.lindy.pass_company.api_key}',
                 },
-                json=lindy_data
+                json=jsonable_encoder(lindy_data)
             )
             response.raise_for_status()
             mongo_database().companies.update_one(
@@ -369,7 +373,6 @@ def show_last_updates_and_news(company: Company):
             if row['type'] == 'news':
                 with button_column:
                     st.link_button("Read more", row['url'], width=192)
-        pass
 
 
 def show_team(company: Company):
