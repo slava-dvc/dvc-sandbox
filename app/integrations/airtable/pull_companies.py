@@ -82,6 +82,8 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             'traction': fields.get('Traction (for minimemo)'),
             'businessModel': fields.get('Business Model'),
             'marketSize': fields.get('Market Size'),
+            'founders': fields.get('Founders'),
+            'email': fields.get('Email')
         }
     }
 
