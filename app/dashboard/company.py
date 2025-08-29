@@ -641,7 +641,7 @@ def company_page():
         ("Created", company.createdAt),
         ("Updated", company.updatedAt),
         ("LinkedIn", company.linkedInUpdatedAt),
-        ("Spectr", company.spectrUpdatedAt),
+        ("Signals", company.spectrUpdatedAt),
         ("Google Play", company.googlePlayUpdatedAt),
         ("App Store", company.appStoreUpdatedAt),
         ("Google Jobs", company.googleJobsUpdatedAt)

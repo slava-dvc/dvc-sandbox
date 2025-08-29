@@ -1,10 +1,13 @@
 from bson import ObjectId
 import streamlit as st
 import itertools
-from app.dashboard.data import get_companies_v2
 from app.shared import Company, CompanyStatus
+from app.dashboard.data import get_companies_v2
 from app.dashboard.formatting import format_relative_time, safe_markdown
+from app.dashboard.company import get_company_traction_metrics, get_company_highlights
+from app.dashboard.company_summary import show_highlights
 from .data import mongo_database, airtable_api_client, AIRTABLE_BASE_ID
+
 
 _PIPELINE_STATUES = {
     "New Company": [
@@ -29,6 +32,7 @@ _PIPELINE_STATUES = {
 
 _AVAILABLE_STATUES = list(itertools.chain.from_iterable(_PIPELINE_STATUES.values())) + [
     CompanyStatus.INVESTED,
+    CompanyStatus.RADAR,
     CompanyStatus.PASSED
 ]
 
@@ -87,7 +91,15 @@ def _render_company_card(company: Company):
             width=256
         )
     with signals_column:
-        st.info("No signals for this company.")
+        highlights = get_company_highlights(company)
+        traction_metrics = get_company_traction_metrics(company)
+        mock_summary = type('MockSummary', (), {
+            'new_highlights': highlights,
+            'traction_metrics': traction_metrics
+        })()
+        highlights_cnt = show_highlights(mock_summary)
+        if not highlights_cnt:
+            st.info("No signals for this company.")
 
     with button_column:
         def update_company_id(company_id):
