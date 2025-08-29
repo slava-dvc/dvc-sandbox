@@ -240,6 +240,7 @@ def show_company_basic_details(company: Company):
 
         if company.status == CompanyStatus.GOING_TO_PASS and st.button("Pass and archive", width=192):
             config = app_config()
+            lindy_data |= {'email': company.ourData.get('email')}
             response = requests.post(
                 url=config.lindy.pass_company.url,
                 headers={
