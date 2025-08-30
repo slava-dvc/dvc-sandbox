@@ -12,8 +12,14 @@ router = APIRouter(
     prefix="/meeting",
 )
 
+public_router = APIRouter(
+    prefix="/meeting",
+    tags=["public"]
+)
+
 
 @router.post("/transcript", status_code=HTTPStatus.ACCEPTED)
+@public_router.post("/transcript", status_code=HTTPStatus.ACCEPTED)
 async def store_transcript(
     request: Request,
     logger: Logger = Depends(dependencies.get_logger),
