@@ -16,7 +16,9 @@ class PublicServer(server.FastAPIServer):
 
     async def __aenter__(self) -> Dict[Str, Any]:
         state = await super().__aenter__()
-        return state
+        return state | {
+            "dataset_bucket": self.storage_client.bucket("dvc-dataset-v2"),
+        }
 
 server = PublicServer()
 app: FastAPI = server.app
