@@ -17,6 +17,21 @@ __all__ = ['timeout_exception_handler', 'runtime_exception_handler', 'http_excep
            'http_connection_exception_handler', 'request_validation_exception_handler']
 
 
+# Mapping downstream HTTP status codes to our service response codes
+DOWNSTREAM_STATUS_MAPPING = {
+    # Authentication/authorization issues - our service misconfiguration
+    401: HTTPStatus.INTERNAL_SERVER_ERROR,
+    403: HTTPStatus.INTERNAL_SERVER_ERROR,
+    
+    # Operational client errors - dependency issues
+    404: HTTPStatus.SERVICE_UNAVAILABLE,
+    429: HTTPStatus.SERVICE_UNAVAILABLE,
+    
+    # All 5xx errors - downstream service issues
+    **{status: HTTPStatus.SERVICE_UNAVAILABLE for status in range(500, 600)}
+}
+
+
 async def request_body(request: Request):
     body = None
     if request.method in ['POST', 'PUT', 'PATCH']:
@@ -67,14 +82,20 @@ async def http_exception_handler(request: Request, exc: HTTPStatusError):
         except (JSONDecodeError, StreamError):
             pass
 
+    # Map downstream status to appropriate response status
+    response_status = DOWNSTREAM_STATUS_MAPPING.get(
+        exc.response.status_code, 
+        exc.response.status_code  # Pass through unmapped 4xx client errors
+    )
+    
     return JSONResponse(
         content={
             "error": {
-                "code": HTTPStatus.BAD_GATEWAY,
+                "code": response_status,
                 "message": f"Http status {exc.response.status_code} from downstream http call"
             }
         },
-        status_code=HTTPStatus.BAD_GATEWAY
+        status_code=response_status
     )
 
 
