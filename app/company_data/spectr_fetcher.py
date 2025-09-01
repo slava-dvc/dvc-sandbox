@@ -22,9 +22,17 @@ class SpectrFetcher(DataFetcher):
         return "spectr"
 
     def should_update(self, company: Company):
-        return company.spectrUpdatedAt is None or (
-            company.spectrUpdatedAt < datetime.now() - datetime.timedelta(days=14)
-        )
+        if company.spectrUpdatedAt is None:
+            return True
+        
+        now = datetime.now()
+        last_update = company.spectrUpdatedAt
+        
+        # If last update was in current month, data is up to date
+        if last_update.year == now.year and last_update.month == now.month:
+            return False
+
+        return True
 
     async def fetch_company_data(self, company: Company) -> FetchResult:
         if not company.spectrId:
