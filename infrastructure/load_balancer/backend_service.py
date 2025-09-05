@@ -1,7 +1,7 @@
 import pulumi
 import pulumi_gcp as gcp
 from globals import DOMAIN
-from services import synapse_cloud_run, dealflow_cloud_run, portfolio_cloud_run, scrapers_cloud_run, public_cloud_run
+from services import synapse_cloud_run, dealflow_cloud_run, portfolio_cloud_run, scrapers_cloud_run, public_cloud_run, job_board_cloud_run
 from tools.load_balancer import make_cloud_run_backend
 
 
@@ -32,6 +32,12 @@ scrapers_cloud_run_neg, scrapers_compute_backend = make_cloud_run_backend(
 public_cloud_run_neg, public_compute_backend = make_cloud_run_backend(
     "public",
     public_cloud_run
+)
+
+
+job_board_cloud_run_neg, job_board_compute_backend = make_cloud_run_backend(
+    "job-board",
+    job_board_cloud_run
 )
 
 

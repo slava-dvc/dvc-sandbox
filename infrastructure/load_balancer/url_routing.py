@@ -11,7 +11,8 @@ from .backend_service import (
     web_app_bucket_backend,
     portfolio_compute_backend,
     scrapers_compute_backend,
-    django_compute_backend
+    django_compute_backend,
+    job_board_compute_backend
 )
 
 default_url_redirect = gcp.compute.URLMapDefaultUrlRedirectArgs(
@@ -73,6 +74,15 @@ api_host_rule = gcp.compute.URLMapHostRuleArgs(
     hosts=[f'api.{DOMAIN}'], path_matcher=api_urlmap_matcher.name,
 )
 
+job_board_urlmap_matcher = gcp.compute.URLMapPathMatcherArgs(
+    name='job-board-path-matcher',
+    default_service=job_board_compute_backend.self_link,
+)
+
+job_board_host_rule = gcp.compute.URLMapHostRuleArgs(
+    hosts=[f'jobs.{DOMAIN}'], path_matcher=job_board_urlmap_matcher.name
+)
+
 
 # Main and single traffic routing
 url_map = gcp.compute.URLMap(
@@ -81,12 +91,14 @@ url_map = gcp.compute.URLMap(
     host_rules=[
         portfolio_host_rule,
         app_web_host_rule,
-        api_host_rule
+        api_host_rule,
+        job_board_host_rule
         ],
     path_matchers=[
         portfolio_urlmap_matcher,
         app_web_urlmap_matcher,
-        api_urlmap_matcher
+        api_urlmap_matcher,
+        job_board_urlmap_matcher
     ],
 )
 

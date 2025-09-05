@@ -8,7 +8,8 @@ ssl_certificate = gcp.compute.ManagedSslCertificate(
         domains=[
             f"api.{DOMAIN}",
             f'portfolio.{DOMAIN}',
-            f'app.{DOMAIN}'
+            f'app.{DOMAIN}',
+            f'jobs.{DOMAIN}'
         ],
     ),
 )

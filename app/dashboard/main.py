@@ -2,8 +2,9 @@ import streamlit as st
 from app.dashboard.navigation import show_navigation
 
 st.set_page_config(
-    page_title="DVC Portfolio Dashboard", page_icon=":bar_chart:",
-    layout='wide'
+    page_title="DVC Portfolio Dashboard",
+    layout='wide',
+    page_icon = "resources/favicon.png"
 )
 
 EMAIL_ALLOW_LIST = {

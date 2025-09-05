@@ -19,6 +19,9 @@ elif [ "$command" = "portfolio" ]; then
     python3 infrastructure/generate_streamlit_secrets.py > .streamlit/secrets.toml
     export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
     exec streamlit run app/dashboard/main.py --server.port $PORT --server.headless 1 --secrets.files .streamlit/secrets.toml "$@"
+elif [ "$command" = "job-board" ]; then
+    export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
+    exec streamlit run app/job_board.py --server.port $PORT --server.headless 1 "$@"
 else
     exec "$command" "$@"
 fi
