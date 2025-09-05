@@ -592,6 +592,60 @@ def show_memorandum(company: Company):
     st.markdown(safe_markdown(company.memorandum))
 
 
+def get_company_meetings(company: Company):
+    """Get meetings for a specific company from the database."""
+    meetings_collection = mongo_database().meetings
+    meetings = list(meetings_collection.find({"companyId": company.id}).sort("createdAt", -1))
+    return meetings
+
+
+def show_meetings(company: Company):
+    """Display meetings for the company as a list of cards."""
+    with st.spinner("Loading meetings..."):
+        meetings = get_company_meetings(company)
+    
+    if not meetings:
+        st.info("No meetings recorded for this company.")
+        return
+    
+    for meeting in meetings:
+        with st.container(border=True):
+            # Header row with meeting title and date
+            header_col, date_col = st.columns([3, 1], vertical_alignment="center")
+            
+            calendar_event = meeting.get('calendarEvent', {})
+            meeting_name = calendar_event.get('name', 'Untitled Meeting')
+            created_at = meeting.get('createdAt')
+            
+            with header_col:
+                st.subheader(meeting_name)
+            
+            with date_col:
+                if created_at:
+                    st.write(format_relative_time(created_at))
+            
+            # Meeting details
+            if calendar_event.get('start'):
+                st.write(f"**Start:** {calendar_event['start']}")
+            
+            if calendar_event.get('attendees'):
+                attendees = [attendee.get('email', 'Unknown') for attendee in calendar_event['attendees']]
+                st.write(f"**Attendees:** {', '.join(attendees)}")
+            
+            # Recording URL
+            recording_url = meeting.get('recordingUrl')
+            if recording_url:
+                st.link_button("Watch Recording", recording_url, use_container_width=False)
+            
+            # Recap as markdown
+            recap = meeting.get('recap', '')
+            if recap and isinstance(recap, str) and recap.strip():
+                with st.expander("Meeting Recap", expanded=False):
+                    st.markdown(safe_markdown(recap))
+            else:
+                st.info("No recap available for this meeting.")
+
+
 def company_page():
     selected_company_id = get_selected_company()
     if not selected_company_id:
@@ -619,6 +673,7 @@ def company_page():
         "Updates": show_last_updates_and_news,
         "Memorandum": show_memorandum,
         "Comments": show_comments,
+        "Meetings": show_meetings,
     }
 
     names = ["Overview", "Team", "Financial"]
@@ -630,7 +685,7 @@ def company_page():
         names.append("Signals")
     if company.status == CompanyStatus.INVESTED:
         names.extend(["Investments", "Asks", "Updates"])
-    names.append('Comments')
+    names.extend(['Comments', 'Meetings'])
     for t, n in zip(st.tabs(names), names):
         with t:
             tabs_config[n](company)
