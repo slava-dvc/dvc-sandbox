@@ -1,0 +1,5 @@
+## Company Profile Data
+
+GET https://api.scrapin.io/v1/enrichment/company/domain?domain=3dpredict.com
+X-API-KEY: {{SCRAPIN_API_KEY}}
+

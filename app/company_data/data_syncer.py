@@ -79,6 +79,11 @@ class DataSyncer:
                 "source": source_id,
                 "updated_at": result.updated_at,
             })
+        else:
+            self._logger.error(f"Fetcher return empty data", labels={
+                "company": company.model_dump_for_logs(),
+                "source": source_id,
+            })
 
     async def store_raw_data(self, company: Company, result: FetchResult):
         source_id = self._data_fetcher.source_id()
