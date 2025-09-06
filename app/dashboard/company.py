@@ -640,7 +640,7 @@ def show_meetings(company: Company):
             # Recap as markdown
             recap = meeting.get('recap', '')
             if recap and isinstance(recap, str) and recap.strip():
-                with st.expander("Meeting Recap", expanded=False):
+                with st.expander("Meeting Recap", expanded=True):
                     st.markdown(safe_markdown(recap))
             else:
                 st.info("No recap available for this meeting.")
