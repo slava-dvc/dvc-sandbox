@@ -3,7 +3,7 @@ import pulumi_gcp as gcp
 
 from globals import API_BASE_URL
 
-from queues import llm_analysis_result, company_data
+from queues import llm_analysis_result, company_data, meeting_transcripts
 from tools.queue import create_subscription_with_push_and_dlq
 from tools.scheduler import make_scheduled_job
 from service_account import cloud_run_service_account, scheduler_service_account
@@ -126,6 +126,14 @@ create_subscription_with_push_and_dlq(
     company_data.spectr_topic_name,
     "consume",
     synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{COMPANY_DATA_PULL_SPECTR}"),
+    cloud_run_service_account
+)
+
+MEETING_TRANSCRIPT_CONSUME = "v1/meeting/transcript/consume"
+create_subscription_with_push_and_dlq(
+    meeting_transcripts.transcript_topic_name,
+    "consume",
+    synapse_cloud_run.uri.apply(lambda uri: f"{uri}/{MEETING_TRANSCRIPT_CONSUME}"),
     cloud_run_service_account
 )
 

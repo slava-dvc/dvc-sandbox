@@ -57,7 +57,7 @@ async def trigger_sync(
     )
     logger.info(f"Starting company data pull", labels={
         "sources": data.sources,
-        "max_items": data.max_items,
+        "maxItems": data.max_items,
         "statuses": data.statuses,
     })
     cnt = await job_dispatcher.trigger_many(max_items=data.max_items, sources=data.sources, statuses=data.statuses)
@@ -65,7 +65,7 @@ async def trigger_sync(
         logger.info(f"Finished company data pull", labels={
             "sources": data.sources,
             "count": cnt,
-            "max_items": data.max_items,
+            "maxItems": data.max_items,
         })
     return
 

@@ -54,6 +54,7 @@ class Company(BaseModel):
     airtableId: str
     name: str
     website: str | None = None
+    domain: str | None = None
     status: CompanyStatus | None = None
     ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")
     blurb: str | None = Field(None, description="Company blurb")
