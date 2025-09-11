@@ -80,7 +80,8 @@ class DataSyncer:
                 "updated_at": result.updated_at,
             })
         else:
-            self._logger.error(f"Fetcher return empty data", labels={
+            # Fetcher may return empty data. Example company as not an app in Apple store
+            self._logger.info(f"Fetcher return empty data", labels={
                 "company": company.model_dump_for_logs(),
                 "source": source_id,
             })
