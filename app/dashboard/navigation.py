@@ -1,6 +1,9 @@
 import streamlit as st
+import json
 from uuid import uuid4
-from google.cloud import storage
+from google.cloud import storage, pubsub
+from google.auth import default
+from infrastructure.queues.company_creation import company_create_from_docs_topic_name
 from .fund import fund_page
 from .company import company_page
 from .jobs import jobs_page
@@ -17,6 +20,61 @@ def get_storage_client():
 @st.cache_resource()
 def get_bucket(name):
     return get_storage_client().get_bucket(name)
+
+
+@st.cache_resource()
+def get_publisher_client():
+    return pubsub.PublisherClient()
+
+
+def validate_company_form(name, email, pitch_deck_url, pitch_deck_file):
+    """Validate company form inputs"""
+    if not name.strip():
+        return "Company Name is required"
+    if not email.strip():
+        return "Company Email is required"
+    if not pitch_deck_url and not pitch_deck_file:
+        return "Pitch Deck is required"
+    if pitch_deck_url and pitch_deck_file:
+        return "Please upload either a PDF file or a link to a PDF file"
+    return None
+
+
+def upload_pdf_to_gcs(file, bucket_name="dvc-pdfs"):
+    """Upload PDF file to GCS bucket and return the path"""
+    bucket = get_bucket(bucket_name)
+    path = f'inbound/{str(uuid4())}.pdf'
+    bucket.blob(path).upload_from_file(file)
+    return path
+
+
+def build_company_sources(pitch_deck_file, pitch_deck_url):
+    """Build sources array for company creation"""
+    sources = []
+    if pitch_deck_file:
+        path = upload_pdf_to_gcs(pitch_deck_file)
+        sources.append({
+            'type': 'pdf',
+            'bucket': 'dvc-pdfs',
+            'key': path
+        })
+    if pitch_deck_url:
+        sources.append({
+            'type': 'url',
+            'url': pitch_deck_url.strip()
+        })
+    return sources
+
+
+def publish_company_to_queue(company_data):
+    """Publish company data to Pub/Sub queue"""
+    publisher = get_publisher_client()
+    _, project_id = default()
+    topic_path = publisher.topic_path(project_id, company_create_from_docs_topic_name)
+    message_data = json.dumps(company_data).encode('utf-8')
+    
+    future = publisher.publish(topic_path, message_data)
+    return future.result()
 
 
 @st.dialog("New company")
@@ -41,59 +99,25 @@ def add_new_company():
         submitted = st.form_submit_button("Submit", type="primary")
 
         if submitted:
-            if not company_name.strip():
-                st.error("Company Name is required")
-                return
-            if not company_email.strip():
-                st.error("Company Email is required")
-                return
-            if not pitch_deck_url and not pitch_deck_file:
-                st.error("Pitch Deck is required")
-                return
-            if pitch_deck_url and pitch_deck_file:
-                st.error("Please upload either a PDF file or a link to a PDF file")
+            # Validate form
+            error = validate_company_form(company_name, company_email, pitch_deck_url, pitch_deck_file)
+            if error:
+                st.error(error)
                 return
 
-            sources = []
-            if pitch_deck_file:
-                bucket = get_bucket("dvc-pdfs")
-                path = f'inbound/{str(uuid4())}.pdf'
-                bucket.blob(path).upload_from_file(pitch_deck_file)
-
-                sources.append(
-                    {
-                        'type': 'pdf',
-                        'bucket': 'dvc-pdfs',
-                        'key': path
-                    }
-                )
-            if pitch_deck_url:
-                sources.append(
-                    {
-                        'type': 'url',
-                        'url': pitch_deck_url.strip()
-                    }
-                )
-
-            data = {
-                "companyName": company_name.strip(),
-                "companyEmail": company_email.strip(),
+            # Build sources and company data
+            sources = build_company_sources(pitch_deck_file, pitch_deck_url)
+            company_data = {
+                "name": company_name.strip(),
+                "email": company_email.strip(), 
                 "website": website.strip(),
                 "sources": sources
             }
 
+            # Publish to queue
+            message_id = publish_company_to_queue(company_data)
+            st.success("Company submitted successfully! It will appear in pipeline shortly.")
 
-            st.info("Company is submitted. It will appear in pipeline shortly")
-
-            #
-            # st.session_state.add_new_company = {
-            #     "companyName": company_name.strip(),
-            #     "companyEmail": company_email.strip(),
-            #     "website": website.strip(),
-            #     "pitchDeckFile": pitch_deck_file,
-            #     "pitchDeckUrl": pitch_deck_url.strip() if pitch_deck_url else None
-            # }
-        # st.rerun()
 
 
 def show_navigation():
