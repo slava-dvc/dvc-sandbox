@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from pymongo.asynchronous.database import AsyncDatabase
+from google.cloud import storage
 
 from app.foundation.server import dependencies, Logger
 from app.companies.crud import Crud
-from app.companies.models import CompanyUpdateRequest
+from app.companies.models import CompanyUpdateRequest, CompanyCreateRequest
+from app.companies.document_flow import CompanyFromDocsFlow
 
 
 router = APIRouter(
@@ -51,3 +53,15 @@ async def update_memorandum_webhook(
         raise HTTPException(status_code=404, detail="Company not found")
     
     return {"status": "success", "companyId": company_id}
+
+
+@router.post("/create_from_docs/consume")
+async def create_from_docs_consume(
+    create_request: CompanyCreateRequest,
+    database: AsyncDatabase = Depends(dependencies.get_default_database),
+    logger: Logger = Depends(dependencies.get_logger),
+    storage_client: storage.Client = Depends(dependencies.get_storage_client),
+):
+    """Pub/Sub consumer endpoint to create company from documents"""
+    flow = CompanyFromDocsFlow(database, storage_client, logger)    
+    await flow(create_request)
