@@ -4,7 +4,7 @@ from service_account import cloud_run_service_account
 from delivery import docker_repository_url
 from tools.run import create_cloud_run_secret_env, repo_short_sha
 
-from .secrets import MONGODB_URI
+from .secrets import MONGODB_URI, OPENAI_API_KEY
 
 # Cloud Run service for Public API
 public_cloud_run = gcp.cloudrunv2.Service(
@@ -27,7 +27,7 @@ public_cloud_run = gcp.cloudrunv2.Service(
                         name="CLOUD",
                         value="1",
                     ),
-                    MONGODB_URI  # Only MongoDB access needed for public API
+                    OPENAI_API_KEY, MONGODB_URI  # Only MongoDB access needed for public API
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
