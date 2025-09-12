@@ -1,11 +1,6 @@
-import io
 import re
 import httpx
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
 from app.foundation.server import Logger
-from app.foundation.env import get_env
 
 
 class URLDownloader:
@@ -78,13 +73,11 @@ class URLDownloader:
                     # Check if we got HTML (likely a permission page) instead of PDF
                     content_type = response.headers.get("content-type", "").lower()
                     if "text/html" in content_type:
-                        # Fall back to authenticated API method
-                        return await URLDownloader._get_file_from_google_drive_api(file_id)
+                        raise ValueError("Unable to access Google Drive file. The file may be private or require authentication.")
                     
                     return response.content
                 except httpx.HTTPStatusError:
-                    # Fall back to authenticated API method
-                    return await URLDownloader._get_file_from_google_drive_api(file_id)
+                    raise ValueError("Unable to access Google Drive file. The file may be private or require authentication.")
         except httpx.TimeoutException:
             raise ValueError("Download timed out. The Google Drive file took too long to download. Please try again or check your internet connection.")
         except Exception as e:
@@ -92,31 +85,6 @@ class URLDownloader:
                 raise
             raise ValueError(f"Unable to download PDF from Google Drive. The file may be private, deleted, or you may not have permission to access it. Please verify the sharing settings and try again. Technical details: {str(e)}")
     
-    @staticmethod
-    async def _get_file_from_google_drive_api(file_id: str) -> bytes:
-        """Download PDF from Google Drive using authenticated API"""
-        try:
-            credentials_path = get_env('GOOGLE_DRIVE_CREDENTIALS_PATH')
-            credentials = service_account.Credentials.from_service_account_file(credentials_path)
-            drive_service = build("drive", "v3", credentials=credentials)
-            
-            # Request the file content from the API
-            content_request = drive_service.files().get_media(fileId=file_id)
-            
-            # Create an in-memory file
-            fh = io.BytesIO()
-            
-            # Download the file
-            downloader = MediaIoBaseDownload(fh, content_request)
-            done = False
-            while not done:
-                status, done = downloader.next_chunk()
-            
-            # Reset and return bytes
-            fh.seek(0)
-            return fh.read()
-        except Exception as e:
-            raise ValueError(f"Unable to access Google Drive file. The file may be private, deleted, or restricted. Please ensure the file is shared properly and accessible. Technical details: {str(e)}")
 
     async def _is_pdf(self) -> bool:
         """Check if URL points to a PDF file"""

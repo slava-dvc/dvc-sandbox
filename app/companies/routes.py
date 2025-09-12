@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from pymongo.asynchronous.database import AsyncDatabase
 from google.cloud import storage
+import openai
 
 from app.foundation.server import dependencies, Logger
 from app.companies.crud import Crud
@@ -61,7 +62,8 @@ async def create_from_docs_consume(
     database: AsyncDatabase = Depends(dependencies.get_default_database),
     logger: Logger = Depends(dependencies.get_logger),
     storage_client: storage.Client = Depends(dependencies.get_storage_client),
+    openai_client: openai.AsyncOpenAI = Depends(dependencies.get_openai_client),
 ):
     """Pub/Sub consumer endpoint to create company from documents"""
-    flow = CompanyFromDocsFlow(database, storage_client, logger)    
+    flow = CompanyFromDocsFlow(database, storage_client, openai_client, logger)    
     await flow(create_request)

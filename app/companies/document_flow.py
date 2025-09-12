@@ -16,6 +16,8 @@ from app.companies.pdf.flyweight import PDFlyweight
 class CompanyFromDocsFlow:
     """Flow for creating companies from PDF documents"""
     
+    PDF_BUCKET_NAME = "dvc-pdfs"
+    
     def __init__(
             self,
             database: AsyncDatabase,
@@ -93,7 +95,7 @@ class CompanyFromDocsFlow:
         
         # Store in company folder
         final_path = f"companies/{company_id}/pitch.pdf"
-        bucket = self.storage_client.bucket("dvc-pdfs")
+        bucket = self.storage_client.bucket(self.PDF_BUCKET_NAME)
         final_blob = bucket.blob(final_path)
         final_blob.upload_from_string(pdf_bytes, content_type="application/pdf")
         
