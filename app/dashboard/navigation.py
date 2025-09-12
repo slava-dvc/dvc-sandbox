@@ -43,8 +43,29 @@ def validate_company_form(name, email, pitch_deck_url, pitch_deck_file):
     return None
 
 
+def validate_pdf_file(file):
+    """Validate PDF file size and format"""
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+    
+    # Check file size
+    file.seek(0, 2)  # Seek to end
+    file_size = file.tell()
+    file.seek(0)  # Reset to beginning
+    
+    if file_size > MAX_FILE_SIZE:
+        raise ValueError("PDF file is too large. Maximum size is 100MB.")
+    
+    # Check PDF header
+    header = file.read(4)
+    file.seek(0)  # Reset to beginning
+    
+    if not header.startswith(b'%PDF'):
+        raise ValueError("Invalid file format. Please upload a valid PDF file.")
+
+
 def upload_pdf_to_gcs(file, bucket_name="dvc-pdfs"):
     """Upload PDF file to GCS bucket and return the path"""
+    validate_pdf_file(file)
     bucket = get_bucket(bucket_name)
     path = f'inbound/{str(uuid4())}.pdf'
     bucket.blob(path).upload_from_file(file)
@@ -129,8 +150,12 @@ def add_new_company():
                 st.error(error)
                 return
 
-            # Build sources
-            sources = build_company_sources(pitch_deck_file, pitch_deck_url)
+            try:
+                # Build sources
+                sources = build_company_sources(pitch_deck_file, pitch_deck_url)
+            except ValueError as e:
+                st.error(str(e))
+                return
             
             # Create company in database first
             company_id = create_company_in_db(company_name, company_email, website, sources)
