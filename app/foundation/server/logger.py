@@ -17,28 +17,35 @@ class Logger:
         "cookie",
         "x-api-key",
     ]
-    def __init__(self, request: Request):
-        path_parts = [p for p in request.url.path.split('/') if p ]
-        self._name = "root" if not path_parts else '_'.join(path_parts)
-        
-        # Extract trace context from headers
-        trace_header = request.headers.get('x-cloud-trace-context', '')
-        if trace_header:
-            trace_parts = trace_header.split('/')
-            self._trace_id = trace_parts[0] if trace_parts else None
-            self._span_id = trace_parts[1].split(';')[0] if len(trace_parts) > 1 else None
+    def __init__(self, request: Request = None):
+        if request:
+            path_parts = [p for p in request.url.path.split('/') if p ]
+            self._name = "root" if not path_parts else '_'.join(path_parts)
+            
+            # Extract trace context from headers
+            trace_header = request.headers.get('x-cloud-trace-context', '')
+            if trace_header:
+                trace_parts = trace_header.split('/')
+                self._trace_id = trace_parts[0] if trace_parts else None
+                self._span_id = trace_parts[1].split(';')[0] if len(trace_parts) > 1 else None
+            else:
+                self._trace_id = None
+                self._span_id = None
+            
+            labels = {
+                # "request_headers": {k:v for k,v in request.headers.items() if k.lower() not in self.BLOCKLISTED_HEADERS},
+                "requestClient": str(request.client),
+                "requestQueryParams": request.query_params,
+                "requestUrl": str(request.url),
+                "requestMethod": request.method,
+                "handler": self._name,
+            }
         else:
+            self._name = "app"
             self._trace_id = None
             self._span_id = None
+            labels = {"handler": self._name}
         
-        labels = {
-            # "request_headers": {k:v for k,v in request.headers.items() if k.lower() not in self.BLOCKLISTED_HEADERS},
-            "requestClient": str(request.client),
-            "requestQueryParams": request.query_params,
-            "requestUrl": str(request.url),
-            "requestMethod": request.method,
-            "handler": self._name,
-        }
         self._labels = jsonable_encoder(labels)
 
     @abc.abstractmethod
@@ -63,8 +70,8 @@ class CloudLogger(Logger):
     def __init__(
             self,
             logger_client: google_logging.Client,
-            request: Request,
-            project_id: str,
+            request: Request = None,
+            project_id: str = None,
     ):
         super().__init__(request)
         self._project_id = project_id
@@ -105,7 +112,7 @@ class CloudLogger(Logger):
 
 
 class LocalLogger(Logger):
-    def __init__(self, request: Request):
+    def __init__(self, request: Request = None):
         super().__init__(request)
         self._logger = python_logging.getLogger("app")
 

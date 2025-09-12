@@ -13,6 +13,7 @@ __all__ = ["Company", "CompanyStatus"]
 BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
 
 class CompanyStatus(StrEnum):
+    PROCESSING = "Processing"
     NEW_COMPANY = "New Company"
     DILIGENCE = "Diligence"
     CONTACTED = "Contacted"
