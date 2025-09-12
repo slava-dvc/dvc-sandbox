@@ -52,7 +52,7 @@ class Company(BaseModel):
             return str(v)
         return v
 
-    airtableId: str
+    airtableId: str | None = None
     name: str
     website: str | None = None
     domain: str | None = None
