@@ -12,6 +12,7 @@ from .data import mongo_database, airtable_api_client, AIRTABLE_BASE_ID
 _PIPELINE_STATUES = {
     "New Company": [
         CompanyStatus.NEW_COMPANY,
+        CompanyStatus.PROCESSING
     ],
     "In Progress": [
         CompanyStatus.CONTACTED,

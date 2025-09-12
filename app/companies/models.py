@@ -19,6 +19,7 @@ class DocumentSource(BaseModel):
 
 
 class CompanyCreateRequest(BaseModel):
+    id: str
     name: str
     email: str
     website: str | None = None

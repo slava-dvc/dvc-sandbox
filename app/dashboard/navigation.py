@@ -4,6 +4,9 @@ from uuid import uuid4
 from google.cloud import storage, pubsub
 from google.auth import default
 from infrastructure.queues.company_creation import company_create_from_docs_topic_name
+from app.shared.company import CompanyStatus
+from app.foundation.primitives import datetime
+from .data import mongo_database
 from .fund import fund_page
 from .company import company_page
 from .jobs import jobs_page
@@ -66,11 +69,32 @@ def build_company_sources(pitch_deck_file, pitch_deck_url):
     return sources
 
 
+def create_company_in_db(name, email, website, sources):
+    """Create company in MongoDB with PROCESSING status"""
+    db = mongo_database()
+    companies_collection = db.get_collection('companies')
+    
+    company_doc = {
+        "name": name.strip(),
+        "website": website.strip() if website else None,
+        "status": CompanyStatus.PROCESSING,
+        "ourData": {
+            "email": email.strip()
+        },
+        "createdAt": datetime.now(),
+        "sources": sources  # Store sources for processing
+    }
+    
+    result = companies_collection.insert_one(company_doc)
+    return str(result.inserted_id)
+
+
 def publish_company_to_queue(company_data):
-    """Publish company data to Pub/Sub queue"""
+    """Publish full company data to Pub/Sub queue"""
     publisher = get_publisher_client()
     _, project_id = default()
     topic_path = publisher.topic_path(project_id, company_create_from_docs_topic_name)
+    
     message_data = json.dumps(company_data).encode('utf-8')
     
     future = publisher.publish(topic_path, message_data)
@@ -105,16 +129,22 @@ def add_new_company():
                 st.error(error)
                 return
 
-            # Build sources and company data
+            # Build sources
             sources = build_company_sources(pitch_deck_file, pitch_deck_url)
+            
+            # Create company in database first
+            company_id = create_company_in_db(company_name, company_email, website, sources)
+            
+            # Build full company data for Pub/Sub
             company_data = {
+                "id": company_id,
                 "name": company_name.strip(),
-                "email": company_email.strip(), 
-                "website": website.strip(),
+                "email": company_email.strip(),
+                "website": website.strip() if website else None,
                 "sources": sources
             }
-
-            # Publish to queue
+            
+            # Publish to queue for processing
             message_id = publish_company_to_queue(company_data)
             st.success("Company submitted successfully! It will appear in pipeline shortly.")
 
