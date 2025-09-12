@@ -128,7 +128,7 @@ class CompanyFromDocsFlow:
                     "ourData.linkToDeck": public_url,
                     "processedAt": datetime.now()
                 },
-                "$unset": {"lastError": "", "sources": ""}
+                "$unset": {"lastError": ""}
             },
             return_document=True
         )
