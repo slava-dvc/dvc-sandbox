@@ -162,6 +162,10 @@ class CompanySummary:
     customers_cnt: int | None = None
     news: List[NewsItem] = field(default_factory=list)
     linkedInData: dict = field(default_factory=dict)
+    unrealizedPaperGain: int  = 0
+    amountInvested: int = 0
+    currentPaperValue: int = 0
+    revaluation: int = 0
 
     def __lt__(self, other):
         status_map = {"Invested": 0, "Exit": -2, "Offered To Invest": 2, "Write-off": -1, }
@@ -210,7 +214,11 @@ class CompanySummary:
             customers_cnt=company.get('customerCount'),
             expected_performance=company.get('performanceOutlook'),
             news=[NewsItem.from_dict(n) for n in news],
-            linkedInData=company.get('linkedInData', {})
+            linkedInData=company.get('linkedInData', {}),
+            unrealizedPaperGain = company.get('unrealizedPaperGain', 0),
+            amountInvested = company.get('amountInvested', 0),
+            currentPaperValue = company.get('currentPaperValue', 0),
+            revaluation = company.get('revaluation', 0)
         )
 
 
@@ -353,10 +361,11 @@ def show_company_summary(company_summary: CompanySummary):
                 header.append("❌ No updates")
             st.markdown("&nbsp; | &nbsp;".join(header))
             c1, c2, = st.columns(2, gap='small')
-            c1.markdown(f"Initial Fund: **{initial_fund}**")
+            c1.markdown(f"Total invested: **{format_as_dollars(company_summary.amountInvested)}**")
             c1.write(company_summary.expected_performance)
-            c2.markdown(f"Initial Val: **{format_as_dollars(initial_valuation, '—')}**")
-            c2.markdown(f"Current Val: **{format_as_dollars(current_valuation, '—')}**")
+            c2.markdown(f"Current paper value: **{format_as_dollars(company_summary.currentPaperValue)}**")
+            c2.markdown(f"Unrealized paper gain: **{format_as_dollars(company_summary.unrealizedPaperGain)}**")
+            c2.markdown(f"Revaluation: **{company_summary.revaluation:0.2f}**")
 
 
         with signals_column:

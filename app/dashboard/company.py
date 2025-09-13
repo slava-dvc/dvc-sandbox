@@ -1,4 +1,5 @@
 from dataclasses import fields
+from tkinter.font import names
 
 import pandas as pd
 import requests
@@ -262,7 +263,7 @@ def show_company_basic_details(company: Company):
         st.info("Memorandum creation is triggered.", icon="️⏲️")
 
 
-def show_company_investment_details(company: Company):
+def show_company_position_details(company: Company):
     with st.spinner("Loading ..."):
         investments = get_investments()
 
@@ -404,33 +405,13 @@ def show_signals(company: Company):
     highlights = get_company_highlights(company)
     traction_metrics = get_company_traction_metrics(company)
 
-    if company.status == CompanyStatus.INVESTED:
-        c1, c2, c3 = st.columns(3)
-        financial_data = get_company_financial_data(company)
-
-        with c1:
-            st.metric("Runway", financial_data['runway'])
-            st.metric("Revenue", format_as_dollars(financial_data['revenue']))
-        with c2:
-            st.metric("Burnrate", financial_data['burnrate'])
-            st.metric("Customers Cnt", financial_data['customers_cnt'])
-        with c3:
-            # Create a mock object with required attributes for show_highlights
-            mock_summary = type('MockSummary', (), {
-                'new_highlights': highlights,
-                'traction_metrics': traction_metrics
-            })()
-            highlights_cnt = show_highlights(mock_summary)
-            if not highlights_cnt:
-                st.info("No signals for this company.")
-    else:
-        mock_summary = type('MockSummary', (), {
-            'new_highlights': highlights,
-            'traction_metrics': traction_metrics
-        })()
-        highlights_cnt = show_highlights(mock_summary)
-        if not highlights_cnt:
-            st.info("No signals for this company.")
+    mock_summary = type('MockSummary', (), {
+        'new_highlights': highlights,
+        'traction_metrics': traction_metrics
+    })()
+    highlights_cnt = show_highlights(mock_summary)
+    if not highlights_cnt:
+        st.info("No signals for this company.")
 
 
 def show_traction_graph(traction_metric: TractionMetric, label=None):
@@ -668,15 +649,18 @@ def company_page():
         "Financial": show_financial,
         "Traction": show_traction_content,
         "Signals": show_signlas_and_traction,
-        "Investments": show_company_investment_details,
+        "Position": show_company_position_details,
         "Asks": show_asks,
-        "Updates": show_last_updates_and_news,
+        "News": show_last_updates_and_news,
         "Memorandum": show_memorandum,
         "Comments": show_comments,
         "Meetings": show_meetings,
     }
+    names = []
+    if company.status == CompanyStatus.INVESTED:
+        names.extend(["News", "Position"])
 
-    names = ["Overview", "Team", "Financial"]
+    names.extend(["Overview", "Team"])
     if company.memorandum:
         names.append("Memorandum")
     if company.ourData.get('traction'):
@@ -684,7 +668,7 @@ def company_page():
     if company.spectrData:
         names.append("Signals")
     if company.status == CompanyStatus.INVESTED:
-        names.extend(["Investments", "Asks", "Updates"])
+        names.extend(["Asks"])
     names.extend(['Comments', 'Meetings'])
     for t, n in zip(st.tabs(names), names):
         with t:

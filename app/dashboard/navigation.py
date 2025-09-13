@@ -182,14 +182,6 @@ def show_navigation():
     Args:
         current_page: Current page identifier ('fund', 'jobs', etc.)
     """
-    # User info section at top of sidebar
-    if st.user.is_logged_in:
-        # st.sidebar.markdown("---")
-        st.sidebar.markdown("**👤 Logged in as:**")
-        st.sidebar.markdown(f"{st.user.email}")
-        if st.sidebar.button("🚪 Logout", key="logout_btn", width=192):
-            st.logout()
-        # st.sidebar.markdown("---")
 
     pages = [
         st.Page(fund_page, title="Funds"),

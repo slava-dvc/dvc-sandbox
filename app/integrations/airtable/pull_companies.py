@@ -209,7 +209,11 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             'businessModel': fields.get('Business Model'),
             'marketSize': fields.get('Market Size'),
             'founders': fields.get('Founders'),
-            'email': fields.get('Email')
+            'email': fields.get('Email'),
+            'unrealizedPaperGain': fields.get('Unrealized Paper Gain Rollup (from Rounds We Invested)'),
+            'amountInvested': fields.get('Amount Invested Rollup (from Rounds We Invested)'),
+            'currentPaperValue': fields.get('Current Paper Value Rollup (from Rounds We Invested)'),
+            'revaluation': fields.get('Revaluation'),
         }
     }
 
