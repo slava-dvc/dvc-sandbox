@@ -1,8 +1,10 @@
-from dataclasses import fields
+import math
 
 import pandas as pd
 import requests
 import streamlit as st
+from dataclasses import fields
+
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 
@@ -57,12 +59,18 @@ def get_company_financial_data(company: Company) -> dict:
 
 def show_key_value_row(key: str, value: str | None):
     """Helper function to display a key-value pair in two columns with proper formatting."""
-    col1, col2 = st.columns([1, 7], vertical_alignment="center")
+    col1, col2 = st.columns([2, 9], vertical_alignment="center")
     with col1:
         st.markdown(f"**{key}**")
     with col2:
         if value and isinstance(value, str) and value.strip():
             st.markdown(safe_markdown(value))
+        elif isinstance(value, int):
+            st.write(value)
+        elif isinstance(value, float) and not math.isnan(value) and not math.isinf(value):
+            st.write(f"{value:,.2f}")
+        elif isinstance(value, list) and value:
+            st.write(', '.join([str(v) for v in value]))
         else:
             st.markdown("—")
 
@@ -273,6 +281,7 @@ def show_company_position_details(company: Company):
     company_id = company.airtableId
     company_investments = investments[
         investments['Company'].apply(lambda x: company_id in x if isinstance(x, list) else False)]
+
     portfolio_index = portfolio['Companies'].apply(lambda x: company_id in x if isinstance(x, list) else False)
     company_in_portfolio = None
     if sum(portfolio_index) == 1:
@@ -313,6 +322,34 @@ def show_company_position_details(company: Company):
     with col4:
         st.metric("Initial Reval", "TBD")
         st.metric("MOIC", f"{moic:0.2f}" if is_valid_number(moic) else "—")
+    fields_for_investment = [
+        "Fund",
+        "Terms",
+        "Amount Invested",
+        "Conv. PPS",
+        "Round PPS",
+        "Latest PPS",
+        "Pre-Money Valuation",
+        "Post-Money Valuation",
+        "Round Size",
+        "Pro Rata",
+        "Discount",
+        "Ownership%",
+        "Current Paper Value",
+        "Unrealized Paper Gain",
+        "Unrealized Value (Priced)",
+        "Latest Unrealized Value",
+        "Initial MOIC (X)",
+        "Memo",
+        # "Notable Co-investors",
+        "YearsInPortfolio",
+        "Date Invested"
+    ]
+    for i, (row_id, company_investment) in enumerate(company_investments.iterrows()):
+        with st.expander(f"{company_investment['Investment']}", expanded=(i == 0)):
+            data = dict(company_investment[fields_for_investment])
+            for k, v in data.items():
+                show_key_value_row(k, v)
 
 
 def show_asks(company: Company):

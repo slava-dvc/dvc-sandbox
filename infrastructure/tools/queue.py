@@ -1,7 +1,16 @@
-import pulumi_gcp as gcp
+is_pulumi = False
+
+try:
+    import pulumi
+    import pulumi_gcp as gcp
+    is_pulumi = pulumi.runtime.is_dry_run() is not None  # Returns bool during pulumi run
+except ImportError:
+    pass
 
 
 def make_topic(topic_name):
+    if not is_pulumi:
+        return None, None
     topic = gcp.pubsub.Topic(
         f'{topic_name}',
         name=topic_name,
@@ -23,6 +32,8 @@ def create_subscription_with_push_and_dlq(
         http_endpoint: str,
         service_account: gcp.serviceaccount.Account
 ):
+    if not is_pulumi:
+        return None, None, None
     # Create a Dead Letter Queue (DLQ) topic for the subscription
     dlq_topic_name = f"{topic_name}-{subscription_name}-dlq"
     dlq_topic = gcp.pubsub.Topic(

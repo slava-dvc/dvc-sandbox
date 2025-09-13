@@ -27,7 +27,7 @@ def show_key_metrics(investments: pd.DataFrame, companies: pd.DataFrame):
         "MOIC": 'TBD',
         "Exits": sum(list(companies.status == 'Exit')),
         "Write offs": sum(list(companies.status == 'Write-off')),
-        "TVPI": 'TBD',
+        "Markup": investments['Markup?'].sum(),
     }
 
     col1, col2, col3, col4 = st.columns(4)
@@ -46,7 +46,7 @@ def show_key_metrics(investments: pd.DataFrame, companies: pd.DataFrame):
 
     with col4:
         st.metric("Follow ons", fund_metrics["Follow ons"])
-        st.metric("TVPI", fund_metrics["TVPI"])
+        st.metric("Markup", fund_metrics["Markup"])
 
 
 def show_counted_pie(df: pd.DataFrame, title: str, column):
