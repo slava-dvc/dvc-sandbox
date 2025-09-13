@@ -11,7 +11,9 @@ from app.foundation.primitives import datetime
 from app.foundation.server import AppConfig
 from google.cloud import firestore
 
+
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
+
 
 @st.cache_resource
 def app_config() -> AppConfig:
@@ -111,7 +113,7 @@ def get_portfolio(**options):
 @st.cache_data(show_spinner=False, ttl=datetime.timedelta(minutes=5))
 def get_jobs(**options):
     """Fetch jobs from MongoDB jobs collection"""
-    from app.foundation.primitives import datetime
+
     
     client = mongodb_client()
     db = client.get_default_database('fund')
