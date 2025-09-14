@@ -8,6 +8,8 @@ from app.foundation.server import dependencies, Logger
 from app.companies.crud import Crud
 from app.companies.models import CompanyUpdateRequest, CompanyCreateRequest
 from app.companies.document_flow import CompanyFromDocsFlow
+from app.company_data.dependencies import get_job_dispatcher
+from app.company_data.job_dispatcher import JobDispatcher
 
 
 router = APIRouter(
@@ -65,7 +67,8 @@ async def create_from_docs_consume(
     storage_client: storage.Client = Depends(dependencies.get_storage_client),
     openai_client: openai.AsyncOpenAI = Depends(dependencies.get_openai_client),
     http_client: httpx.AsyncClient = Depends(dependencies.get_http_client),
+    job_dispatcher: JobDispatcher = Depends(get_job_dispatcher),
 ):
     """Pub/Sub consumer endpoint to create company from documents"""
-    flow = CompanyFromDocsFlow(database, storage_client, openai_client, http_client, logger)
+    flow = CompanyFromDocsFlow(database, storage_client, openai_client, http_client, job_dispatcher, logger)
     await flow(create_request)

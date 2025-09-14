@@ -13,9 +13,11 @@ from pymongo.asynchronous.database import AsyncDatabase
 from app.companies.models import CompanyCreateRequest
 from app.companies.pdf.downloader import URLDownloader
 from app.companies.pdf.flyweight import PDFlyweight
+from app.company_data.job_dispatcher import JobDispatcher
 from app.foundation.primitives import datetime, json
 from app.foundation.server import Logger
-from app.shared.company import CompanyStatus
+from app.shared.company import CompanyStatus, Company
+from app.shared.url_utils import is_valid_website_url, normalize_url, extract_domain
 
 
 def _unwrap_single_item(value):
@@ -37,12 +39,14 @@ class CompanyFromDocsFlow:
             storage_client: storage.Client,
             openai_client: openai.AsyncOpenAI,
             http_client: httpx.AsyncClient,
+            job_dispatcher: JobDispatcher,
             logger: Logger
     ):
         self.database = database
         self.storage_client = storage_client
         self.openai_client = openai_client
         self.http_client = http_client
+        self.job_dispatcher = job_dispatcher
         self.logger = logger
 
     async def __call__(self, request: CompanyCreateRequest) -> str:
@@ -219,7 +223,7 @@ class CompanyFromDocsFlow:
             {k: v for k, v in our_data_fields.items() if v is not None}
         )
 
-    async def _update_company(self, request: CompanyCreateRequest, key_fields: Dict, data: Dict, public_url: str):
+    async def _update_company(self, request: CompanyCreateRequest, key_fields: Dict, data: Dict, public_url: str) -> Company:
         """Update company in MongoDB with extracted data and processing status"""
         update_fields = {}
 
@@ -227,7 +231,12 @@ class CompanyFromDocsFlow:
             update_fields['name'] = key_fields.get('name')
 
         if not request.website:
-            update_fields['website'] = key_fields.get('website')
+            extracted_website = key_fields.get('website')
+            if extracted_website and is_valid_website_url(extracted_website):
+                normalized_website = normalize_url(extracted_website.strip())
+                domain = extract_domain(extracted_website.strip())
+                update_fields['website'] = normalized_website
+                update_fields['domain'] = domain
 
         if not request.email:
             update_fields['email'] = key_fields.get('email')
@@ -248,7 +257,7 @@ class CompanyFromDocsFlow:
             },
             return_document=True
         )
-        return result
+        return Company.model_validate(result)
 
     async def _update_company_error(self, company_id: str, error_msg: str):
         """Update company with processing error"""
