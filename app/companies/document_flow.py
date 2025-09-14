@@ -180,6 +180,7 @@ class CompanyFromDocsFlow:
         main_fields = {
             'name': company_info.get('Company Name', {}).get('value'),
             'website': company_info.get('Company Site', {}).get('value'),
+            'email': company_info.get('Company Email', {}).get('value'),
             'blurb': unstructured.get('key_facts', {}).get('Product Solution', {}).get('value'),  # Solution Statement -> blurb
         }
 
@@ -222,19 +223,22 @@ class CompanyFromDocsFlow:
         """Update company in MongoDB with extracted data and processing status"""
         update_fields = {}
 
-        # Update main company fields
-        for key, value in key_fields.items():
-            update_fields[key] = value
+        if not request.name:
+            update_fields['name'] = key_fields.get('name')
 
-        # Update ourData fields
-        for key, value in data.items():
-            update_fields[f'ourData.{key}'] = value
+        if not request.website:
+            update_fields['website'] = key_fields.get('website')
+
+        if not request.email:
+            update_fields['email'] = key_fields.get('email')
+
+        update_fields['blurb'] = key_fields.get('blurb')
+        update_fields['ourData'] = data
+        update_fields['ourData']['linkToDeck'] = public_url
 
         # Add processing status and timestamps
         update_fields['status'] = CompanyStatus.NEW_COMPANY
-        update_fields['ourData.linkToDeck'] = public_url
-        update_fields['extractedAt'] = datetime.now()
-        update_fields['processedAt'] = datetime.now()
+        update_fields['updatedAt'] = datetime.now()
 
         result = await self.database["companies"].find_one_and_update(
             {"_id": ObjectId(request.id)},
