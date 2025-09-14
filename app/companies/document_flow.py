@@ -18,6 +18,13 @@ from app.foundation.server import Logger
 from app.shared.company import CompanyStatus
 
 
+def _unwrap_single_item(value):
+    """Helper to unwrap single-item lists to their value"""
+    if isinstance(value, list) and len(value) == 1:
+        return value[0]
+    return value
+
+
 class CompanyFromDocsFlow:
     """Flow for creating companies from PDF documents"""
 
@@ -53,15 +60,18 @@ class CompanyFromDocsFlow:
             # Fetch and store PDF
             pdf_bytes, gcs_path = await self._fetch_and_store_pdf(request.id, request.sources)
 
-            # Extract text from PDF
-            extracted_text = await self._extract_text_from_pdf(pdf_bytes)
+            # Extract text from PDF and upload to bucket
+            extracted_text = await self._extract_and_upload_text_from_pdf(request.id, pdf_bytes)
             self.logger.info("Extracted text from PDF", labels=log_labels | {"textLength": len(extracted_text)})
-            extracted_data = await self._extract_data_from_pitch_text(request.id, extracted_text)
-            pathlib.Path('temp.json').write_text(json.dumps(extracted_data))
 
-            # Build public URL and update company
+            # Extract structured data and upload to bucket
+            extracted_data = await self._extract_and_upload_data_from_pitch_text(request.id, extracted_text)
+
+            # Store extracted data to company record
+            key_fields, data = self._flatten_extracted_data(extracted_data)
             public_url = f"https://api.dvcagent.com/media/{gcs_path}"
-            company = await self._update_company_success(request.id, public_url)
+
+            company = await self._update_company(request, key_fields, data, public_url)
 
         except Exception as e:
             await self._update_company_error(request.id, str(e))
@@ -100,7 +110,8 @@ class CompanyFromDocsFlow:
 
         return pdf_bytes, final_path
 
-    async def _extract_data_from_pitch_text(self, company_id, text) -> Dict:
+    async def _extract_and_upload_data_from_pitch_text(self, company_id: str, text: str) -> Dict:
+        """Extract structured data from pitch text and upload to bucket"""
         url = "https://api.dvcagent.com/dealflow/run/main"
         data = {
             "graph": "Subgraphs #0 Main Graph",
@@ -115,10 +126,18 @@ class CompanyFromDocsFlow:
         }
         result = await self.http_client.post(url, headers=headers, json=data)
         result.raise_for_status()
-        return result.json()
+        extracted_data = result.json()
 
-    async def _extract_text_from_pdf(self, pdf_bytes: bytes) -> str:
-        """Uses PDFlyweight to extract text from PDF"""
+        # Upload structured data to bucket
+        bucket = self.storage_client.bucket(self.PDF_BUCKET_NAME)
+        json_path = f"companies/{company_id}/pitch.json"
+        json_blob = bucket.blob(json_path)
+        json_blob.upload_from_string(json.dumps(extracted_data, indent=2), content_type="application/json")
+
+        return extracted_data
+
+    async def _extract_and_upload_text_from_pdf(self, company_id: str, pdf_bytes: bytes) -> str:
+        """Uses PDFlyweight to extract text from PDF and uploads to bucket"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Save PDF to temp file
             temp_pdf_path = Path(temp_dir) / "document.pdf"
@@ -132,18 +151,95 @@ class CompanyFromDocsFlow:
             pdf_processor.to_pages(str(temp_pdf_path))
             extracted_text = await pdf_processor.to_text()
 
+            # Upload extracted text to bucket
+            bucket = self.storage_client.bucket(self.PDF_BUCKET_NAME)
+            text_path = f"companies/{company_id}/pitch.txt"
+            text_blob = bucket.blob(text_path)
+            text_blob.upload_from_string(extracted_text, content_type="text/plain")
+
             return extracted_text
 
-    async def _update_company_success(self, company_id: str, public_url: str):
-        """Update company with successful processing results"""
+    def _flatten_extracted_data(self, extracted_data: Dict) -> tuple[Dict, Dict]:
+        """Flatten extracted data for MongoDB storage following existing schema"""
+        output = extracted_data.get('output', {}).get('value', {})
+        structured = output.get('structured', {})
+        unstructured = output.get('unstructured', {})
+
+        # Extract key terms
+        key_terms = structured.get('key_terms', {})
+        company_info = key_terms.get('company_info', {})
+        fundraising = key_terms.get('fundrasing_summary', {})
+
+        # Extract indicators (also contains some fields)
+        indicators = output.get('indicators', {})
+
+        # Extract founders info
+        founders_data = structured.get('founders_info', {})
+
+        # Main company fields (not in ourData)
+        main_fields = {
+            'name': company_info.get('Company Name', {}).get('value'),
+            'website': company_info.get('Company Site', {}).get('value'),
+            'blurb': unstructured.get('key_facts', {}).get('Product Solution', {}).get('value'),  # Solution Statement -> blurb
+        }
+
+        # ourData fields matching existing schema
+        our_data_fields = {
+            'summary': unstructured.get('executive_summary'),  # executive_summary -> summary
+            'businessModelType': _unwrap_single_item(indicators.get('Business Model', {}).get('value')),  # Single value expected
+            'problem': unstructured.get('key_facts', {}).get('Problem', {}).get('value'),
+            'traction': unstructured.get('key_facts', {}).get('Traction', {}).get('value'),
+            'marketSize': unstructured.get('key_facts', {}).get('Market', {}).get('value'),
+            'founders': founders_data,
+            'companyHQ': company_info.get('Headquarter Location', {}).get('value'),
+            'foundationYear': company_info.get('Year of Foundation', {}).get('value'),
+            'employeeCount': company_info.get('Quantity of Employee', {}).get('value'),
+
+            # Additional ourData fields from dvc_mapping.yml - using correct JSON paths
+            'category': _unwrap_single_item(indicators.get('Product Type', {}).get('value')),  # Single value expected
+            'mainIndustry': _unwrap_single_item(key_terms.get('not_validated_flags', {}).get('Industry', {}).get('value')),  # Single value expected
+            'productStructureType': _unwrap_single_item(indicators.get('Product Structure Type', {}).get('value')),  # Single value expected
+            'targetMarket': key_terms.get('not_validated_flags', {}).get('Target market', {}).get('value'),  # Target market -> targetMarket
+            'revenueModelType': _unwrap_single_item(indicators.get('Revenue Model Type', {}).get('value')),  # Single value expected
+            'distributionModelType': _unwrap_single_item(indicators.get('Distribution Strategy', {}).get('value')),  # Single value expected
+
+            # Fundraising fields
+            'targetAmount': _unwrap_single_item(fundraising.get('Target Amount', {}).get('value')),  # Single value expected
+            'dealSize': _unwrap_single_item(fundraising.get('Deal Size', {}).get('value')),  # Single value expected
+            'raisedAmount': _unwrap_single_item(fundraising.get('Raised Amount', {}).get('value')),  # Single value expected
+            'coinvestorsList': fundraising.get('CoInvestors List', {}).get('value'),  # Keep as list
+
+            # Additional extracted fields
+            'competitors': unstructured.get('key_facts', {}).get('Competitors', {}).get('value'),
+        }
+
+        return (
+            {k: v for k, v in main_fields.items() if v is not None},
+            {k: v for k, v in our_data_fields.items() if v is not None}
+        )
+
+    async def _update_company(self, request: CompanyCreateRequest, key_fields: Dict, data: Dict, public_url: str):
+        """Update company in MongoDB with extracted data and processing status"""
+        update_fields = {}
+
+        # Update main company fields
+        for key, value in key_fields.items():
+            update_fields[key] = value
+
+        # Update ourData fields
+        for key, value in data.items():
+            update_fields[f'ourData.{key}'] = value
+
+        # Add processing status and timestamps
+        update_fields['status'] = CompanyStatus.NEW_COMPANY
+        update_fields['ourData.linkToDeck'] = public_url
+        update_fields['extractedAt'] = datetime.now()
+        update_fields['processedAt'] = datetime.now()
+
         result = await self.database["companies"].find_one_and_update(
-            {"_id": ObjectId(company_id)},
+            {"_id": ObjectId(request.id)},
             {
-                "$set": {
-                    "status": CompanyStatus.NEW_COMPANY,
-                    "ourData.linkToDeck": public_url,
-                    "processedAt": datetime.now()
-                },
+                "$set": update_fields,
                 "$unset": {"lastError": ""}
             },
             return_document=True
