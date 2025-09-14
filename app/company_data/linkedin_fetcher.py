@@ -1,8 +1,9 @@
 from typing import AnyStr as Str, Dict
 from functools import cache
+from http import HTTPStatus
 
 from bson import ObjectId
-from httpx import HTTPError
+from httpx import HTTPError, HTTPStatusError, Response
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.shared import Company, ScrapinClient
@@ -70,8 +71,12 @@ class LinkedInFetcher(DataFetcher):
 
     async def _linkedin_url_from_db(self, company_id):
         company = await self._companies_collection.find_one({"_id": ObjectId(company_id)})
-        if not company:
-            return ""
+        if not company or company.spectrUpdatedAt is None:
+            raise HTTPStatusError(
+                "Spectr data required for LinkedIn processing",
+                request=None,
+                response=Response(HTTPStatus.PRECONDITION_FAILED)
+            )
         linkedInData = company.get("linkedInData") or {}
         linkedInUrl = linkedInData.get("linkedInUrl") or ""
         if linkedInUrl:

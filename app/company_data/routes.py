@@ -1,14 +1,14 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, Body, Depends, Query
-from google.cloud import pubsub, storage
+from google.cloud import storage
 from pydantic import BaseModel, Field
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.foundation.server import dependencies, Logger
-from app.foundation.server.config import AppConfig
 from app.shared import Company, CompanyStatus
 from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client, get_genai_client, get_spectr_client
+from .dependencies import get_job_dispatcher
 from .job_dispatcher import JobDispatcher
 from .data_syncer import DataSyncer
 from .linkedin_fetcher import LinkedInFetcher
@@ -44,17 +44,9 @@ class SyncRequest(BaseModel):
 @router.post('/pull', status_code=HTTPStatus.ACCEPTED)
 async def trigger_sync(
         data: SyncRequest = Body(),
-        database: AsyncDatabase = Depends(dependencies.get_default_database),
-        publisher_client: pubsub.PublisherClient = Depends(dependencies.get_publisher_client),
+        job_dispatcher: JobDispatcher = Depends(get_job_dispatcher),
         logger: Logger = Depends(dependencies.get_logger),
-        config: AppConfig = Depends(dependencies.get_config),
 ):
-    job_dispatcher = JobDispatcher(
-        database=database,
-        publisher_client=publisher_client,
-        project_id=config.project_id,
-        logger=logger,
-    )
     logger.info(f"Starting company data pull", labels={
         "sources": data.sources,
         "maxItems": data.max_items,
