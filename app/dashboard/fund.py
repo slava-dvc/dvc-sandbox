@@ -5,6 +5,7 @@ from app.dashboard.formatting import format_as_dollars
 from app.dashboard.data import get_investments, get_companies_v2, get_updates
 from app.shared.company import Company, CompanyStatus
 from app.dashboard.highlights import show_highlights_for_company
+from app.foundation.primitives import datetime
 
 __all__ = ['fund_page']
 
@@ -105,25 +106,22 @@ def show_company_card(company: Company):
             else:
                 header.append("—")
 
-            # Show investment fund if available
-            fund = company.ourData.get('investingFund') if company.ourData else None
-            if fund:
-                header.append(f"Fund: {fund}")
-
             st.markdown("&nbsp; | &nbsp;".join(header))
 
             # Show valuation info
             c1, c2 = st.columns(2, gap='small')
 
-            # Initial valuation
-            initial_val = company.ourData.get('entryValuation') if company.ourData else None
-            if initial_val:
-                c1.markdown(f"Entry: **{format_as_dollars(initial_val)}**")
+            performanceOutlook = company.ourData.get('performanceOutlook')
+            unrealizedPaperGain = company.ourData.get('unrealizedPaperGain', 0)
+            amountInvested = company.ourData.get('amountInvested', 0)
+            currentPaperValue = company.ourData.get('currentPaperValue', 0)
+            revaluation = company.ourData.get('revaluation', 0)
 
-            # Current valuation
-            current_val = company.ourData.get('latestValuation')
-            if current_val and isinstance(current_val, list) and current_val:
-                c2.markdown(f"Latest: **{format_as_dollars(current_val[0])}**")
+            c1.markdown(f"Total invested: **{format_as_dollars(amountInvested)}**")
+            c1.write(performanceOutlook)
+            c2.markdown(f"Current paper value: **{format_as_dollars(currentPaperValue)}**")
+            c2.markdown(f"Unrealized paper gain: **{format_as_dollars(unrealizedPaperGain)}**")
+            c2.markdown(f"Revaluation: **{revaluation:0.2f}**")
 
         with signals_column:
             highlights_cnt = show_highlights_for_company(company)
@@ -169,9 +167,7 @@ def show_companies(companies: list[Company], updates: pd.DataFrame):
 
     with col5:
         # Sort by dropdown
-        sort_options = ["Default", "Current Val (High to Low)", "Current Val (Low to High)",
-                       "Initial Val (High to Low)", "Initial Val (Low to High)",
-                       "Name (A to Z)", "Name (Z to A)"]
+        sort_options = ["Default", "Name (A to Z)", "Name (Z to A)"]
         selected_sort = st.selectbox("Sort by", sort_options, index=0)
 
     # Apply filters
@@ -194,34 +190,36 @@ def show_companies(companies: list[Company], updates: pd.DataFrame):
                             if c.ourData and c.ourData.get('performanceOutlook') in selected_expected_performance]
 
     # Apply sorting
-    if selected_sort != "Default":
-        if "Name" in selected_sort:
-            key_func = lambda c: c.name.lower()
-            reverse = "Z to A" in selected_sort
-        else:
-            def get_numeric_val(company, val_type):
-                if val_type == "current":
-                    val = company.ourData.get('latestValuation') if company.ourData else None
-                    if isinstance(val, list) and val:
-                        val = val[0]
-                else:  # initial
-                    val = company.ourData.get('entryValuation') if company.ourData else None
+    if selected_sort == "Name (A to Z)":
+        filtered_companies.sort(key=lambda c: c.name.lower())
+    elif selected_sort == "Name (Z to A)":
+        filtered_companies.sort(key=lambda c: c.name.lower(), reverse=True)
+    else:  # Default
+        # Default sorting: highlights count, last update, status priority
+        def get_default_sort_key(company):
+            # Highlights count (higher = better)
+            highlights_count = 0
+            if company.spectrData and 'new_highlights' in company.spectrData:
+                highlights = company.spectrData['new_highlights']
+                highlights_count = len(highlights) if isinstance(highlights, list) else 0
 
-                if val is None:
-                    return 0
-                try:
-                    return float(val)
-                except (ValueError, TypeError):
-                    return 0
+            # Last update (more recent = better)
+            last_update = company.updatedAt or company.createdAt
+            if last_update is None:
+                last_update = datetime.datetime.min
 
-            if "Current Val" in selected_sort:
-                key_func = lambda c: get_numeric_val(c, "current")
-            else:  # Initial Val
-                key_func = lambda c: get_numeric_val(c, "initial")
+            # Status priority
+            status_map = {
+                CompanyStatus.INVESTED: 0,
+                CompanyStatus.OFFERED_TO_INVEST: 2,
+                CompanyStatus.EXIT: -2,
+                CompanyStatus.WRITE_OFF: -1,
+            }
+            status_priority = status_map.get(company.status, 1)
 
-            reverse = "High to Low" in selected_sort
+            return (highlights_count, last_update, status_priority)
 
-        filtered_companies.sort(key=key_func, reverse=reverse)
+        filtered_companies.sort(key=get_default_sort_key, reverse=True)
 
     # Display company cards
     for company in filtered_companies:
