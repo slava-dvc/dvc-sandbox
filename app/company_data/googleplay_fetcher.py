@@ -1,7 +1,9 @@
 from typing import Dict
 from urllib.parse import urlparse
+from http import HTTPStatus
 
 from bson import ObjectId
+from httpx import HTTPStatusError, Response
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.shared import Company, SerpApiClient
@@ -67,9 +69,13 @@ class GooglePlayFetcher(DataFetcher):
 
     async def _get_developer_id_from_db(self, company_id: str) -> str:
         company = await self._companies_collection.find_one({"_id": ObjectId(company_id)})
-        if not company:
-            return ""
-            
+        if not company or company.get("spectrUpdatedAt") is None:
+            raise HTTPStatusError(
+                "Spectr data required for Google Play processing",
+                request=None,
+                response=Response(HTTPStatus.PRECONDITION_FAILED)
+            )
+
         spectr_data = company.get("spectrData") or {}
         socials = spectr_data.get("socials") or {}
         googleplay = socials.get("googleplay") or {}

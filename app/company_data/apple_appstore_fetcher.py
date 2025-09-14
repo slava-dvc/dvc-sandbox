@@ -1,7 +1,9 @@
 from typing import Dict
 from urllib.parse import urlparse
+from http import HTTPStatus
 
 from bson import ObjectId
+from httpx import HTTPStatusError, Response
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.shared import Company, SerpApiClient
@@ -67,8 +69,12 @@ class AppleAppStoreFetcher(DataFetcher):
 
     async def _get_app_store_product_id(self, company_id: str) -> str:
         company = await self._companies_collection.find_one({"_id": ObjectId(company_id)})
-        if not company:
-            return ""
+        if not company or company.get("spectrUpdatedAt") is None:
+            raise HTTPStatusError(
+                "Spectr data required for App Store processing",
+                request=None,
+                response=Response(HTTPStatus.PRECONDITION_FAILED)
+            )
         
         # Check if we already have the product ID stored
         existing_product_id = company.get("appStoreId")
