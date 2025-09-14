@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from app.dashboard.formatting import format_as_dollars
-from app.dashboard.data import get_investments, get_companies_v2, get_updates
+from app.dashboard.data import get_investments, get_companies_v2
 from app.shared.company import Company, CompanyStatus
 from app.dashboard.highlights import show_highlights_for_company
 from app.foundation.primitives import datetime
@@ -132,7 +132,7 @@ def show_company_card(company: Company):
             st.link_button("View", url=f'/company_page?company_id={company.id}', width=192)
 
 
-def show_companies(companies: list[Company], updates: pd.DataFrame):
+def show_companies(companies: list[Company]):
     st.subheader("Portfolio Companies")
 
     # Get unique values for filters
@@ -232,9 +232,6 @@ def fund_page():
     with st.spinner("Loading investments..."):
         investments = get_investments()
 
-    with st.spinner("Loading updates..."):
-        updates = get_updates()
-
     selected_funds = show_fund_selector(investments)
     st.markdown("---")
 
@@ -268,4 +265,4 @@ def fund_page():
             column="mainIndustry"
         )
     st.divider()
-    show_companies(companies, updates)
+    show_companies(companies)
