@@ -49,7 +49,6 @@ def get_investments(**options):
     return fetch_airtable_as_df('tblrsrZTHW8famwpw', **options)
 
 
-@st.cache_resource(show_spinner=False)
 def get_companies_v2(query: dict = None, sort: typing.List[typing.Tuple[str, int]] = None, projection=None) -> typing.List[Company]:
     db = mongo_database()
     companies_collection = db.get_collection('companies')
