@@ -78,15 +78,15 @@ class CompanyFromDocsFlow:
         pdf_bytes = None
         
         for source in sources:
-            if source['type'] == 'url':
+            if source.type == 'url':
                 # Download from URL
-                downloader = URLDownloader(source['url'], self.logger)
+                downloader = URLDownloader(source.url, self.logger)
                 pdf_bytes = await downloader.process_content()
                 break
-            elif source['type'] == 'pdf':
+            elif source.type == 'pdf':
                 # Copy from temp bucket location
-                bucket = self.storage_client.bucket(source['bucket'])
-                temp_blob = bucket.blob(source['key'])
+                bucket = self.storage_client.bucket(source.bucket)
+                temp_blob = bucket.blob(source.key)
                 pdf_bytes = temp_blob.download_as_bytes()
                 break
         
