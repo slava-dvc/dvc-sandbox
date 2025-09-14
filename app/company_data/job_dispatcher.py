@@ -56,7 +56,7 @@ class JobDispatcher(object):
             try:
                 company = Company.model_validate(company_data)
                 if not company.has_valid_website():
-                    self._logger.warning("Company has no valid website", labels={
+                    self._logger.info("Company has no valid website", labels={
                         "company": company.model_dump_for_logs(),
                         "sources": sources,
                     })

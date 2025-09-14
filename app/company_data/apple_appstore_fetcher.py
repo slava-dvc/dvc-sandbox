@@ -52,6 +52,7 @@ class AppleAppStoreFetcher(DataFetcher):
             self._logger.info("Company has no App Store presence", labels={
                 "company": company.model_dump_for_logs(),
             })
+            return None
 
         return FetchResult(
             raw_data=raw_data,

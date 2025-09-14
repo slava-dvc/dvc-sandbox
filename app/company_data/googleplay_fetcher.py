@@ -51,6 +51,7 @@ class GooglePlayFetcher(DataFetcher):
                 "company_id": company.id,
                 "company_name": company.name,
             })
+            return None
 
         return FetchResult(
             raw_data=raw_data,

@@ -34,7 +34,7 @@ class DataFetcher(metaclass=ABCMeta):
         return True
 
     @abstractmethod
-    async def fetch_company_data(self, company: Company) -> FetchResult:
+    async def fetch_company_data(self, company: Company) -> FetchResult | None:
         """
         Fetch raw data and return transformed result
         """
@@ -65,7 +65,8 @@ class DataSyncer:
             return
 
         result = await self._data_fetcher.fetch_company_data(company)
-
+        if result is None:
+            return
         # Only store in bucket if there's meaningful data
         if result.raw_data:
             await self.store_raw_data(company, result)
@@ -81,7 +82,7 @@ class DataSyncer:
             })
         else:
             # Fetcher may return empty data. Example company as not an app in Apple store
-            self._logger.info(f"Fetcher return empty data", labels={
+            self._logger.warning(f"Fetcher returned empty data", labels={
                 "company": company.model_dump_for_logs(),
                 "source": source_id,
             })

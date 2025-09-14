@@ -166,7 +166,7 @@ async def _process_company_record(record: Dict[str, Any], companies_collection: 
             validated_website = _normalize_url(raw_url.strip())
             domain = _extract_domain(raw_url.strip())
         else:
-            logger.warning(
+            logger.info(
                 "Invalid URL detected",
                 labels={
                     "company": {"name": fields.get("Company"), "airtableId": record["id"]},
