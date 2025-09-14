@@ -11,7 +11,9 @@ from app.foundation.primitives import datetime
 from app.foundation.server import AppConfig
 from google.cloud import firestore
 
+
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
+
 
 @st.cache_resource
 def app_config() -> AppConfig:
@@ -46,34 +48,8 @@ def fetch_airtable_as_df(table_name: str, **options) -> pd.DataFrame:
 def get_investments(**options):
     return fetch_airtable_as_df('tblrsrZTHW8famwpw', **options)
 
+
 @st.cache_resource(show_spinner=False)
-def get_companies(query: dict = None):
-    def transform_company(company):
-        data = {'id': company['airtableId']}
-        data |= {
-            k: v for k, v in company.items()
-            if k in {'spectrId', 'spectrUpdatedAt', 'name', 'website', 'blurb', 'status', 'linkedInData'}
-        }
-        data |= company.get('ourData')
-        spectrData = company.get('spectrData')
-        if spectrData:
-            data = data | {
-                k: v for k, v in spectrData.items()
-                if k in {'new_highlights', 'highlights', 'traction_metrics', 'news'}
-            }
-        return data
-
-    db = mongo_database()
-    companies_collection = db.get_collection('companies')
-    rows = [
-        transform_company(company)
-        for company in companies_collection.find(query or {})
-    ]
-    if not rows:
-        return pd.DataFrame()
-    return pd.DataFrame(rows).set_index('id')
-
-
 def get_companies_v2(query: dict = None, sort: typing.List[typing.Tuple[str, int]] = None, projection=None) -> typing.List[Company]:
     db = mongo_database()
     companies_collection = db.get_collection('companies')
@@ -111,7 +87,7 @@ def get_portfolio(**options):
 @st.cache_data(show_spinner=False, ttl=datetime.timedelta(minutes=5))
 def get_jobs(**options):
     """Fetch jobs from MongoDB jobs collection"""
-    from app.foundation.primitives import datetime
+
     
     client = mongodb_client()
     db = client.get_default_database('fund')

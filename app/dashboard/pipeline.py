@@ -5,7 +5,7 @@ from app.shared import Company, CompanyStatus
 from app.dashboard.data import get_companies_v2
 from app.dashboard.formatting import format_relative_time, safe_markdown
 from app.dashboard.company import get_company_traction_metrics, get_company_highlights
-from app.dashboard.company_summary import show_highlights
+from app.dashboard.highlights import show_highlights_for_company
 from .data import mongo_database, airtable_api_client, AIRTABLE_BASE_ID
 
 
@@ -92,21 +92,15 @@ def _render_company_card(company: Company):
             width=256
         )
     with signals_column:
-        highlights = get_company_highlights(company)
-        traction_metrics = get_company_traction_metrics(company)
-        mock_summary = type('MockSummary', (), {
-            'new_highlights': highlights,
-            'traction_metrics': traction_metrics
-        })()
-        highlights_cnt = show_highlights(mock_summary)
+        highlights_cnt = show_highlights_for_company(company)
         if not highlights_cnt:
             st.info("No signals for this company.")
 
     with button_column:
         def update_company_id(company_id):
-            st.query_params.update({'company_id': company.airtableId})
+            st.query_params.update({'company_id': company.id})
 
-        st.link_button("View", url=f'/company_page?company_id={company.airtableId}', width=192)
+        st.link_button("View", url=f'/company_page?company_id={company.id}', width=192)
 
     if isinstance(company.blurb, str) and company.blurb:
         blurb = safe_markdown(company.blurb)

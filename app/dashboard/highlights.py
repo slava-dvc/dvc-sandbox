@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Optional, Union, List, Any, Dict
-import pandas as pd
+from typing import Optional, List, Dict
 import streamlit as st
 
-from app.dashboard.formatting import format_as_dollars, get_preview, format_compact_number
+from app.dashboard.formatting import format_compact_number
 from app.foundation.primitives import datetime
 
 
@@ -139,89 +138,6 @@ class TractionMetrics:
         return cls(**metrics)
 
 
-@dataclass
-class CompanySummary:
-    """Represents a company with its relevant data."""
-    company_id: str
-    name: str
-    website: Optional[str] = None
-    blurb: None | str = None
-    stage: Optional[str] = None
-    status: Optional[str] = None
-    initial_fund: Optional[str] = None
-    initial_valuation: Optional[Union[str, float, int]] = None
-    current_valuation: Optional[Union[str, float, int]] = None
-    logo_url: Optional[str] = None
-    last_update: Optional[Any] = None
-    new_highlights: Optional[List[str]] = None
-    traction_metrics: TractionMetrics = None
-    runway: int | None = None
-    expected_performance: str | None = None
-    revenue: int | None = None
-    burnrate: int | None = None
-    customers_cnt: int | None = None
-    news: List[NewsItem] = field(default_factory=list)
-    linkedInData: dict = field(default_factory=dict)
-    unrealizedPaperGain: int  = 0
-    amountInvested: int = 0
-    currentPaperValue: int = 0
-    revaluation: int = 0
-
-    def __lt__(self, other):
-        status_map = {"Invested": 0, "Exit": -2, "Offered To Invest": 2, "Write-off": -1, }
-
-        def get_sorting_tuple(obj):
-            highlights_count = 0 if not isinstance(obj.new_highlights, list) else len(obj.new_highlights)
-            last_update = datetime.now() if not isinstance(obj.last_update, datetime.datetime) else obj.last_update
-            return (highlights_count, last_update, status_map.get(obj.status, 0),)
-
-        return get_sorting_tuple(self) < get_sorting_tuple(other)
-
-    @staticmethod
-    def _extract_value(value):
-        """Extract value from potentially list-containing field."""
-
-        extracted = value[0] if isinstance(value, list) and value else value
-
-        # Handle NaN values by converting them to None
-        return None if pd.isna(extracted) else extracted or None
-
-    @classmethod
-    def from_dict(cls, company: dict, company_id, last_update=None):
-        stage = cls._extract_value(company.get('currentStage'))
-        
-        runway = None
-        try:
-            runway = int(company['runway'])
-        except (ValueError, TypeError, KeyError):
-            pass
-        
-        current_val = cls._extract_value(company.get('latestValuation'))
-        initial_val = cls._extract_value(company.get('entryValuation'))
-        news = (company.get('news'))
-        if not isinstance(news, list):
-            news= []
-        return cls(
-            company_id=company_id, name=company['name'], status=company['status'], website=company['website'],
-            stage=stage, initial_fund=company['investingFund'], initial_valuation=initial_val,
-            current_valuation=current_val, logo_url=get_preview(company['logo']), last_update=last_update,
-            new_highlights=company.get('new_highlights'),
-            blurb=company.get('blurb'),
-            traction_metrics=TractionMetrics.from_dict(company.get('traction_metrics')),
-            runway=runway,
-            revenue=cls._extract_value(company.get('revenue')),
-            burnrate=cls._extract_value(company.get('burnRate')),
-            customers_cnt=company.get('customerCount'),
-            expected_performance=company.get('performanceOutlook'),
-            news=[NewsItem.from_dict(n) for n in news],
-            linkedInData=company.get('linkedInData', {}),
-            unrealizedPaperGain = company.get('unrealizedPaperGain', 0),
-            amountInvested = company.get('amountInvested', 0),
-            currentPaperValue = company.get('currentPaperValue', 0),
-            revaluation = company.get('revaluation', 0)
-        )
-
-
 def show_highlight(highlight: Highlight, metric: TractionMetric = None):
     is_positive = highlight.is_positive
     description = highlight.description
@@ -265,7 +181,7 @@ def filter_highlights(highlights: List[str]) -> List[str]:
         "web_traffic_surge": "strong_web_traffic_growth",
         "app_downloads_surge": "strong_app_downloads_growth"
     }
-    
+
     # Define time period priorities (longer periods take precedence)
     time_period_groups = {
         # Web traffic - prefer longer periods
@@ -286,12 +202,12 @@ def filter_highlights(highlights: List[str]) -> List[str]:
 
     # Check which highlights to skip
     highlights_to_skip = set()
-    
+
     # Filter based on strength
     for weak_highlight, strong_highlight in redundant_pairs.items():
         if weak_highlight in highlights and strong_highlight in highlights:
             highlights_to_skip.add(weak_highlight)
-    
+
     # Filter based on time periods (prefer longer periods for positive highlights)
     for short_period, long_period in time_period_groups.items():
         if short_period in highlights and long_period in highlights:
@@ -301,14 +217,23 @@ def filter_highlights(highlights: List[str]) -> List[str]:
     return [h for h in highlights if h not in highlights_to_skip]
 
 
-def show_highlights(company_summary: CompanySummary):
-    # Display new highlights badge
-    new_highlights = company_summary.new_highlights
-    if not (isinstance(new_highlights, list) and len(new_highlights) > 0):
+def show_highlights_for_company(company):
+    """Show highlights for a Company object."""
+    # Extract highlights from Company object
+    highlights = []
+    if company.spectrData and 'new_highlights' in company.spectrData:
+        highlights = company.spectrData['new_highlights']
+
+    if not (isinstance(highlights, list) and len(highlights) > 0):
         return 0
 
+    # Get traction metrics
+    traction_metrics = None
+    if company.spectrData and 'traction_metrics' in company.spectrData:
+        traction_metrics = TractionMetrics.from_dict(company.spectrData['traction_metrics'])
+
     # Filter out redundant highlights
-    filtered_highlights = filter_highlights(new_highlights)
+    filtered_highlights = filter_highlights(highlights)
 
     # Display filtered highlights
     for highlight_id in filtered_highlights:
@@ -316,65 +241,7 @@ def show_highlights(company_summary: CompanySummary):
         if not highlight:
             continue
         metric = None
-        if highlight.metric:
-            metric = getattr(company_summary.traction_metrics, highlight.metric)
+        if highlight.metric and traction_metrics:
+            metric = getattr(traction_metrics, highlight.metric)
         show_highlight(highlight, metric)
     return len(filtered_highlights)
-
-
-def show_company_summary(company_summary: CompanySummary):
-    company_id = company_summary.company_id
-    company_name = company_summary.name
-    company_website = company_summary.website
-    company_stage = company_summary.stage
-    initial_fund = company_summary.initial_fund
-    initial_valuation = company_summary.initial_valuation
-    current_valuation = company_summary.current_valuation
-
-    company_last_update = company_summary.last_update
-
-    with st.container(border=True):
-        # st.write(f"expected_performance: {company_summary.expected_performance}")
-        logo_column, info_column, signals_column, button_column = st.columns([1, 6, 4, 1], gap='small', vertical_alignment='center')
-
-        with logo_column:
-            linedIn_url = company_summary.linkedInData.get('logo') if isinstance(company_summary.linkedInData, dict) else None
-            fallback_url = f'https://placehold.co/128x128?text={company_name}'
-            st.image(linedIn_url if linedIn_url else fallback_url, width=128)
-
-        with info_column:
-            header = []
-            if company_website and isinstance(company_website, str):
-                header.append(f"**[{company_name}]({company_website})**")
-            else:
-                header.append(f"**{company_name}**")
-            header.append(company_stage or "—")
-            if company_last_update:
-                now = datetime.now()
-                if company_last_update < now - datetime.timedelta(days=7):
-                    header.append(f"🕐 This week")
-                elif company_last_update < now - datetime.timedelta(days=30):
-                    header.append(f"🕐 This month")
-                else:
-                    header.append(f"🕐 {company_last_update.strftime('%d %b %Y')}")
-            else:
-                header.append("❌ No updates")
-            st.markdown("&nbsp; | &nbsp;".join(header))
-            c1, c2, = st.columns(2, gap='small')
-            c1.markdown(f"Total invested: **{format_as_dollars(company_summary.amountInvested)}**")
-            c1.write(company_summary.expected_performance)
-            c2.markdown(f"Current paper value: **{format_as_dollars(company_summary.currentPaperValue)}**")
-            c2.markdown(f"Unrealized paper gain: **{format_as_dollars(company_summary.unrealizedPaperGain)}**")
-            c2.markdown(f"Revaluation: **{company_summary.revaluation:0.2f}**")
-
-
-        with signals_column:
-            highlights_cnt = show_highlights(company_summary)
-            if not highlights_cnt:
-                st.info("No signals for this company.")
-
-        with button_column:
-            def update_company_id(company_id):
-                st.query_params.update({'company_id': company_id})
-
-            st.link_button("View", url=f'/company_page?company_id={company_id}', width=192)

@@ -8,7 +8,7 @@ from dataclasses import fields
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 
-from app.dashboard.company_summary import show_highlights, TractionMetric, TractionMetrics, NewsItem
+from app.dashboard.highlights import TractionMetric, TractionMetrics, NewsItem, show_highlights_for_company
 from app.dashboard.data import (
     get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
     get_companies_v2, app_config, update_company, mongo_database,
@@ -43,18 +43,6 @@ def get_company_highlights(company: Company) -> list[str]:
     if not company.spectrData:
         return []
     return company.spectrData.get('new_highlights', [])
-
-
-def get_company_financial_data(company: Company) -> dict:
-    """Extract financial data from Company object."""
-    our_data = company.ourData or {}
-    return {
-        'runway': our_data.get('runway'),
-        'revenue': our_data.get('revenue'),
-        'burnrate': our_data.get('burnRate'),
-        'customers_cnt': our_data.get('customerCount'),
-        'expected_performance': our_data.get('performanceOutlook')
-    }
 
 
 def show_key_value_row(key: str, value: str | None):
@@ -438,14 +426,7 @@ def show_team(company: Company):
 
 
 def show_signals(company: Company):
-    highlights = get_company_highlights(company)
-    traction_metrics = get_company_traction_metrics(company)
-
-    mock_summary = type('MockSummary', (), {
-        'new_highlights': highlights,
-        'traction_metrics': traction_metrics
-    })()
-    highlights_cnt = show_highlights(mock_summary)
+    highlights_cnt = show_highlights_for_company(company)
     if not highlights_cnt:
         st.info("No signals for this company.")
 
@@ -546,8 +527,8 @@ def get_selected_company():
         'status': {'$in': [s for s in CompanyStatus if s not in {CompanyStatus.PASSED}]}
     }
     companies = {
-        c.airtableId: c.name for c in
-        get_companies_v2(query=active_companies_query, projection=['name', 'airtableId'])
+        c.id: c.name for c in
+        get_companies_v2(query=active_companies_query, projection=['name', 'id'])
     }
     ids = sorted(companies.keys(), key=lambda x: companies[x])
     company_id = st.query_params.get('company_id', None)
@@ -669,7 +650,7 @@ def company_page():
         st.info("Please select a company.")
         return
     st.query_params.update({'company_id': selected_company_id})
-    companies = get_companies_v2(query={'airtableId': selected_company_id})
+    companies = get_companies_v2(query={'_id': ObjectId(selected_company_id)})
     if len(companies) != 1:
         st.warning("Company not found.")
         return
