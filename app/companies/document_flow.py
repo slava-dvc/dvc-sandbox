@@ -77,6 +77,10 @@ class CompanyFromDocsFlow:
 
             company = await self._update_company(request, key_fields, data, public_url)
 
+            # Trigger data source updates if company has valid website
+            if company.has_valid_website():
+                await self._trigger_data_source_updates(company)
+
         except Exception as e:
             await self._update_company_error(request.id, str(e))
             self.logger.error("Company processing failed", labels=log_labels | {"error": str(e)})
@@ -258,6 +262,13 @@ class CompanyFromDocsFlow:
             return_document=True
         )
         return Company.model_validate(result)
+
+    async def _trigger_data_source_updates(self, company: Company):
+        """Trigger job dispatcher updates for all supported data sources"""
+        supported_sources = ["linkedin", "spectr", "googleplay", "appstore", "google_jobs"]
+
+        for source in supported_sources:
+            await self.job_dispatcher.trigger_one(company, source)
 
     async def _update_company_error(self, company_id: str, error_msg: str):
         """Update company with processing error"""
