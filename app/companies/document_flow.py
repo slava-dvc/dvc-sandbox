@@ -140,7 +140,7 @@ class CompanyFromDocsFlow:
         bucket = self.storage_client.bucket(self.PDF_BUCKET_NAME)
         json_path = f"companies/{company_id}/pitch.json"
         json_blob = bucket.blob(json_path)
-        json_blob.upload_from_string(json.dumps(extracted_data, indent=2), content_type="application/json")
+        json_blob.upload_from_string(json.dumps(extracted_data), content_type="application/json")
 
         return extracted_data
 
