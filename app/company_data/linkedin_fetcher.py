@@ -71,7 +71,7 @@ class LinkedInFetcher(DataFetcher):
 
     async def _linkedin_url_from_db(self, company_id):
         company = await self._companies_collection.find_one({"_id": ObjectId(company_id)})
-        if not company or company.spectrUpdatedAt is None:
+        if not company or company.get("spectrUpdatedAt") is None:
             raise HTTPStatusError(
                 "Spectr data required for LinkedIn processing",
                 request=None,

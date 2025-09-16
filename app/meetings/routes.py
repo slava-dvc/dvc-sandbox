@@ -63,9 +63,7 @@ async def store_transcript(
     topic_path = publisher.topic_path(project_id, transcript_topic_name)
     message_data = data.encode('utf-8')
     
-    # Use receivedAt as ordering key
-    ordering_key = body['receivedAt'].isoformat()
-    future = publisher.publish(topic_path, message_data, ordering_key=ordering_key)
+    future = publisher.publish(topic_path, message_data)
     message_id = await as_async(future.result)
     
     logger.info("Stored meeting transcript", labels={
