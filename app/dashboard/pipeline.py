@@ -86,7 +86,7 @@ def _render_company_card(company: Company):
         new_status = st.selectbox(
             label="Status",
             options=_AVAILABLE_STATUES,
-            key=f"status_{company.airtableId}",
+            key=f"status_{company.id}",
             index=_AVAILABLE_STATUES.index(str(company.status)) if company.status else 0,
             label_visibility="collapsed",
             width=256
