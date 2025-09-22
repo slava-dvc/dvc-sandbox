@@ -37,7 +37,7 @@ synapse_cloud_run = gcp.cloudrunv2.Service(
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
                         "cpu": "1",
-                        "memory": "512Mi",
+                        "memory": "1024Mi",
                     }
                 ),
             )

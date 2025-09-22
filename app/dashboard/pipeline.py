@@ -52,11 +52,11 @@ def _update_company_status(company: Company, status):
         {'_id': ObjectId(company.id)},
         {'$set': {'status': str(status)}}
     )
-
-    # Update Airtable
-    api = airtable_api_client()
-    table = api.table(AIRTABLE_BASE_ID, 'tblJL5aEsZFa0x6zY')  # Companies table
-    table.update(company.airtableId, {'Status': str(status)})
+    if company.airtableId:
+        # Update Airtable
+        api = airtable_api_client()
+        table = api.table(AIRTABLE_BASE_ID, 'tblJL5aEsZFa0x6zY')  # Companies table
+        table.update(company.airtableId, {'Status': str(status)})
 
 
 def _render_company_card(company: Company):
