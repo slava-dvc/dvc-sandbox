@@ -26,15 +26,8 @@ def make_topic(topic_name):
     return topic, debug_subscription
 
 
-def create_subscription_with_push_and_dlq(
-        topic_name: str,
-        subscription_name: str,
-        http_endpoint: str,
-        service_account: gcp.serviceaccount.Account
-):
-    if not is_pulumi:
-        return None, None, None, None
-    # Create a Dead Letter Queue (DLQ) topic for the subscription
+def _create_dlq_topic(topic_name: str, subscription_name: str):
+    """Create a Dead Letter Queue topic and debug subscription"""
     dlq_topic_name = f"{topic_name}-{subscription_name}-dlq"
     dlq_topic = gcp.pubsub.Topic(
         dlq_topic_name,
@@ -42,16 +35,25 @@ def create_subscription_with_push_and_dlq(
         project=gcp.config.project,
     )
 
-    # Create a debug pull subscription for failed messages in the DLQ topic
-    dlq_topic_debug_subscription = gcp.pubsub.Subscription(
+    dlq_debug_subscription = gcp.pubsub.Subscription(
         f"{dlq_topic_name}-debug",
         name=f"{dlq_topic_name}-debug",
         topic=dlq_topic.name,
         **DEFAULT_SUBSCRIPTION_KWARGS
     )
 
-    # Create the subscription to push to the provided HTTP endpoint with a DLQ
-    subscription = gcp.pubsub.Subscription(
+    return dlq_topic, dlq_debug_subscription, dlq_topic_name
+
+
+def _create_push_subscription(
+        topic_name: str,
+        subscription_name: str,
+        http_endpoint: str,
+        service_account: gcp.serviceaccount.Account,
+        dlq_topic_name: str
+):
+    """Create the main push subscription with DLQ configuration"""
+    return gcp.pubsub.Subscription(
         f"{topic_name}-{subscription_name}",
         name=f"{topic_name}-{subscription_name}",
         topic=topic_name,
@@ -75,8 +77,10 @@ def create_subscription_with_push_and_dlq(
         **DEFAULT_SUBSCRIPTION_KWARGS
     )
 
-    # Create DLQ monitoring alert policy
-    alert_policy = gcp.monitoring.AlertPolicy(
+
+def _create_dlq_alert_policy(topic_name: str, subscription_name: str, dlq_topic_name: str):
+    """Create monitoring alert policy for DLQ message accumulation"""
+    return gcp.monitoring.AlertPolicy(
         f"{dlq_topic_name}-alert",
         display_name=f"DLQ Messages: {topic_name}-{subscription_name}",
         documentation=gcp.monitoring.AlertPolicyDocumentationArgs(
@@ -106,7 +110,26 @@ def create_subscription_with_push_and_dlq(
         project=gcp.config.project
     )
 
-    return dlq_topic, dlq_topic_debug_subscription, subscription, alert_policy
+
+def create_subscription_with_push_and_dlq(
+        topic_name: str,
+        subscription_name: str,
+        http_endpoint: str,
+        service_account: gcp.serviceaccount.Account
+):
+    """Create a push subscription with DLQ and monitoring"""
+    if not is_pulumi:
+        return None, None, None, None
+
+    dlq_topic, dlq_debug_subscription, dlq_topic_name = _create_dlq_topic(topic_name, subscription_name)
+
+    subscription = _create_push_subscription(
+        topic_name, subscription_name, http_endpoint, service_account, dlq_topic_name
+    )
+
+    alert_policy = _create_dlq_alert_policy(topic_name, subscription_name, dlq_topic_name)
+
+    return dlq_topic, dlq_debug_subscription, subscription, alert_policy
 
 
 DEFAULT_SUBSCRIPTION_KWARGS = dict(
