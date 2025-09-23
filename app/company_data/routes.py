@@ -1,38 +1,27 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, Response
 from google.cloud import storage
 from pydantic import BaseModel, Field
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.foundation.server import dependencies, Logger
-from app.shared import Company, CompanyStatus
+from app.shared import Company
 from app.shared.dependencies import get_scrapin_clinet, get_serpapi_client, get_genai_client, get_spectr_client
-from .dependencies import get_job_dispatcher
-from .job_dispatcher import JobDispatcher
+from .constants import ACTIVE_COMPANY_STATUSES
 from .data_syncer import DataSyncer
 from .linkedin_fetcher import LinkedInFetcher
 from .googleplay_fetcher import GooglePlayFetcher
 from .apple_appstore_fetcher import AppleAppStoreFetcher
 from .google_jobs import GoogleJobsFetcher, GoogleJobsDataSyncer
 from .spectr_fetcher import SpectrFetcher
+from .data_freshness_monitor import DataFreshnessMonitor
+from .dependencies import get_job_dispatcher
+from .job_dispatcher import JobDispatcher
 
 router = APIRouter(
     prefix="/company_data",
 )
-
-ACTIVE_COMPANY_STATUSES = [
-    CompanyStatus.INVESTED,
-    CompanyStatus.NEW_COMPANY,
-    CompanyStatus.OFFERED_TO_INVEST,
-    CompanyStatus.SUBMITTED_AL,
-    CompanyStatus.DILIGENCE,
-    CompanyStatus.CONTACTED,
-    CompanyStatus.MEETING,
-    CompanyStatus.CHECKIN,
-    CompanyStatus.DOCS_SENT,
-    CompanyStatus.RADAR
-]
 
 
 class SyncRequest(BaseModel):
@@ -62,6 +51,22 @@ async def trigger_sync(
     return
 
 
+@router.get('/freshness')
+async def get_data_freshness_report(
+    response: Response,
+    database: AsyncDatabase = Depends(dependencies.get_default_database),
+    logger: Logger = Depends(dependencies.get_logger),
+):
+    """Get data freshness monitoring report for active companies"""
+    monitor = DataFreshnessMonitor(database, logger)
+    report = await monitor.check_data_freshness()
+
+    if not report["isHealthy"]:
+        response.status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+
+    return report
+
+
 @router.post('/pull/linkedin', status_code=HTTPStatus.ACCEPTED)
 async def sync_company_linkedin(
         data: Company = Body(),
@@ -75,14 +80,14 @@ async def sync_company_linkedin(
         scrapin_client=scrapin_client,
         logger=logger,
     )
-    
+
     data_syncer = DataSyncer(
         dataset_bucket=dataset_bucket,
         database=database,
         data_fetcher=fetcher,
         logger=logger,
     )
-    
+
     await data_syncer.sync_one(company=data)
     return
 
@@ -100,14 +105,14 @@ async def sync_company_googleplay(
         serpapi_client=serpapi_client,
         logger=logger,
     )
-    
+
     data_syncer = DataSyncer(
         dataset_bucket=dataset_bucket,
         database=database,
         data_fetcher=fetcher,
         logger=logger,
     )
-    
+
     await data_syncer.sync_one(company=data)
     return
 
@@ -125,14 +130,14 @@ async def sync_company_appstore(
         serpapi_client=serpapi_client,
         logger=logger,
     )
-    
+
     data_syncer = DataSyncer(
         dataset_bucket=dataset_bucket,
         database=database,
         data_fetcher=fetcher,
         logger=logger,
     )
-    
+
     await data_syncer.sync_one(company=data)
     return
 
@@ -176,13 +181,13 @@ async def sync_company_spectr(
         spectr_client=spectr_client,
         logger=logger,
     )
-    
+
     data_syncer = DataSyncer(
         dataset_bucket=dataset_bucket,
         database=database,
         data_fetcher=fetcher,
         logger=logger,
     )
-    
+
     await data_syncer.sync_one(company=data)
     return
