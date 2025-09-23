@@ -33,7 +33,7 @@ def create_subscription_with_push_and_dlq(
         service_account: gcp.serviceaccount.Account
 ):
     if not is_pulumi:
-        return None, None, None
+        return None, None, None, None
     # Create a Dead Letter Queue (DLQ) topic for the subscription
     dlq_topic_name = f"{topic_name}-{subscription_name}-dlq"
     dlq_topic = gcp.pubsub.Topic(
@@ -75,7 +75,38 @@ def create_subscription_with_push_and_dlq(
         **DEFAULT_SUBSCRIPTION_KWARGS
     )
 
-    return dlq_topic, dlq_topic_debug_subscription, subscription
+    # Create DLQ monitoring alert policy
+    alert_policy = gcp.monitoring.AlertPolicy(
+        f"{dlq_topic_name}-alert",
+        display_name=f"DLQ Messages: {topic_name}-{subscription_name}",
+        documentation=gcp.monitoring.AlertPolicyDocumentationArgs(
+            content=f"Messages are accumulating in DLQ for {topic_name}-{subscription_name}. Check integration health and debug subscription for failed messages.",
+            mime_type="text/markdown"
+        ),
+        conditions=[
+            gcp.monitoring.AlertPolicyConditionArgs(
+                display_name=f"DLQ message count > 0",
+                condition_threshold=gcp.monitoring.AlertPolicyConditionConditionThresholdArgs(
+                    filter=f'resource.type="pubsub_subscription" AND resource.labels.subscription_id="{dlq_topic_name}-debug" AND metric.type="pubsub.googleapis.com/subscription/num_undelivered_messages"',
+                    comparison="COMPARISON_GT",
+                    threshold_value=0,
+                    duration="300s",  # 5 minutes
+                    aggregations=[
+                        gcp.monitoring.AlertPolicyConditionConditionThresholdAggregationArgs(
+                            alignment_period="300s",
+                            per_series_aligner="ALIGN_MAX",
+                            cross_series_reducer="REDUCE_SUM"
+                        )
+                    ]
+                )
+            )
+        ],
+        combiner="OR",
+        enabled=True,
+        project=gcp.config.project
+    )
+
+    return dlq_topic, dlq_topic_debug_subscription, subscription, alert_policy
 
 
 DEFAULT_SUBSCRIPTION_KWARGS = dict(
