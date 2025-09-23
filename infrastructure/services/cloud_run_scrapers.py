@@ -5,7 +5,7 @@ from delivery import docker_repository_url
 from tools.run import create_cloud_run_secret_env, create_cloud_run_with_monitoring
 
 
-scrapers_cloud_run, scrapers_alert_policy, allow_unauthenticated = create_cloud_run_with_monitoring(
+scrapers_cloud_run, scrapers_5xx_alert, _, _, allow_unauthenticated = create_cloud_run_with_monitoring(
     service_name="scrapers-v2",
     image=f"{docker_repository_url}/scrapers:latest",
     envs=[

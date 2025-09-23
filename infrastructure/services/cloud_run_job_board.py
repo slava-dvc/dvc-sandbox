@@ -6,7 +6,7 @@ from tools.run import repo_short_sha, create_cloud_run_with_monitoring
 
 from .secrets import MONGODB_URI
 
-job_board_cloud_run, job_board_alert_policy, allow_unauthenticated_job_board = create_cloud_run_with_monitoring(
+job_board_cloud_run, job_board_5xx_alert, _, _, allow_unauthenticated_job_board = create_cloud_run_with_monitoring(
     service_name="job-board",
     image=f"{docker_repository_url}/synapse:{repo_short_sha()}",
     args=["job-board"],

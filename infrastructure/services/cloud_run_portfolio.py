@@ -7,7 +7,7 @@ from tools.run import create_cloud_run_secret_env, repo_short_sha, create_cloud_
 from .secrets import AIRTABLE_API_KEY, MONGODB_URI
 
 
-portfolio_cloud_run, portfolio_alert_policy, _ = create_cloud_run_with_monitoring(
+portfolio_cloud_run, portfolio_5xx_alert, _, _, _ = create_cloud_run_with_monitoring(
     service_name="portfolio",
     image=f"{docker_repository_url}/synapse:{repo_short_sha()}",
     args=['portfolio'],

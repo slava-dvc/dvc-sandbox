@@ -8,7 +8,7 @@ from .secrets import ANTHROPIC_KEY, OPENAI_API_KEY, PERPLEXITY_KEY
 
 
 # Cloud Run service with monitoring
-dealflow_cloud_run, dealflow_alert_policy, _ = create_cloud_run_with_monitoring(
+dealflow_cloud_run, dealflow_5xx_alert, _, _, _ = create_cloud_run_with_monitoring(
     service_name="dealflow",
     image=f"{docker_repository_url}/dealflow:latest",
     envs=[

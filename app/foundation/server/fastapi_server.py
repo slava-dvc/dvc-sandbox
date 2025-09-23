@@ -14,7 +14,7 @@ from pymongo.errors import PyMongoError
 from pymongo.asynchronous import database
 from google.cloud import firestore, pubsub, storage
 from functools import cached_property
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware import gzip, trustedhost
 
 from .async_server import AsyncServer
@@ -143,6 +143,18 @@ class FastAPIServer(AsyncServer):
             if 'exception' in request.query_params:
                 raise RuntimeError("Exception requested")
             return "OK"
+
+        @app.get('/healthz')
+        async def health_check(
+                request: Request,
+                logger = Depends(get_logger),
+        ):
+            try:
+                await self.default_database.command('ping')
+                return {"status": "healthy"}
+            except Exception as e:
+                logger.error("Health check failed", labels={"error": str(e)})
+                raise HTTPException(status_code=503, detail={"status": "unhealthy", "error": str(e)})
 
     def execute(self):
         multiprocessing.set_start_method('spawn')

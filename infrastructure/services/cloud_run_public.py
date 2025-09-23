@@ -7,7 +7,7 @@ from tools.run import create_cloud_run_secret_env, repo_short_sha, create_cloud_
 from .secrets import MONGODB_URI, OPENAI_API_KEY
 
 # Cloud Run service for Public API with monitoring
-public_cloud_run, public_alert_policy, allow_unauthenticated = create_cloud_run_with_monitoring(
+public_cloud_run, public_5xx_alert, _, _, allow_unauthenticated = create_cloud_run_with_monitoring(
     service_name="public",
     image=f"{docker_repository_url}/synapse:{repo_short_sha()}",
     args=["public"],
