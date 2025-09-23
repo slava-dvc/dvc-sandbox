@@ -40,7 +40,7 @@ ci: test test-backend-dry-run test-job-dry-run test-public-dry-run
 docker-build:
 	@echo "Building image ${IMAGE}"
 	docker pull ${IMAGE_LATEST} || true
-	docker build -t ${IMAGE} -t ${IMAGE_LATEST} --cache-from ${IMAGE_LATEST} .
+	docker build --network=host -t ${IMAGE} -t ${IMAGE_LATEST} --cache-from ${IMAGE_LATEST} .
 
 .PHONY: docker-push
 docker-push: docker-build

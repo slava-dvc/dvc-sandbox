@@ -5,7 +5,6 @@ from typing import Dict, Any, AnyStr as Str
 
 import httpx
 import uvicorn
-import openai
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
@@ -14,7 +13,7 @@ from pymongo.errors import PyMongoError
 from pymongo.asynchronous import database
 from google.cloud import firestore, pubsub, storage
 from functools import cached_property
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware import gzip, trustedhost
 
 from .async_server import AsyncServer
@@ -70,9 +69,6 @@ class FastAPIServer(AsyncServer):
     def storage_client(self) -> Any:
         return storage.Client()
 
-    @cached_property
-    def openai_client(self) -> openai.AsyncOpenAI:
-        return openai.AsyncOpenAI(http_client=self.http_client)
 
     @cached_property
     def default_database(self) -> database.AsyncDatabase:
@@ -86,7 +82,6 @@ class FastAPIServer(AsyncServer):
             "publisher_client": self.publisher_client,
             "mongo_client": self.mongo_client,
             "storage_client": self.storage_client,
-            "openai_client": self.openai_client,
             "config": self.config,
             "args": self.args,
             "logging_client": self.logging_client,
@@ -143,6 +138,18 @@ class FastAPIServer(AsyncServer):
             if 'exception' in request.query_params:
                 raise RuntimeError("Exception requested")
             return "OK"
+
+        @app.get('/healthz')
+        async def health_check(
+                request: Request,
+                logger = Depends(get_logger),
+        ):
+            try:
+                await self.default_database.command('ping')
+                return {"status": "healthy"}
+            except Exception as e:
+                logger.error("Health check failed", labels={"error": str(e)})
+                raise HTTPException(status_code=503, detail={"status": "unhealthy", "error": str(e)})
 
     def execute(self):
         multiprocessing.set_start_method('spawn')

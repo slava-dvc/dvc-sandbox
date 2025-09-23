@@ -65,10 +65,10 @@ async def create_from_docs_consume(
     database: AsyncDatabase = Depends(dependencies.get_default_database),
     logger: Logger = Depends(dependencies.get_logger),
     storage_client: storage.Client = Depends(dependencies.get_storage_client),
-    openai_client: openai.AsyncOpenAI = Depends(dependencies.get_openai_client),
     http_client: httpx.AsyncClient = Depends(dependencies.get_http_client),
     job_dispatcher: JobDispatcher = Depends(get_job_dispatcher),
 ):
     """Pub/Sub consumer endpoint to create company from documents"""
+    openai_client = openai.AsyncOpenAI(http_client=http_client)
     flow = CompanyFromDocsFlow(database, storage_client, openai_client, http_client, job_dispatcher, logger)
     await flow(create_request)
