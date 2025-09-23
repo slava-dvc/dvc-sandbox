@@ -5,7 +5,6 @@ from typing import Dict, Any, AnyStr as Str
 
 import httpx
 import uvicorn
-import openai
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
@@ -70,9 +69,6 @@ class FastAPIServer(AsyncServer):
     def storage_client(self) -> Any:
         return storage.Client()
 
-    @cached_property
-    def openai_client(self) -> openai.AsyncOpenAI:
-        return openai.AsyncOpenAI(http_client=self.http_client)
 
     @cached_property
     def default_database(self) -> database.AsyncDatabase:
@@ -86,7 +82,6 @@ class FastAPIServer(AsyncServer):
             "publisher_client": self.publisher_client,
             "mongo_client": self.mongo_client,
             "storage_client": self.storage_client,
-            "openai_client": self.openai_client,
             "config": self.config,
             "args": self.args,
             "logging_client": self.logging_client,

@@ -3,7 +3,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from google.cloud import firestore, pubsub, logging, storage
 from httpx import AsyncClient
-import openai
 
 from .config import AppConfig
 from .logger import CloudLogger, LocalLogger, Logger
@@ -11,7 +10,7 @@ from .logger import CloudLogger, LocalLogger, Logger
 __all__ = [
     'get_config', 'get_mongo_client', 'get_default_database', 'get_firestore_client',
     'get_publisher_client', 'get_http_client', 'get_auth_token', 'get_logger', 'get_storage_client',
-    'get_dataset_bucket', 'get_openai_client'
+    'get_dataset_bucket'
 ]
 
 
@@ -67,10 +66,6 @@ def get_storage_client(request: Request) -> storage.Client:
 def get_dataset_bucket(request: Request) -> storage.Bucket:
     return request.state.dataset_bucket
 
-
-# Dependency to get the OpenAI client
-def get_openai_client(request: Request) -> openai.AsyncOpenAI:
-    return request.state.openai_client
 
 
 # Dependency to extract token from a Bearer authorization header
