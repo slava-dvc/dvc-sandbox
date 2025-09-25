@@ -234,24 +234,22 @@ class CompanyFromDocsFlow:
         if not request.name:
             update_fields['name'] = key_fields.get('name')
 
-        if not request.website:
-            extracted_website = key_fields.get('website')
-            if extracted_website and is_valid_website_url(extracted_website):
-                normalized_website = normalize_url(extracted_website.strip())
-                domain = extract_domain(extracted_website.strip())
-                update_fields['website'] = normalized_website
-                update_fields['domain'] = domain
+        website = request.website or key_fields.get('website')
+        if website and is_valid_website_url(website):
+            update_fields['website'] = normalize_url(website.strip())
+            update_fields['domain'] = extract_domain(website.strip())
 
         if not request.email:
             update_fields['email'] = key_fields.get('email')
 
         update_fields['blurb'] = key_fields.get('blurb')
-        update_fields['ourData'] = data
-        update_fields['ourData']['linkToDeck'] = public_url
-
-        # Add processing status and timestamps
         update_fields['status'] = CompanyStatus.NEW_COMPANY
         update_fields['updatedAt'] = datetime.now()
+
+        # Set ourData fields using dot notation to preserve existing fields
+        data['linkToDeck'] = public_url
+        for field, value in data.items():
+            update_fields[f'ourData.{field}'] = value
 
         result = await self.database["companies"].find_one_and_update(
             {"_id": ObjectId(request.id)},

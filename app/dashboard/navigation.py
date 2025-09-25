@@ -90,7 +90,7 @@ def build_company_sources(pitch_deck_file, pitch_deck_url):
     return sources
 
 
-def create_company_in_db(name, email, website, sources):
+def create_company_in_db(name, email, website, sources, source, introduced_by):
     """Create company in MongoDB with PROCESSING status"""
     db = mongo_database()
     companies_collection = db.get_collection('companies')
@@ -100,7 +100,9 @@ def create_company_in_db(name, email, website, sources):
         "website": website.strip() if website else None,
         "status": CompanyStatus.PROCESSING,
         "ourData": {
-            "email": email.strip()
+            "email": email.strip(),
+            "source": source,
+            "introducedBy": introduced_by
         },
         "createdAt": datetime.now(),
         "sources": sources  # Store sources for processing
@@ -128,6 +130,8 @@ def add_new_company():
         company_name = st.text_input("Company Name", placeholder="Enter company name...")
         company_email = st.text_input("Company Email", placeholder="contact@company.com")
         website = st.text_input("Website", placeholder="https://company.com")
+        source = st.selectbox("Source", options=['Introduction', 'Cold email', 'Direct from Founder', 'YC'])
+        introduced_by = st.text_input("Introduced By", value=st.user.given_name + ' ' + st.user.family_name)
 
         st.subheader("Pitch Deck")
         pitch_deck_file = st.file_uploader(
@@ -158,7 +162,7 @@ def add_new_company():
                 return
             
             # Create company in database first
-            company_id = create_company_in_db(company_name, company_email, website, sources)
+            company_id = create_company_in_db(company_name, company_email, website, sources, source, introduced_by)
             
             # Build full company data for Pub/Sub
             company_data = {
@@ -166,7 +170,9 @@ def add_new_company():
                 "name": company_name.strip(),
                 "email": company_email.strip(),
                 "website": website.strip() if website else None,
-                "sources": sources
+                "sources": sources,
+                "source": source,
+                "introduced_by": introduced_by
             }
             
             # Publish to queue for processing

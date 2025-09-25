@@ -24,3 +24,5 @@ class CompanyCreateRequest(BaseModel):
     email: str
     website: str | None = None
     sources: list[DocumentSource]
+    source: str | None = None
+    introduced_by: str | None = None

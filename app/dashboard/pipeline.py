@@ -65,6 +65,14 @@ def _render_company_card(company: Company):
     company_website = company.website
     company_stage = company.ourData.get('currentStage')
     source = company.ourData.get('source')
+    introduced_by = company.ourData.get('introducedBy')
+    if introduced_by:
+        if isinstance(introduced_by, list):
+            introduced_by = ' and '.join([str(person) for person in introduced_by])
+        else:
+            introduced_by = str(introduced_by)
+        source = ' by '.join([source, introduced_by])
+
     logo_column, info_column, signals_column, button_column = st.columns([1, 7, 4, 1], gap='small', vertical_alignment='center')
 
     with logo_column:
