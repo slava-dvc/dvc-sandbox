@@ -139,7 +139,7 @@ class FastAPIServer(AsyncServer):
                 raise RuntimeError("Exception requested")
             return "OK"
 
-        @app.get('/healthz')
+        @app.get('/status')
         async def health_check(
                 request: Request,
                 logger = Depends(get_logger),

@@ -73,7 +73,7 @@ def _create_uptime_check(service_name: str, service_uri):
         timeout="10s",
         period="900s",  # 15 minutes
         http_check=gcp.monitoring.UptimeCheckConfigHttpCheckArgs(
-            path="/healthz",
+            path="/status",
             port=443,
             use_ssl=True,
             validate_ssl=True

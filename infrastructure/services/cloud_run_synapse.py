@@ -30,7 +30,7 @@ synapse_cloud_run, synapse_5xx_alert, synapse_uptime_check, synapse_uptime_alert
         }
     ),
     service_account_email=cloud_run_service_account.email,
-    enable_uptime_monitoring=True,  # Enable uptime monitoring for synapse (has /healthz endpoint)
+    enable_uptime_monitoring=True,
     max_instances=8
 )
 
