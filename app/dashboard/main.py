@@ -7,10 +7,6 @@ st.set_page_config(
     page_icon = "resources/favicon.png"
 )
 
-EMAIL_ALLOW_LIST = {
-    'galilei.mail@gmail.com',
-    'neverproof@gmail.com',
-}
 
 def login_screen():
     st.header("This app is private.")
@@ -20,7 +16,7 @@ def login_screen():
 
 def is_email_allowed():
     email = st.user.email
-    return email in EMAIL_ALLOW_LIST or email.endswith('davidovs.com')
+    return email.endswith('davidovs.com')
 
 
 def handle_not_authorized():
