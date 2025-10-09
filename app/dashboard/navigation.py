@@ -5,8 +5,9 @@ from google.cloud import storage, pubsub
 from google.auth import default
 from infrastructure.queues.company_creation import company_create_from_docs_topic_name
 from app.shared.company import CompanyStatus
+from app.shared.url_utils import extract_domain
 from app.foundation.primitives import datetime
-from .data import mongo_database
+from .data import mongo_collection
 from .fund import fund_page
 from .company import company_page
 from .jobs import jobs_page
@@ -30,7 +31,7 @@ def get_publisher_client():
     return pubsub.PublisherClient()
 
 
-def validate_company_form(name, email, pitch_deck_url, pitch_deck_file):
+def validate_company_form(name, email, website, pitch_deck_url, pitch_deck_file):
     """Validate company form inputs"""
     if not name.strip():
         return "Company Name is required"
@@ -40,6 +41,12 @@ def validate_company_form(name, email, pitch_deck_url, pitch_deck_file):
         return "Pitch Deck is required"
     if pitch_deck_url and pitch_deck_file:
         return "Please upload either a PDF file or a link to a PDF file"
+
+    # Check for existing company with same domain
+    existing_company = check_existing_company_by_domain(website)
+    if existing_company:
+        return f"Company with domain already exists: {existing_company.get('name', 'Unknown')}"
+
     return None
 
 
@@ -92,8 +99,7 @@ def build_company_sources(pitch_deck_file, pitch_deck_url):
 
 def create_company_in_db(name, email, website, sources, source, introduced_by):
     """Create company in MongoDB with PROCESSING status"""
-    db = mongo_database()
-    companies_collection = db.get_collection('companies')
+    companies_collection = mongo_collection('companies')
     
     company_doc = {
         "name": name.strip(),
@@ -117,11 +123,70 @@ def publish_company_to_queue(company_data):
     publisher = get_publisher_client()
     _, project_id = default()
     topic_path = publisher.topic_path(project_id, company_create_from_docs_topic_name)
-    
+
     message_data = json.dumps(company_data).encode('utf-8')
-    
+
     future = publisher.publish(topic_path, message_data)
     return future.result()
+
+
+def check_existing_company_by_domain(website_url):
+    """Check if company with same domain already exists in database"""
+    if not website_url or not website_url.strip():
+        return None
+
+    domain = extract_domain(website_url.strip())
+    if not domain:
+        return None
+
+    companies_collection = mongo_collection('companies')
+
+    # Find all companies with websites and check exact domain match
+    companies_with_websites = companies_collection.find({
+        "website": {"$exists": True, "$ne": None}
+    })
+
+    for company in companies_with_websites:
+        existing_domain = extract_domain(company.get("website", ""))
+        if existing_domain and existing_domain.lower() == domain.lower():
+            return company
+
+    return None
+
+
+def submit_new_company(company_name, company_email, website, source, introduced_by, pitch_deck_url, pitch_deck_file):
+    """Handle the submission logic for creating a new company"""
+    # Validate form
+    error = validate_company_form(company_name, company_email, website, pitch_deck_url, pitch_deck_file)
+    if error:
+        st.error(error)
+        return False
+
+    try:
+        # Build sources
+        sources = build_company_sources(pitch_deck_file, pitch_deck_url)
+    except ValueError as e:
+        st.error(str(e))
+        return False
+
+    # Create company in database first
+    company_id = create_company_in_db(company_name, company_email, website, sources, source, introduced_by)
+
+    # Build full company data for Pub/Sub
+    company_data = {
+        "id": company_id,
+        "name": company_name.strip(),
+        "email": company_email.strip(),
+        "website": website.strip() if website else None,
+        "sources": sources,
+        "source": source,
+        "introduced_by": introduced_by
+    }
+
+    # Publish to queue for processing
+    message_id = publish_company_to_queue(company_data)
+    st.success("Company submitted successfully! It will appear in pipeline shortly.")
+    return True
 
 
 @st.dialog("New company")
@@ -148,36 +213,7 @@ def add_new_company():
         submitted = st.form_submit_button("Submit", type="primary")
 
         if submitted:
-            # Validate form
-            error = validate_company_form(company_name, company_email, pitch_deck_url, pitch_deck_file)
-            if error:
-                st.error(error)
-                return
-
-            try:
-                # Build sources
-                sources = build_company_sources(pitch_deck_file, pitch_deck_url)
-            except ValueError as e:
-                st.error(str(e))
-                return
-            
-            # Create company in database first
-            company_id = create_company_in_db(company_name, company_email, website, sources, source, introduced_by)
-            
-            # Build full company data for Pub/Sub
-            company_data = {
-                "id": company_id,
-                "name": company_name.strip(),
-                "email": company_email.strip(),
-                "website": website.strip() if website else None,
-                "sources": sources,
-                "source": source,
-                "introduced_by": introduced_by
-            }
-            
-            # Publish to queue for processing
-            message_id = publish_company_to_queue(company_data)
-            st.success("Company submitted successfully! It will appear in pipeline shortly.")
+            submit_new_company(company_name, company_email, website, source, introduced_by, pitch_deck_url, pitch_deck_file)
 
 
 

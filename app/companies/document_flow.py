@@ -132,7 +132,8 @@ class CompanyFromDocsFlow:
             "Content-Type": "application/json",
             "Deal": str(company_id),
         }
-        result = await self.http_client.post(url, headers=headers, json=data)
+        timeout = httpx.Timeout(60*20)
+        result = await self.http_client.post(url, headers=headers, json=data, timeout=timeout)
         result.raise_for_status()
         extracted_data = result.json()
 
@@ -243,7 +244,6 @@ class CompanyFromDocsFlow:
             update_fields['email'] = key_fields.get('email')
 
         update_fields['blurb'] = key_fields.get('blurb')
-        update_fields['status'] = CompanyStatus.NEW_COMPANY
         update_fields['updatedAt'] = datetime.now()
 
         # Set ourData fields using dot notation to preserve existing fields
@@ -259,6 +259,13 @@ class CompanyFromDocsFlow:
             },
             return_document=True
         )
+
+        # Update status to NEW_COMPANY only if current status is PROCESSING
+        await self.database["companies"].find_one_and_update(
+            {"_id": ObjectId(request.id), "status": CompanyStatus.PROCESSING},
+            {"$set": {"status": CompanyStatus.NEW_COMPANY}},
+        )
+
         return Company.model_validate(result)
 
     async def _trigger_data_source_updates(self, company: Company):

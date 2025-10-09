@@ -34,6 +34,10 @@ def mongodb_client():
 def mongo_database():
     return mongodb_client().get_default_database('fund')
 
+@st.cache_resource()
+def mongo_collection(collection_name):
+    return mongo_database().get_collection(collection_name)
+
 @st.cache_data(show_spinner=False, ttl=datetime.timedelta(minutes=5))
 def fetch_airtable_as_rows(table_name: str, **options) -> typing.List[dict]:
     api = airtable_api_client()
