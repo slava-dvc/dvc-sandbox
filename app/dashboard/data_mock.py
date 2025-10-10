@@ -3,7 +3,7 @@ Mock data layer for local development - matches production data structure
 """
 import pandas as pd
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from bson import ObjectId
 from app.shared.company import Company
 from app.shared.task import Task
@@ -252,7 +252,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_001",
                 "company_id": company_id,
                 "title": "Review financial projections",
-                "due_date": datetime.now(timezone.utc) + timedelta(days=3),
+                "due_date": date.today() + timedelta(days=3),
                 "assignee": "Alice Johnson",
                 "status": "active",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=1)
@@ -261,7 +261,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_002", 
                 "company_id": company_id,
                 "title": "Schedule follow-up meeting with founders",
-                "due_date": datetime.now(timezone.utc) + timedelta(days=7),
+                "due_date": date.today() + timedelta(days=7),
                 "assignee": "Bob Smith",
                 "status": "active",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=12)
@@ -270,7 +270,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_003",
                 "company_id": company_id, 
                 "title": "Complete initial market research",
-                "due_date": datetime.now(timezone.utc) - timedelta(days=1),
+                "due_date": date.today() - timedelta(days=1),
                 "assignee": "Carol Davis",
                 "status": "completed",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=5)
@@ -284,7 +284,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_004",
                 "company_id": company_id,
                 "title": "Analyze competitive landscape",
-                "due_date": datetime.now(timezone.utc) + timedelta(days=5),
+                "due_date": date.today() + timedelta(days=5),
                 "assignee": "David Wilson",
                 "status": "active", 
                 "created_at": datetime.now(timezone.utc) - timedelta(days=2)
@@ -293,7 +293,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_005",
                 "company_id": company_id,
                 "title": "Review technical architecture",
-                "due_date": datetime.now(timezone.utc) + timedelta(days=10),
+                "due_date": date.today() + timedelta(days=10),
                 "assignee": "Eva Brown",
                 "status": "active",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=6)
@@ -307,7 +307,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_006",
                 "company_id": company_id,
                 "title": "Due diligence on HIPAA compliance",
-                "due_date": datetime.now(timezone.utc) + timedelta(days=14),
+                "due_date": date.today() + timedelta(days=14),
                 "assignee": "Frank Miller",
                 "status": "active",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=3)
