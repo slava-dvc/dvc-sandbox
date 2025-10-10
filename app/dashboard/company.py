@@ -9,6 +9,7 @@ from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 
 from app.dashboard.highlights import TractionMetric, TractionMetrics, NewsItem, show_highlights_for_company
+from app.dashboard.tasks import show_tasks_section
 from app.dashboard.data import (
     get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
     get_companies_v2, app_config, update_company, mongo_database,
@@ -678,6 +679,7 @@ def company_page():
         "Memorandum": show_memorandum,
         "Comments": show_comments,
         "Meetings": show_meetings,
+        "Tasks": show_tasks_section,
     }
     names = []
     if company.status == CompanyStatus.INVESTED:
@@ -692,7 +694,7 @@ def company_page():
         names.append("Signals")
     if company.status == CompanyStatus.INVESTED:
         names.extend(["Asks"])
-    names.extend(['Comments', 'Meetings'])
+    names.extend(['Comments', 'Meetings', 'Tasks'])
     for t, n in zip(st.tabs(names), names):
         with t:
             tabs_config[n](company)
