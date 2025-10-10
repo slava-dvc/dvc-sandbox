@@ -32,15 +32,20 @@ def handle_not_authorized():
 
 st.markdown("""<style> div[data-testid="stMainBlockContainer"] { width: 100% !important; padding: 3rem !important; } </style>""", unsafe_allow_html=True)
 
-# Bypass authentication for local development
-LOCAL_DEV = True  # Set to False when deploying to production
+def main():
+    """Main entry point for the Streamlit app"""
+    # Bypass authentication for local development
+    LOCAL_DEV = True  # Set to False when deploying to production
 
-if LOCAL_DEV:
-    show_navigation()
-else:
-    if not st.user.is_logged_in:
-        login_screen()
-    elif not is_email_allowed():
-        handle_not_authorized()
-    else:
+    if LOCAL_DEV:
         show_navigation()
+    else:
+        if not st.user.is_logged_in:
+            login_screen()
+        elif not is_email_allowed():
+            handle_not_authorized()
+        else:
+            show_navigation()
+
+if __name__ == "__main__":
+    main()
