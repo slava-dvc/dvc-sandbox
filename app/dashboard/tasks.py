@@ -8,12 +8,12 @@ from app.shared.task import Task
 from app.dashboard.data import get_tasks, add_task, update_task, delete_task
 
 
-def show_tasks_section():
+def show_tasks_section(company):
     """Main tasks section for company pages"""
     st.header("📋 Tasks")
     
-    # Get company ID from URL params
-    company_id = st.query_params.get("company_id")
+    # Get company ID from the company object
+    company_id = company.id
     if not company_id:
         st.error("No company selected")
         return
@@ -197,8 +197,9 @@ def get_due_date_color(due_date: date) -> str:
         return "🟢"  # Not urgent
 
 
-def show_task_summary_card(company_id: str):
+def show_task_summary_card(company):
     """Compact task summary for company cards"""
+    company_id = company.id
     tasks = get_tasks(company_id)
     active_count = len([t for t in tasks if t.status == "active"])
     
