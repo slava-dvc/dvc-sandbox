@@ -694,10 +694,18 @@ def company_page():
         names.append("Signals")
     if company.status == CompanyStatus.INVESTED:
         names.extend(["Asks"])
-    names.extend(['Comments', 'Meetings', 'Tasks'])
+    # Calculate active task count for Tasks tab
+    from app.dashboard.data import get_tasks
+    tasks = get_tasks(company.id)
+    active_task_count = len([t for t in tasks if t.status == "active"])
+    tasks_tab_name = f"Tasks({active_task_count})" if active_task_count > 0 else "Tasks"
+    
+    names.extend(['Comments', 'Meetings', tasks_tab_name])
     for t, n in zip(st.tabs(names), names):
         with t:
-            tabs_config[n](company)
+            # Handle dynamic tab names (like Tasks(2)) by extracting the base name
+            base_name = n.split('(')[0] if '(' in n else n
+            tabs_config[base_name](company)
 
     # Show last update timestamps
     update_parts = []
