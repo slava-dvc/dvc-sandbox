@@ -1,5 +1,9 @@
 import streamlit as st
+import os
 from app.dashboard.navigation import show_navigation
+
+# Set local development mode for mock data
+os.environ['LOCAL_DEV'] = 'True'
 
 st.set_page_config(
     page_title="DVC Portfolio Dashboard",
@@ -28,9 +32,15 @@ def handle_not_authorized():
 
 st.markdown("""<style> div[data-testid="stMainBlockContainer"] { width: 100% !important; padding: 3rem !important; } </style>""", unsafe_allow_html=True)
 
-if not st.user.is_logged_in:
-    login_screen()
-elif not is_email_allowed():
-    handle_not_authorized()
-else:
+# Bypass authentication for local development
+LOCAL_DEV = True  # Set to False when deploying to production
+
+if LOCAL_DEV:
     show_navigation()
+else:
+    if not st.user.is_logged_in:
+        login_screen()
+    elif not is_email_allowed():
+        handle_not_authorized()
+    else:
+        show_navigation()

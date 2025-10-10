@@ -592,6 +592,12 @@ def show_memorandum(company: Company):
 
 def get_company_meetings(company: Company):
     """Get meetings for a specific company from the database."""
+    from app.dashboard.data import LOCAL_DEV
+    
+    if LOCAL_DEV:
+        # Return empty list for local development
+        return []
+    
     meetings_collection = mongo_database().meetings
     meetings = list(meetings_collection.find({"companyId": company.id}).sort("createdAt", -1))
     return meetings

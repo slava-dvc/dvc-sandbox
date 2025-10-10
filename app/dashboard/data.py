@@ -10,6 +10,13 @@ from app.shared.company import Company
 from app.foundation.primitives import datetime
 from app.foundation.server import AppConfig
 from google.cloud import firestore
+from .data_mock import get_mock_companies, get_mock_investments, get_mock_jobs, get_mock_company_by_id, get_mock_companies_by_status
+
+# Set local development mode for mock data (override any existing value)
+os.environ['LOCAL_DEV'] = 'True'
+
+# Check if we're in local development mode
+LOCAL_DEV = os.getenv('LOCAL_DEV', 'False').lower() == 'true'
 
 
 AIRTABLE_BASE_ID = 'appRfyOgGDu7UKmeD'
@@ -24,22 +31,32 @@ def app_config() -> AppConfig:
 
 @st.cache_resource
 def airtable_api_client() -> Api:
+    if LOCAL_DEV:
+        return None  # Mock API client for local development
     return Api(os.environ['AIRTABLE_API_KEY'])
 
 @st.cache_resource
 def mongodb_client():
+    if LOCAL_DEV:
+        return None  # Mock client for local development
     return MongoClient(os.environ['MONGODB_URI'], tz_aware=True)
 
 @st.cache_resource()
 def mongo_database():
+    if LOCAL_DEV:
+        return None  # Mock database for local development
     return mongodb_client().get_default_database('fund')
 
 @st.cache_resource()
 def mongo_collection(collection_name):
+    if LOCAL_DEV:
+        return None  # Mock collection for local development
     return mongo_database().get_collection(collection_name)
 
 @st.cache_data(show_spinner=False, ttl=datetime.timedelta(minutes=5))
 def fetch_airtable_as_rows(table_name: str, **options) -> typing.List[dict]:
+    if LOCAL_DEV:
+        return []  # Mock empty rows for local development
     api = airtable_api_client()
     return api.table( AIRTABLE_BASE_ID, table_name).all(**options)
 
@@ -50,10 +67,41 @@ def fetch_airtable_as_df(table_name: str, **options) -> pd.DataFrame:
 
 
 def get_investments(**options):
+    if LOCAL_DEV:
+        return get_mock_investments(**options)
     return fetch_airtable_as_df('tblrsrZTHW8famwpw', **options)
 
 
 def get_companies_v2(query: dict = None, sort: typing.List[typing.Tuple[str, int]] = None, projection=None) -> typing.List[Company]:
+    if LOCAL_DEV:
+        mock_companies = get_mock_companies(query, sort)
+        return [
+            Company(
+                id=str(company['_id']),
+                name=company.get('name', ''),
+                status=company.get('status', ''),
+                website=company.get('website', ''),
+                blurb=company.get('blurb', ''),
+                createdAt=company.get('createdAt'),
+                ourData={
+                    'mainIndustry': company.get('mainIndustry', ''),
+                    'summary': company.get('summary', ''),
+                    'problem': company.get('problem', ''),
+                    'marketSize': company.get('marketOpportunity', ''),
+                    'targetMarket': company.get('mainIndustry', ''),
+                    'bulletPoints': company.get('bulletPoints', []),
+                    'signals': company.get('signals', ''),
+                    'fundingStage': company.get('fundingStage', ''),
+                    'team': company.get('team', []),
+                    'partnerships': company.get('partnerships', []),
+                    'metrics': company.get('metrics', {})
+                },
+                spectrData={
+                    'description': company.get('solution', '')
+                }
+            ) for company in mock_companies
+        ]
+    
     db = mongo_database()
     companies_collection = db.get_collection('companies')
     companies = companies_collection.find(query or {}, sort=sort, projection=projection).to_list()
@@ -72,25 +120,49 @@ def update_company(company_id: str, fields: dict):
 
 
 def get_ask_to_task(**options):
+    if LOCAL_DEV:
+        return pd.DataFrame(columns=['id'])
     return fetch_airtable_as_df('tblos3pGBciCaxXp0', **options)
 
 
 def get_people(**options):
+    if LOCAL_DEV:
+        # Return mock DataFrame with expected structure for local development
+        mock_people = [
+            {
+                'id': 'person_001',
+                'Founder of Company': ['68e69a2dc32b590896149739'],  # Generous company ID
+                'Name': 'Kyle Montgomery',
+                'Role': 'Co-founder & CEO'
+            },
+            {
+                'id': 'person_002', 
+                'Founder of Company': ['68e69a2dc32b590896149739'],  # Generous company ID
+                'Name': 'Vlad Turcu',
+                'Role': 'Co-founder & CTO'
+            }
+        ]
+        return pd.DataFrame(mock_people).set_index('id')
     return fetch_airtable_as_df('tbl5cyHdQ9ijkbz7K', **options)
 
 
 def get_updates(**options):
+    if LOCAL_DEV:
+        return pd.DataFrame(columns=['id'])
     return fetch_airtable_as_df('tblBA51bFtn6dZmRX', **options)
 
 
 def get_portfolio(**options):
+    if LOCAL_DEV:
+        return pd.DataFrame(columns=['id'])
     return fetch_airtable_as_df('tblxeUBhlLFnoG6QC', **options)
 
 
 @st.cache_data(show_spinner=False, ttl=datetime.timedelta(minutes=5))
 def get_jobs(**options):
     """Fetch jobs from MongoDB jobs collection"""
-
+    if LOCAL_DEV:
+        return get_mock_jobs(**options)
     
     client = mongodb_client()
     db = client.get_default_database('fund')
