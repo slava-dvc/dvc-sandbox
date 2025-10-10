@@ -6,6 +6,7 @@ import typing
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 from app.shared.company import Company
+from app.shared.task import Task
 
 # Mock companies data matching the structure from screenshots
 MOCK_COMPANIES = [
@@ -236,3 +237,82 @@ def get_mock_company_by_id(company_id: str) -> typing.Optional[Company]:
 def get_mock_companies_by_status(status: str) -> list:
     """Return mock companies filtered by status"""
     return [company for company in MOCK_COMPANIES if company.get('status') == status]
+
+
+# ============================================================================
+# MOCK TASK DATA
+# ============================================================================
+
+def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
+    """Return mock tasks for a specific company"""
+    # Mock tasks for Generous company (68e69a2dc32b590896149739)
+    if company_id == "68e69a2dc32b590896149739":
+        return [
+            {
+                "id": "task_001",
+                "company_id": company_id,
+                "title": "Review financial projections",
+                "due_date": datetime.now(timezone.utc) + timedelta(days=3),
+                "assignee": "Alice Johnson",
+                "status": "active",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=1)
+            },
+            {
+                "id": "task_002", 
+                "company_id": company_id,
+                "title": "Schedule follow-up meeting with founders",
+                "due_date": datetime.now(timezone.utc) + timedelta(days=7),
+                "assignee": "Bob Smith",
+                "status": "active",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=12)
+            },
+            {
+                "id": "task_003",
+                "company_id": company_id, 
+                "title": "Complete initial market research",
+                "due_date": datetime.now(timezone.utc) - timedelta(days=1),
+                "assignee": "Carol Davis",
+                "status": "completed",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=5)
+            }
+        ]
+    
+    # Mock tasks for TechFlow company (68e69a2dc32b590896149740)
+    elif company_id == "68e69a2dc32b590896149740":
+        return [
+            {
+                "id": "task_004",
+                "company_id": company_id,
+                "title": "Analyze competitive landscape",
+                "due_date": datetime.now(timezone.utc) + timedelta(days=5),
+                "assignee": "David Wilson",
+                "status": "active", 
+                "created_at": datetime.now(timezone.utc) - timedelta(days=2)
+            },
+            {
+                "id": "task_005",
+                "company_id": company_id,
+                "title": "Review technical architecture",
+                "due_date": datetime.now(timezone.utc) + timedelta(days=10),
+                "assignee": "Eva Brown",
+                "status": "active",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=6)
+            }
+        ]
+    
+    # Mock tasks for HealthSync company (68e69a2dc32b590896149741)
+    elif company_id == "68e69a2dc32b590896149741":
+        return [
+            {
+                "id": "task_006",
+                "company_id": company_id,
+                "title": "Due diligence on HIPAA compliance",
+                "due_date": datetime.now(timezone.utc) + timedelta(days=14),
+                "assignee": "Frank Miller",
+                "status": "active",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=3)
+            }
+        ]
+    
+    # No tasks for other companies
+    return []

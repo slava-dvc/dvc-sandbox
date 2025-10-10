@@ -3,14 +3,16 @@ import requests
 import streamlit as st
 import os
 import pandas as pd
+from datetime import date
 from bson import ObjectId
 from pyairtable import Api
 from pymongo import MongoClient
 from app.shared.company import Company
+from app.shared.task import Task
 from app.foundation.primitives import datetime
 from app.foundation.server import AppConfig
 from google.cloud import firestore
-from .data_mock import get_mock_companies, get_mock_investments, get_mock_jobs, get_mock_company_by_id, get_mock_companies_by_status
+from .data_mock import get_mock_companies, get_mock_investments, get_mock_jobs, get_mock_company_by_id, get_mock_companies_by_status, get_mock_tasks_for_company
 
 # Set local development mode for mock data (override any existing value)
 os.environ['LOCAL_DEV'] = 'True'
@@ -294,3 +296,122 @@ def fetch_tables_config() -> dict:
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return {table['id']: table for table in response.json()['tables']}
+
+
+# ============================================================================
+# TASK MANAGEMENT FUNCTIONS
+# ============================================================================
+
+def get_tasks(company_id: str) -> typing.List[Task]:
+    """Get all tasks for a company"""
+    if LOCAL_DEV:
+        # For local development, use session state with mock data fallback
+        if "tasks" not in st.session_state:
+            st.session_state.tasks = {}
+        
+        # Get tasks from session state (user-created) or mock data (initial)
+        session_tasks = st.session_state.tasks.get(company_id, [])
+        if not session_tasks:
+            # Initialize with mock data if no tasks exist
+            mock_tasks = get_mock_tasks_for_company(company_id)
+            st.session_state.tasks[company_id] = mock_tasks
+            session_tasks = mock_tasks
+        
+        return [Task(**task) if isinstance(task, dict) else task for task in session_tasks]
+    
+    # Production: Query MongoDB
+    db = mongo_database()
+    tasks_collection = db.get_collection('tasks')
+    tasks_data = tasks_collection.find({'companyId': ObjectId(company_id)}).to_list()
+    return [Task(**task) for task in tasks_data]
+
+
+def add_task(company_id: str, title: str, due_date: date, assignee: str) -> Task:
+    """Add a new task to a company"""
+    task = Task(
+        company_id=company_id,
+        title=title,
+        due_date=due_date,
+        assignee=assignee
+    )
+    
+    if LOCAL_DEV:
+        # Store in session state for local development
+        if "tasks" not in st.session_state:
+            st.session_state.tasks = {}
+        
+        if company_id not in st.session_state.tasks:
+            st.session_state.tasks[company_id] = []
+        
+        st.session_state.tasks[company_id].append(task.model_dump())
+        return task
+    
+    # Production: Save to MongoDB
+    db = mongo_database()
+    tasks_collection = db.get_collection('tasks')
+    task_data = task.model_dump()
+    task_data['companyId'] = ObjectId(company_id)
+    result = tasks_collection.insert_one(task_data)
+    task.id = str(result.inserted_id)
+    return task
+
+
+def update_task(task_id: str, **updates) -> typing.Optional[Task]:
+    """Update a task by ID"""
+    if LOCAL_DEV:
+        # Update in session state for local development
+        if "tasks" not in st.session_state:
+            return None
+        
+        for company_id, tasks in st.session_state.tasks.items():
+            for i, task_data in enumerate(tasks):
+                if isinstance(task_data, dict) and task_data.get('id') == task_id:
+                    task_data.update(updates)
+                    return Task(**task_data)
+                elif hasattr(task_data, 'id') and task_data.id == task_id:
+                    # Update the task object
+                    for key, value in updates.items():
+                        setattr(task_data, key, value)
+                    return task_data
+        return None
+    
+    # Production: Update in MongoDB
+    db = mongo_database()
+    tasks_collection = db.get_collection('tasks')
+    result = tasks_collection.update_one({'_id': ObjectId(task_id)}, {'$set': updates})
+    
+    if result.modified_count > 0:
+        updated_task = tasks_collection.find_one({'_id': ObjectId(task_id)})
+        return Task(**updated_task) if updated_task else None
+    
+    return None
+
+
+def delete_task(task_id: str) -> bool:
+    """Delete a task by ID"""
+    if LOCAL_DEV:
+        # Delete from session state for local development
+        if "tasks" not in st.session_state:
+            return False
+        
+        for company_id, tasks in st.session_state.tasks.items():
+            for i, task_data in enumerate(tasks):
+                if isinstance(task_data, dict) and task_data.get('id') == task_id:
+                    del st.session_state.tasks[company_id][i]
+                    return True
+                elif hasattr(task_data, 'id') and task_data.id == task_id:
+                    del st.session_state.tasks[company_id][i]
+                    return True
+        return False
+    
+    # Production: Delete from MongoDB
+    db = mongo_database()
+    tasks_collection = db.get_collection('tasks')
+    result = tasks_collection.delete_one({'_id': ObjectId(task_id)})
+    return result.deleted_count > 0
+
+
+def get_active_tasks_count(company_id: str) -> int:
+    """Get count of active tasks for a company"""
+    tasks = get_tasks(company_id)
+    return len([task for task in tasks if task.status == "active"])
