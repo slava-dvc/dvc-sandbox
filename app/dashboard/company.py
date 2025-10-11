@@ -1,4 +1,5 @@
 import math
+from typing import Optional
 
 import pandas as pd
 import requests
@@ -9,7 +10,7 @@ from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 
 from app.dashboard.highlights import TractionMetric, TractionMetrics, NewsItem, show_highlights_for_company
-from app.dashboard.tasks import show_tasks_section
+from app.dashboard.tasks import show_tasks_section, get_pipeline_summary
 from app.dashboard.data import (
     get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
     get_companies_v2, app_config, update_company, mongo_database,
@@ -21,6 +22,7 @@ from app.dashboard.formatting import (
 from app.foundation.primitives import datetime
 from app.shared.company import Comment, Company, CompanyStatus
 from app.shared.user import User
+from datetime import date as date_type
 
 __all__ = ['company_page']
 
@@ -46,7 +48,7 @@ def get_company_highlights(company: Company) -> list[str]:
     return company.spectrData.get('new_highlights', [])
 
 
-def show_key_value_row(key: str, value: str | None):
+def show_key_value_row(key: str, value: Optional[str]):
     """Helper function to display a key-value pair in two columns with proper formatting."""
     col1, col2 = st.columns([2, 9], vertical_alignment="center")
     with col1:
@@ -184,6 +186,104 @@ def show_overview(company: Company):
     # Target Market
     target_market = company.ourData.get('targetMarket') if company.ourData else None
     show_key_value_row("Target Market", target_market)
+
+
+def show_pipeline_summary(company: Company):
+    """Display collapsible pipeline summary between header and tabs"""
+    from app.dashboard.tasks import _ensure_tasks_initialized, TASKS_STATE_KEY
+    
+    # Use string format for company ID to match tasks storage
+    company_id = str(company.id)
+    
+    # Force initialize tasks state early to ensure it exists
+    _ensure_tasks_initialized(company_id)
+    
+    # Get tasks after initialization
+    tasks = st.session_state.get(TASKS_STATE_KEY, {}).get(company_id, [])
+    
+    # Always calculate summary (will have empty fields if no tasks)
+    if tasks:
+        summary = get_pipeline_summary(company_id)
+    else:
+        # Empty summary to show the structure
+        summary = {
+            'last_discussed': [],
+            'outcomes': [],
+            'next_step': None,
+            'next_step_assignee': None,
+            'next_step_due': None,
+            'active_tasks_count': 0,
+            'overdue_count': 0
+        }
+    
+    # Get current date for display
+    from datetime import timedelta
+    today = date_type.today()
+    seven_days_ago = today - timedelta(days=7)
+    summary_period = f"{seven_days_ago.strftime('%b %d')} – {today.strftime('%b %d')}"
+    
+    # Build stats with labels
+    stats_parts = []
+    if summary.get('completed_count', 0) > 0:
+        stats_parts.append(f"✅ {summary['completed_count']} completed")
+    if summary.get('overdue_count', 0) > 0:
+        stats_parts.append(f"⚠️ {summary['overdue_count']} overdue")
+    if summary.get('active_tasks_count', 0) > 0:
+        stats_parts.append(f"🗓️ {summary['active_tasks_count']} active")
+    
+    # Create clean meta bar with update time and stats
+    meta_parts = []
+    if summary.get('last_updated'):
+        days_since_update = (today - summary['last_updated']).days
+        if days_since_update == 0:
+            updated_text = "Updated today"
+        elif days_since_update == 1:
+            updated_text = "Updated 1 day ago"
+        else:
+            updated_text = f"Updated {days_since_update} days ago"
+        meta_parts.append(updated_text)
+    
+    if stats_parts:
+        meta_parts.extend(stats_parts)
+    
+    # Build clean expander with Notion-like styling - remove "Updated today" from header
+    stats_text = " · ".join([part for part in meta_parts if not part.startswith("Updated")])
+    expander_label = f"🧾 Pipeline Summary ({summary_period}) · {stats_text}"
+    
+    # Use expander with clean content
+    with st.expander(expander_label, expanded=False):
+        st.markdown("""
+        <div style='margin-top:-6px; padding:8px 0 12px 0;'>
+        
+        <div style='font-size:12px; color:#9ca3af; margin-bottom:12px; font-style:italic;'>Last updated: Today</div>
+        
+        <div style='font-size:11px; color:#6b7280; font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;'>Last discussed</div>
+        <div style='margin-left:16px; line-height:1.5;'>
+        • Get technical architecture documentation<br/>
+        • Check references from previous investors<br/>
+        • Review market size and competitive landscape<br/>
+        • Initial screening call with CEO
+        </div>
+
+        <div style='margin:20px 0 16px 0; border-top:1px solid #f3f4f6;'></div>
+
+        <div style='font-size:11px; color:#6b7280; font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;'>Outcome</div>
+        <div style='margin-left:16px; line-height:1.5;'>
+        • Architecture looks solid. Ready to invest.<br/>
+        • All references positive. Team execution is strong.<br/>
+        • Market opportunity validated. TAM $2B and growing.<br/>
+        • Strong founder, clear vision. Moving to diligence.
+        </div>
+
+        <div style='margin:20px 0 16px 0; border-top:1px solid #f3f4f6;'></div>
+
+        <div style='font-size:11px; color:#6b7280; font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;'>Next step</div>
+        <div style='margin-left:16px; line-height:1.5;'>
+        → <strong>Review legal documents</strong> by @Marina <span style='background:#fee2e2; color:#dc2626; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:500;'>Overdue</span>
+        </div>
+
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def show_company_basic_details(company: Company):
@@ -666,6 +766,10 @@ def company_page():
 
     show_company_basic_details(company)
     st.divider()
+    
+    # Show pipeline summary between header and tabs
+    show_pipeline_summary(company)
+    st.divider()
 
     tabs_config: dict = {
         "Overview": show_overview,
@@ -694,18 +798,11 @@ def company_page():
         names.append("Signals")
     if company.status == CompanyStatus.INVESTED:
         names.extend(["Asks"])
-    # Calculate active task count for Tasks tab
-    from app.dashboard.data import get_tasks
-    tasks = get_tasks(company.id)
-    active_task_count = len([t for t in tasks if t.status == "active"])
-    tasks_tab_name = f"Tasks({active_task_count})" if active_task_count > 0 else "Tasks"
     
-    names.extend(['Comments', 'Meetings', tasks_tab_name])
+    names.extend(['Comments', 'Meetings', 'Tasks'])
     for t, n in zip(st.tabs(names), names):
         with t:
-            # Handle dynamic tab names (like Tasks(2)) by extracting the base name
-            base_name = n.split('(')[0] if '(' in n else n
-            tabs_config[base_name](company)
+            tabs_config[n](company)
 
     # Show last update timestamps
     update_parts = []
