@@ -508,11 +508,11 @@ def show_task_list(tasks: List[Task], company_id: str, is_completed: bool = Fals
                     else:
                         due_date_class = "due-date-upcoming"
                 
-                # Create columns for task card and completion button
-                col_card, col_complete = st.columns([10, 1])
+                # Create columns for task card and action buttons
+                col_card, col_actions = st.columns([8, 2])
                 
                 with col_card:
-                    # Make the entire card clickable using a button
+                    # Clean task card without button overlay
                     st.markdown(f'<div class="task-card">', unsafe_allow_html=True)
                     
                     # Two-line layout
@@ -525,18 +525,20 @@ def show_task_list(tasks: List[Task], company_id: str, is_completed: bool = Fals
                     """, unsafe_allow_html=True)
                     
                     st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Invisible button overlay for click handling
-                    if st.button("​", key=f"edit_{task.id}", help="Click to edit task", use_container_width=True):
-                        st.session_state[f"inline_editing_{task.id}"] = True
-                        st.rerun()
                 
-                with col_complete:
-                    st.markdown('<div class="task-actions">', unsafe_allow_html=True)
-                    if st.button("✓", key=f"complete_{task.id}", help="Complete task", type="secondary"):
-                        st.session_state[f"completing_task_{task.id}"] = True
-                        st.rerun()
-                    st.markdown('</div>', unsafe_allow_html=True)
+                with col_actions:
+                    # Action buttons row
+                    col_edit, col_complete = st.columns([1, 1])
+                    
+                    with col_edit:
+                        if st.button("✏️", key=f"edit_{task.id}", help="Edit task", type="secondary"):
+                            st.session_state[f"inline_editing_{task.id}"] = True
+                            st.rerun()
+                    
+                    with col_complete:
+                        if st.button("✓", key=f"complete_{task.id}", help="Complete task", type="secondary"):
+                            st.session_state[f"completing_task_{task.id}"] = True
+                            st.rerun()
 
 
 @st.dialog("Edit Task")
