@@ -73,6 +73,75 @@ def show_tasks_section(company):
     """Main tasks section for company pages"""
     # Remove the Tasks header to match wireframe
     
+    # Add CSS for clean, airy task cards (only once per section)
+    st.markdown("""
+    <style>
+    .task-card {
+        background: #FAFAFA !important;
+        border: 1px solid #E9E9E9 !important;
+        border-radius: 8px !important;
+        margin: 8px 0 !important;
+        padding: 12px 16px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+    .task-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        transform: translateY(-1px) !important;
+    }
+    .task-title {
+        font-weight: 500 !important;
+        font-size: 16px !important;
+        line-height: 1.4 !important;
+        margin: 0 0 8px 0 !important;
+        color: #1a1a1a !important;
+    }
+    .task-metadata {
+        font-size: 14px !important;
+        color: #666 !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+    .task-owner {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
+    .task-due-date {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
+    .due-date-overdue { color: #ef4444 !important; }
+    .due-date-soon { color: #f97316 !important; }
+    .due-date-upcoming { color: #22c55e !important; }
+    .due-date-gray { color: #9ca3af !important; }
+    .task-expanded {
+        background: white !important;
+        border: 1px solid #E9E9E9 !important;
+        border-radius: 8px !important;
+        margin: 8px 0 !important;
+        padding: 16px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
+    .task-actions {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .task-card:hover .task-actions {
+        opacity: 1;
+    }
+    
+    /* Hide empty button containers that appear as gray boxes */
+    [data-testid="stBaseButton-secondary"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Get company ID from the company object
     company_id = company.id
     if not company_id:
@@ -279,74 +348,6 @@ def show_add_task_form(company_id: str):
 
 def show_task_list(tasks: List[Task], company_id: str, is_completed: bool = False):
     """Display a list of tasks with clean Todoist-style design"""
-    # Add CSS for clean, airy task cards
-    st.markdown("""
-    <style>
-    .task-card {
-        background: #FAFAFA !important;
-        border: 1px solid #E9E9E9 !important;
-        border-radius: 8px !important;
-        margin: 8px 0 !important;
-        padding: 12px 16px !important;
-        cursor: pointer !important;
-        transition: all 0.2s ease !important;
-    }
-    .task-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-        transform: translateY(-1px) !important;
-    }
-    .task-title {
-        font-weight: 500 !important;
-        font-size: 16px !important;
-        line-height: 1.4 !important;
-        margin: 0 0 8px 0 !important;
-        color: #1a1a1a !important;
-    }
-    .task-metadata {
-        font-size: 14px !important;
-        color: #666 !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-    }
-    .task-owner {
-        display: flex !important;
-        align-items: center !important;
-        gap: 4px !important;
-    }
-    .task-due-date {
-        display: flex !important;
-        align-items: center !important;
-        gap: 4px !important;
-    }
-    .due-date-overdue { color: #ef4444 !important; }
-    .due-date-soon { color: #f97316 !important; }
-    .due-date-upcoming { color: #22c55e !important; }
-    .due-date-gray { color: #9ca3af !important; }
-    .task-expanded {
-        background: white !important;
-        border: 1px solid #E9E9E9 !important;
-        border-radius: 8px !important;
-        margin: 8px 0 !important;
-        padding: 16px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    }
-    .task-actions {
-        opacity: 0;
-        transition: opacity 0.2s ease;
-    }
-    .task-card:hover .task-actions {
-        opacity: 1;
-    }
-    
-    /* Hide empty button containers that appear as gray boxes */
-    [data-testid="stBaseButton-secondary"] {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
     
     for task in tasks:
         if is_completed:
