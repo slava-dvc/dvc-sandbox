@@ -88,7 +88,7 @@ def show_tasks_section(company):
     # Add filter as separate component
     col_filter_header, col_filter_dropdown = st.columns([4, 1])
     with col_filter_header:
-        st.markdown("")  # Empty space for alignment
+        pass  # Empty space for alignment - no rendering
     with col_filter_dropdown:
         filter_option = st.selectbox(
             "Filter",
@@ -344,14 +344,6 @@ def show_task_list(tasks: List[Task], company_id: str, is_completed: bool = Fals
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-    }
-    
-    /* Style action buttons to be compact */
-    .action-button {
-        min-width: auto !important;
-        width: auto !important;
-        padding: 4px 8px !important;
-        margin: 0 2px !important;
     }
     </style>
     """, unsafe_allow_html=True)
