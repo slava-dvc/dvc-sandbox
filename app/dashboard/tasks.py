@@ -338,6 +338,21 @@ def show_task_list(tasks: List[Task], company_id: str, is_completed: bool = Fals
     .task-card:hover .task-actions {
         opacity: 1;
     }
+    
+    /* Hide empty button containers that appear as gray boxes */
+    [data-testid="stBaseButton-secondary"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Style action buttons to be compact */
+    .action-button {
+        min-width: auto !important;
+        width: auto !important;
+        padding: 4px 8px !important;
+        margin: 0 2px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -508,37 +523,32 @@ def show_task_list(tasks: List[Task], company_id: str, is_completed: bool = Fals
                     else:
                         due_date_class = "due-date-upcoming"
                 
-                # Create columns for task card and action buttons
-                col_card, col_actions = st.columns([8, 2])
+                # Clean task card without buttons - just display
+                st.markdown(f'<div class="task-card">', unsafe_allow_html=True)
                 
-                with col_card:
-                    # Clean task card without button overlay
-                    st.markdown(f'<div class="task-card">', unsafe_allow_html=True)
-                    
-                    # Two-line layout
-                    st.markdown(f"""
-                    <div class="task-title">{task.text}</div>
-                    <div class="task-metadata">
-                        <div class="task-owner">👤 {task.assignee}</div>
-                        <div class="task-due-date {due_date_class}">⏰ {due_date_str}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
+                # Two-line layout
+                st.markdown(f"""
+                <div class="task-title">{task.text}</div>
+                <div class="task-metadata">
+                    <div class="task-owner">👤 {task.assignee}</div>
+                    <div class="task-due-date {due_date_class}">⏰ {due_date_str}</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                with col_actions:
-                    # Action buttons row
-                    col_edit, col_complete = st.columns([1, 1])
-                    
-                    with col_edit:
-                        if st.button("✏️", key=f"edit_{task.id}", help="Edit task", type="secondary"):
-                            st.session_state[f"inline_editing_{task.id}"] = True
-                            st.rerun()
-                    
-                    with col_complete:
-                        if st.button("✓", key=f"complete_{task.id}", help="Complete task", type="secondary"):
-                            st.session_state[f"completing_task_{task.id}"] = True
-                            st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Add action buttons below the card
+                col_edit, col_complete = st.columns([1, 1])
+                
+                with col_edit:
+                    if st.button("✏️ Edit", key=f"edit_{task.id}", help="Edit task", type="secondary"):
+                        st.session_state[f"inline_editing_{task.id}"] = True
+                        st.rerun()
+                
+                with col_complete:
+                    if st.button("✓ Complete", key=f"complete_{task.id}", help="Complete task", type="secondary"):
+                        st.session_state[f"completing_task_{task.id}"] = True
+                        st.rerun()
 
 
 @st.dialog("Edit Task")
