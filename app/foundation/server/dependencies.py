@@ -1,7 +1,20 @@
+from typing import TYPE_CHECKING, Any
 from fastapi import Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
-from google.cloud import firestore, pubsub, logging, storage
+try:
+    from google.cloud import firestore, pubsub, logging, storage
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    firestore = None
+    pubsub = None
+    logging = None
+    storage = None
+
+if TYPE_CHECKING:
+    from google.cloud import firestore, pubsub, logging, storage
+
 from httpx import AsyncClient
 
 from .config import AppConfig
@@ -43,12 +56,12 @@ def get_default_database(request: Request):
 
 
 # Dependency to get the Firestore client
-def get_firestore_client(request: Request) -> firestore.AsyncClient:
+def get_firestore_client(request: Request) -> Any:  # firestore.AsyncClient
     return request.state.firestore_client
 
 
 # Dependency to get the PubSub client
-def get_publisher_client(request: Request) -> pubsub.PublisherClient:
+def get_publisher_client(request: Request) -> Any:  # pubsub.PublisherClient
     return request.state.publisher_client
 
 
@@ -58,12 +71,12 @@ def get_http_client(request: Request) -> AsyncClient:
 
 
 # Dependency to get the Storage client
-def get_storage_client(request: Request) -> storage.Client:
+def get_storage_client(request: Request) -> Any:  # storage.Client
     return request.state.storage_client
 
 
 # Dependency to get the dataset bucket
-def get_dataset_bucket(request: Request) -> storage.Bucket:
+def get_dataset_bucket(request: Request) -> Any:  # storage.Bucket
     return request.state.dataset_bucket
 
 

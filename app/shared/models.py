@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional, List, Union
 from pydantic import BaseModel, Field
 
 
@@ -36,34 +37,34 @@ class DataType(str, Enum):
 
 
 class SourceRef(BaseModel):
-    page: int | str | None = None
-    type: str | None = None  # It should be SourceType, but there is not validation at rivet site
-    quote: str | None = None
-    url: str | None = None
-    value: str | None = None
+    page: Union[int, str, None] = None
+    type: Optional[str] = None  # It should be SourceType, but there is not validation at rivet site
+    quote: Optional[str] = None
+    url: Optional[str] = None
+    value: Optional[str] = None
 
 
 class Feature(BaseModel):
     criterion: str
-    value: list[str] | str | float | int | bool | None
-    source: list[SourceRef] | None = Field(default_factory=list) # Its should be sources but keep for compatibility
+    value: Union[List[str], str, float, int, bool, None]
+    source: Optional[List[SourceRef]] = Field(default_factory=list) # Its should be sources but keep for compatibility
 
 
 class Startup(BaseModel):
     name: str
-    website: str | None = None
-    email: str | None = None
-    foundation_year: str | int | None = None
-    features: dict[str, Feature] | None = Field(default_factory=dict)
+    website: Optional[str] = None
+    email: Optional[str] = None
+    foundation_year: Union[str, int, None] = None
+    features: Optional[dict[str, Feature]] = Field(default_factory=dict)
 
 
 class Person(BaseModel):
     name: str
-    linkedin_url: str | None = None
-    features: dict[str, Feature] | None = Field(default_factory=dict)
+    linkedin_url: Optional[str] = None
+    features: Optional[dict[str, Feature]] = Field(default_factory=dict)
 
 
 class Source(BaseModel):
-    type: str | None  # It should be SourceType, but there is not validation at rivet site
-    url: str | None
-    value: str | None = None
+    type: Optional[str]  # It should be SourceType, but there is not validation at rivet site
+    url: Optional[str]
+    value: Optional[str] = None

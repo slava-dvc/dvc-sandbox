@@ -103,6 +103,39 @@ MOCK_COMPANIES = [
             "patientRecords": "100K+ monthly",
             "compliance": "HIPAA certified"
         }
+    },
+    {
+        "_id": ObjectId("68e69a2dc32b590896149742"),
+        "name": "CloudScale AI",
+        "status": "New Company",
+        "website": "https://cloudscaleai.com",
+        "shortDescription": "Enterprise-grade AI infrastructure platform that enables companies to deploy and scale machine learning models at unprecedented speed and efficiency.",
+        "mainIndustry": "AI Infrastructure, Cloud Computing, Machine Learning",
+        "summary": "CloudScale AI is revolutionizing enterprise AI deployment with its cutting-edge infrastructure platform. The company has developed proprietary technology that reduces AI model deployment time from weeks to hours, while maintaining enterprise-grade security and scalability. With partnerships with AWS and Microsoft Azure, and 150+ enterprise customers processing 10M+ predictions daily, CloudScale AI is positioned to capture significant market share in the rapidly growing AI infrastructure market.",
+        "problem": "Enterprise AI deployment is slow, expensive, and complex. Companies take 6-12 months to deploy AI models, with 70% of AI projects failing due to infrastructure challenges. Current solutions lack enterprise-grade security and scalability.",
+        "solution": "CloudScale AI provides a unified platform for AI model deployment, scaling, and management. Features include automated model optimization, real-time scaling, enterprise security compliance, and seamless integration with existing cloud infrastructure. The platform reduces deployment time by 95% and operational costs by 60%.",
+        "marketOpportunity": "The AI infrastructure market is valued at $15.8 billion and growing at 28% annually. Enterprise AI adoption is accelerating with 85% of companies planning to increase AI investments in 2024.",
+        "introductionSource": "David Kim",
+        "source": "David Kim",
+        "blurb": "Enterprise-grade AI infrastructure platform that enables companies to deploy and scale machine learning models at unprecedented speed and efficiency.",
+        "createdAt": datetime.now(timezone.utc) - timedelta(hours=6),
+        "bulletPoints": [
+            "Page #1: 95% reduction in AI deployment time (weeks to hours)",
+            "Page #2: 150+ enterprise customers with 10M+ daily predictions"
+        ],
+        "signals": "Strong technical signals: AWS and Microsoft Azure partnerships confirmed.",
+        "fundingStage": "Series A",
+        "team": [
+            {"name": "David Kim", "role": "Founder & CEO"},
+            {"name": "Dr. Sarah Patel", "role": "Co-founder & CTO"},
+            {"name": "Michael Torres", "role": "VP of Engineering"}
+        ],
+        "metrics": {
+            "enterpriseCustomers": "150+",
+            "dailyPredictions": "10M+",
+            "deploymentTimeReduction": "95%",
+            "costReduction": "60%"
+        }
     }
 ]
 
@@ -129,6 +162,14 @@ MOCK_INVESTMENTS = [
         "company_name": "HealthSync", 
         "investment_amount": "$2.5M",
         "investment_date": "2024-03-10",
+        "stage": "Series A",
+        "status": "Active"
+    },
+    {
+        "id": "inv_004",
+        "company_name": "CloudScale AI",
+        "investment_amount": "$3.8M",
+        "investment_date": "2024-10-14",
         "stage": "Series A",
         "status": "Active"
     }

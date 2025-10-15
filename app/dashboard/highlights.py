@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 import streamlit as st
 
 from app.dashboard.formatting import format_compact_number
@@ -72,9 +72,9 @@ class NewsItem:
 
 @dataclass
 class TractionValue:
-    value: str | int | float
-    change: int | float | None = None
-    percentage: int | float | None = None
+    value: Union[str, int, float]
+    change: Union[int, float, None] = None
+    percentage: Union[int, float, None] = None
 
     @classmethod
     def from_dict(cls, traction_value: dict):
@@ -88,7 +88,7 @@ class TractionValue:
 @dataclass
 class TractionMetric:
     """Represents traction metrics for a company."""
-    latest: str | int | float
+    latest: Union[str, int, float]
     previous: Dict[str, TractionValue] = field(default_factory=dict)
 
     def __bool__(self):

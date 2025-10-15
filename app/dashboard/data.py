@@ -11,7 +11,12 @@ from app.shared.company import Company
 from app.shared.task import Task
 from app.foundation.primitives import datetime
 from app.foundation.server import AppConfig
-from google.cloud import firestore
+try:
+    from google.cloud import firestore
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    firestore = None
 from .data_mock import get_mock_companies, get_mock_investments, get_mock_jobs, get_mock_company_by_id, get_mock_companies_by_status, get_mock_tasks_for_company
 
 # Set local development mode for mock data (override any existing value)
@@ -326,13 +331,18 @@ def get_tasks(company_id: str) -> typing.List[Task]:
     return [Task(**task) for task in tasks_data]
 
 
-def add_task(company_id: str, title: str, due_date: date, assignee: str) -> Task:
+def add_task(company_id: str, text: str, due_date: date, assignee: str, created_by: str = "Unknown") -> Task:
     """Add a new task to a company"""
+    # Validate that due_date is not in the past
+    if due_date < date.today():
+        raise ValueError(f"Cannot create task with past due date: {due_date.strftime('%m/%d/%Y')}. Please use today or a future date.")
+    
     task = Task(
         company_id=company_id,
-        title=title,
+        text=text,
         due_date=due_date,
-        assignee=assignee
+        assignee=assignee,
+        created_by=created_by
     )
     
     if LOCAL_DEV:
@@ -358,6 +368,11 @@ def add_task(company_id: str, title: str, due_date: date, assignee: str) -> Task
 
 def update_task(task_id: str, **updates) -> typing.Optional[Task]:
     """Update a task by ID"""
+    # Validate that due_date is not in the past if it's being updated
+    if 'due_date' in updates and updates['due_date'] is not None:
+        if isinstance(updates['due_date'], date) and updates['due_date'] < date.today():
+            raise ValueError(f"Cannot update task with past due date: {updates['due_date'].strftime('%m/%d/%Y')}. Please use today or a future date.")
+    
     if LOCAL_DEV:
         # Update in session state for local development
         if "tasks" not in st.session_state:

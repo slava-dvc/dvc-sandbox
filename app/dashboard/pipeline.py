@@ -37,6 +37,9 @@ _AVAILABLE_STATUES = list(itertools.chain.from_iterable(_PIPELINE_STATUES.values
     CompanyStatus.PASSED
 ]
 
+# Status values for dropdown display
+_AVAILABLE_STATUS_VALUES = [status.value for status in _AVAILABLE_STATUES]
+
 
 @st.dialog("Company details", width="large")
 def company_details(company):
@@ -46,17 +49,29 @@ def company_details(company):
     )
 
 
-def _update_company_status(company: Company, status):
-    # Update MongoDB
-    mongo_database().companies.update_one(
-        {'_id': ObjectId(company.id)},
-        {'$set': {'status': str(status)}}
-    )
-    if company.airtableId:
-        # Update Airtable
-        api = airtable_api_client()
-        table = api.table(AIRTABLE_BASE_ID, 'tblJL5aEsZFa0x6zY')  # Companies table
-        table.update(company.airtableId, {'Status': str(status)})
+def _update_company_status(company: Company, status_value):
+    # In local development mode, we don't have MongoDB/Airtable
+    # For now, just update the company object in memory
+    # Convert status value back to CompanyStatus enum
+    company.status = CompanyStatus(status_value)
+    
+    # Store the updated company in session state for persistence
+    if 'updated_companies' not in st.session_state:
+        st.session_state.updated_companies = {}
+    st.session_state.updated_companies[company.id] = company
+    
+    st.success(f"Updated {company.name} status to {status_value}")
+    
+    # TODO: In production, update MongoDB and Airtable
+    # mongo_database().companies.update_one(
+    #     {'_id': ObjectId(company.id)},
+    #     {'$set': {'status': str(status)}}
+    # )
+    # if company.airtableId:
+    #     # Update Airtable
+    #     api = airtable_api_client()
+    #     table = api.table(AIRTABLE_BASE_ID, 'tblJL5aEsZFa0x6zY')  # Companies table
+    #     table.update(company.airtableId, {'Status': str(status)})
 
 
 def _render_company_card(company: Company):
@@ -91,14 +106,22 @@ def _render_company_card(company: Company):
 
         st.markdown("&nbsp; | &nbsp;".join(header))
         st.text(source if source else "No source provided")
-        new_status = st.selectbox(
-            label="Status",
-            options=_AVAILABLE_STATUES,
-            key=f"status_{company.id}",
-            index=_AVAILABLE_STATUES.index(str(company.status)) if company.status else 0,
-            label_visibility="collapsed",
-            width=256
-        )
+    # Find the index of the current status in the available statuses
+    current_status_index = 0
+    if company.status:
+        try:
+            current_status_index = _AVAILABLE_STATUS_VALUES.index(company.status.value)
+        except ValueError:
+            current_status_index = 0
+    
+    new_status = st.selectbox(
+        label="Status",
+        options=_AVAILABLE_STATUS_VALUES,
+        key=f"status_{company.id}",
+        index=current_status_index,
+        label_visibility="collapsed",
+        width=256
+    )
     with signals_column:
         highlights_cnt = show_highlights_for_company(company)
         if not highlights_cnt:
@@ -118,20 +141,27 @@ def _render_company_card(company: Company):
     else:
         st.caption("No blurb provided.")
 
-    if new_status != str(company.status):
+    if new_status != company.status.value:
         with st.spinner("Updating..."):
             _update_company_status(company, new_status)
 
-        st.rerun(scope='fragment')
+        st.rerun()
 
 
 def show_pipeline_tab(statuses):
     query = {
         'status': {
-            '$in': [str(s) for s in statuses]
+            '$in': [s.value for s in statuses]
         }
     }
     companies = get_companies_v2(query, [('createdAt', -1)])
+
+    # Apply any status updates from session state
+    if 'updated_companies' in st.session_state:
+        updated_companies = st.session_state.updated_companies
+        for i, company in enumerate(companies):
+            if company.id in updated_companies:
+                companies[i] = updated_companies[company.id]
 
     if not companies:
         st.info("No companies found for this stage yet.")

@@ -2,6 +2,7 @@ import asyncio
 import sys
 from http import HTTPStatus
 from json import JSONDecodeError
+from typing import Union
 
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
@@ -99,7 +100,7 @@ async def http_exception_handler(request: Request, exc: HTTPStatusError):
     )
 
 
-def http_connection_exception_handler(request: Request, exc: ReadError | ConnectError):
+def http_connection_exception_handler(request: Request, exc: Union[ReadError, ConnectError]):
     logger = get_logger(request)
     logger.warning("Downstream HTTP connection error", labels={
         "exceptionType": type(exc).__name__,

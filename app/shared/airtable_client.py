@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -22,10 +22,10 @@ class AirField(BaseModel):
     id: str
     type: str
     name: str
-    description: str | None = None
-    options: Dict[str, Any] | None = None
-    value: Any | None = None
-    sources: List[models.SourceRef] | None = Field(default_factory=list)
+    description: Optional[str] = None
+    options: Optional[Dict[str, Any]] = None
+    value: Optional[Any] = None
+    sources: Optional[List[models.SourceRef]] = Field(default_factory=list)
 
     def is_readonly(self) -> bool:
         readonly_type = self.type in _readonly_field_types
@@ -75,7 +75,7 @@ class AirTable(BaseModel):
     id: str
     name: str
     primaryFieldId: str
-    description: str | None = None
+    description: Optional[str] = None
     fields: List['AirField']
     views: List[Any]
 

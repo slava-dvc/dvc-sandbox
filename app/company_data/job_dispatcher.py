@@ -1,4 +1,4 @@
-from typing import List, AnyStr as Str
+from typing import List, AnyStr as Str, Optional
 
 from google.cloud import pubsub
 from pymongo.asynchronous.database import AsyncDatabase
@@ -33,7 +33,7 @@ class JobDispatcher(object):
     def is_supported(self, source: Str) -> bool:
         return source in self._source_to_topic_mapping
 
-    async def trigger_many(self, max_items: int, sources: List[Str], statuses: List[Str] | None = None) -> int:
+    async def trigger_many(self, max_items: int, sources: List[Str], statuses: Optional[List[Str]] = None) -> int:
         supported_sources = [source for source in sources if self.is_supported(source)]
         if not supported_sources:
             self._logger.warning("No supported sources", labels={

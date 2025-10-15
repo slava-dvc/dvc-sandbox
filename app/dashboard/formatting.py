@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Union, Optional
 
 from app.foundation.primitives import datetime
 
@@ -129,7 +130,7 @@ def format_compact_number(number, default="—", decimal_places=1):
     return format_str.format(number, suffixes[magnitude])
 
 
-def format_relative_time(date: str | datetime.datetime):
+def format_relative_time(date: Union[str, datetime.datetime]):
     """Convert datetime to human-readable relative time (e.g. 'Today', '2 days ago')"""
     if not date:
         return "Unknown"
@@ -156,7 +157,7 @@ def format_relative_time(date: str | datetime.datetime):
         return f"Unknown: {e}"
 
 
-def safe_markdown(text: str | None) -> str:
+def safe_markdown(text: Optional[str]) -> str:
     """Helper function to safely format text for markdown display by escaping special characters."""
     if not text or not isinstance(text, str):
         return text or ""

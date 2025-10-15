@@ -11,9 +11,16 @@ from functools import cached_property
 from sys import _current_frames
 from typing import Union
 
-from google.auth import default
-from google.cloud import firestore
-from google.cloud import logging as cloud_logging
+try:
+    from google.auth import default
+    from google.cloud import firestore
+    from google.cloud import logging as cloud_logging
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    firestore = None
+    cloud_logging = None
+    default = None
 
 from .config import AppConfig
 from ..env import is_debug, is_test, is_cloud, port, get_env
@@ -54,23 +61,23 @@ class AsyncServer(metaclass=abc.ABCMeta):
         pass
 
     @cached_property
-    def logging_client(self) -> Union[cloud_logging.Client, None]:
-        if self.config['cloud']:
+    def logging_client(self):
+        if self.config['cloud'] and GOOGLE_CLOUD_AVAILABLE:
             local_logging.root.handlers.clear()
             logging_client = cloud_logging.Client()
             logging_client.get_default_handler()
-            logging_client.setup_logging(log_level=logging.DEBUG if self.config['debug'] else logging.INFO)
-            logging.getLogger("httpx").setLevel(logging.WARNING)
+            logging_client.setup_logging(log_level=local_logging.DEBUG if self.config['debug'] else local_logging.INFO)
+            local_logging.getLogger("httpx").setLevel(local_logging.WARNING)
             return logging_client
 
         local_logging.root.handlers.clear()
         ch = local_logging.StreamHandler()
-        ch.setLevel(logging.DEBUG if self.config['debug'] else logging.INFO)
-        ch.setFormatter(logging.Formatter(style='{', fmt='{levelname:8}{lineno:5}:{filename:30}{message}'))
+        ch.setLevel(local_logging.DEBUG if self.config['debug'] else local_logging.INFO)
+        ch.setFormatter(local_logging.Formatter(style='{', fmt='{levelname:8}{lineno:5}:{filename:30}{message}'))
 
         local_logging.root.addHandler(ch)
-        local_logging.root.setLevel(logging.DEBUG if self.config['debug'] else logging.INFO)
-        logging.getLogger("httpx").setLevel(logging.WARNING)
+        local_logging.root.setLevel(local_logging.DEBUG if self.config['debug'] else local_logging.INFO)
+        local_logging.getLogger("httpx").setLevel(local_logging.WARNING)
         return None
 
     @cached_property
@@ -85,7 +92,10 @@ class AsyncServer(metaclass=abc.ABCMeta):
 
     @cached_property
     def args(self):
-        credentials, project_id = default()
+        if GOOGLE_CLOUD_AVAILABLE and default:
+            credentials, project_id = default()
+        else:
+            project_id = None
         parser = argparse.ArgumentParser(prog=self.name)
         parser.add_argument('-d', '--debug', help='Run in debug mode', default=bool(is_debug()), action='store_true')
         parser.add_argument('-c', '--config', help="Path to config file", default='config.yml')
@@ -102,7 +112,8 @@ class AsyncServer(metaclass=abc.ABCMeta):
     def config(self):
         cfg = AppConfig()
         cfg.load_yml(self.args['config'])
-        cfg.load_db(firestore.Client())
+        if GOOGLE_CLOUD_AVAILABLE and firestore:
+            cfg.load_db(firestore.Client())
         for a in ['debug', 'cloud', 'project_id', 'region']:
             cfg[a] = self.args[a]
         return cfg
@@ -111,9 +122,10 @@ class AsyncServer(metaclass=abc.ABCMeta):
         # Check config every 5 minutes
         self.loop.call_later(300, self.check_config)
         try:
-            if self.config.load_db(firestore.Client()):
-                logger.critical("Config update detected. Stop")
-                signal.raise_signal(signal.SIGTERM)
+            if GOOGLE_CLOUD_AVAILABLE and firestore:
+                if self.config.load_db(firestore.Client()):
+                    logger.critical("Config update detected. Stop")
+                    signal.raise_signal(signal.SIGTERM)
             logger.debug(f"Config is the same.")
         except Exception as error:
             logger.warning(f"An error occurred when updating the config - {error}")

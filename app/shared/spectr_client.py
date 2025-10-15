@@ -1,5 +1,10 @@
 import httpx
-from google.cloud import storage
+try:
+    from google.cloud import storage
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    storage = None
 from app.foundation import get_env, as_async
 from app.foundation.server.logger import Logger
 from typing import Dict, Any, List
@@ -14,7 +19,7 @@ class SpectrClient(object):
             self,
             logger: Logger,
             http_client: httpx.AsyncClient,
-            dataset_bucket: storage.Bucket = None,
+            dataset_bucket: Any = None,  # storage.Bucket
     ):
         self._api_key = str(get_env("SPECTR_API_KEY")).strip()
         self._http_client = http_client

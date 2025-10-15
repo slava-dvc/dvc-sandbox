@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import PlainTextResponse
 from pymongo.asynchronous.database import AsyncDatabase
@@ -19,7 +20,7 @@ public_router = APIRouter(
 @router.get("")
 @public_router.get("")
 async def get_jobs(
-    format: str | None = Query(None, description="Output format (markdown)"),
+    format: Optional[str] = Query(None, description="Output format (markdown)"),
     database: AsyncDatabase = Depends(dependencies.get_default_database),
     logger: Logger = Depends(dependencies.get_logger),
 ):

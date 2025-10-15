@@ -1,7 +1,7 @@
 import gzip
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Optional
 
 from bson import ObjectId
 from google.cloud import storage
@@ -34,7 +34,7 @@ class DataFetcher(metaclass=ABCMeta):
         return True
 
     @abstractmethod
-    async def fetch_company_data(self, company: Company) -> FetchResult | None:
+    async def fetch_company_data(self, company: Company) -> Optional[FetchResult]:
         """
         Fetch raw data and return transformed result
         """

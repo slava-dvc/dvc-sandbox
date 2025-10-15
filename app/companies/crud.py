@@ -1,3 +1,4 @@
+from typing import Optional
 from bson import ObjectId
 from pymongo.asynchronous.database import AsyncDatabase
 from app.foundation.primitives import datetime
@@ -11,7 +12,7 @@ class Crud(object):
         self._database = database
         self._companies_collection = database["companies"]
     
-    async def update_company(self, company_id: str, update_request: CompanyUpdateRequest) -> Company | None:
+    async def update_company(self, company_id: str, update_request: CompanyUpdateRequest) -> Optional[Company]:
         """Update a company by ID"""
         update_data = update_request.model_dump(exclude_none=True)
         if not update_data:

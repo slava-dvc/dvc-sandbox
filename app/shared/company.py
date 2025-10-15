@@ -1,5 +1,5 @@
 import uuid
-from enum import StrEnum
+from enum import Enum
 from typing import Optional, List, ClassVar, Set, Any
 from urllib.parse import urlparse
 from bson import ObjectId
@@ -12,7 +12,7 @@ __all__ = ["Company", "CompanyStatus"]
 
 BLOCKLISTED_DOMAINS = {'google.com', 'docsend.com', 'linkedin.com'}
 
-class CompanyStatus(StrEnum):
+class CompanyStatus(str, Enum):
     PROCESSING = "Processing"
     NEW_COMPANY = "New Company"
     DILIGENCE = "Diligence"
@@ -43,7 +43,7 @@ class Company(BaseModel):
         "linkedInData", "spectrData", "googlePlayData", "appStoreData", "ourData", "comments"
     }
 
-    id: str | None = Field(..., validation_alias=AliasChoices("_id", 'id'))
+    id: Optional[str] = Field(..., validation_alias=AliasChoices("_id", 'id'))
 
     @field_validator('id', mode='before')
     @classmethod
@@ -52,37 +52,37 @@ class Company(BaseModel):
             return str(v)
         return v
 
-    airtableId: str | None = None
+    airtableId: Optional[str] = None
     name: str
-    website: str | None = None
-    domain: str | None = None
-    status: CompanyStatus | None = None
+    website: Optional[str] = None
+    domain: Optional[str] = None
+    status: Optional[CompanyStatus] = None
     ourData: dict[str, Any] = Field(default_factory=dict, description="Company data we collected")
-    blurb: str | None = Field(None, description="Company blurb")
-    memorandum: str | None = Field(None, description="Company memorandum")
-    comments: List[Comment] | None= Field(default_factory=list)
-    concerns: List[str] | None = Field(default_factory=list)
+    blurb: Optional[str] = Field(None, description="Company blurb")
+    memorandum: Optional[str] = Field(None, description="Company memorandum")
+    comments: Optional[List[Comment]] = Field(default_factory=list)
+    concerns: Optional[List[str]] = Field(default_factory=list)
 
-    createdAt: datetime.datetime | None = None
-    updatedAt: datetime.datetime | None = None
+    createdAt: Optional[datetime.datetime] = None
+    updatedAt: Optional[datetime.datetime] = None
 
-    linkedInId: str | None = None
-    linkedInData: dict | None = None
-    linkedInUpdatedAt: datetime.datetime | None = None
+    linkedInId: Optional[str] = None
+    linkedInData: Optional[dict] = None
+    linkedInUpdatedAt: Optional[datetime.datetime] = None
 
-    spectrId: str | None = None
-    spectrUpdatedAt: datetime.datetime | None = None
-    spectrData: dict | None = None
+    spectrId: Optional[str] = None
+    spectrUpdatedAt: Optional[datetime.datetime] = None
+    spectrData: Optional[dict] = None
 
-    googlePlayId: str | None = None
-    googlePlayData: dict | None = None
-    googlePlayUpdatedAt: datetime.datetime | None = None
+    googlePlayId: Optional[str] = None
+    googlePlayData: Optional[dict] = None
+    googlePlayUpdatedAt: Optional[datetime.datetime] = None
 
-    appStoreId: str | None = None
-    appStoreData: dict | None = None
-    appStoreUpdatedAt: datetime.datetime | None = None
+    appStoreId: Optional[str] = None
+    appStoreData: Optional[dict] = None
+    appStoreUpdatedAt: Optional[datetime.datetime] = None
 
-    googleJobsUpdatedAt: datetime.datetime | None = None
+    googleJobsUpdatedAt: Optional[datetime.datetime] = None
 
     def model_dump_for_logs(self):
         return self.model_dump(exclude_none=True, exclude=list(self.DATA_FIELDS) + ["blurb"])

@@ -2,8 +2,17 @@ import abc
 import logging as python_logging
 import os
 import traceback
+from typing import TYPE_CHECKING, Any
 from fastapi import Request
-from google.cloud import logging as google_logging
+try:
+    from google.cloud import logging as google_logging
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    google_logging = None
+
+if TYPE_CHECKING:
+    from google.cloud import logging as google_logging
 
 from fastapi.encoders import jsonable_encoder
 from ..primitives import json
@@ -69,14 +78,14 @@ class CloudLogger(Logger):
 
     def __init__(
             self,
-            logger_client: google_logging.Client,
+            logger_client: Any,  # google_logging.Client
             request: Request = None,
             project_id: str = None,
     ):
         super().__init__(request)
         self._project_id = project_id
 
-        self._logger: google_logging.Logger = logger_client.logger(
+        self._logger: Any = logger_client.logger(  # google_logging.Logger
             name="app",
         )
 

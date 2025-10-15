@@ -10,7 +10,7 @@ from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 
 from app.dashboard.highlights import TractionMetric, TractionMetrics, NewsItem, show_highlights_for_company
-from app.dashboard.tasks import show_tasks_section, get_pipeline_summary
+from app.dashboard.tasks import show_tasks_section, show_pipeline_summary
 from app.dashboard.data import (
     get_investments, get_portfolio, get_updates, get_ask_to_task, get_people,
     get_companies_v2, app_config, update_company, mongo_database,
@@ -186,104 +186,6 @@ def show_overview(company: Company):
     # Target Market
     target_market = company.ourData.get('targetMarket') if company.ourData else None
     show_key_value_row("Target Market", target_market)
-
-
-def show_pipeline_summary(company: Company):
-    """Display collapsible pipeline summary between header and tabs"""
-    from app.dashboard.tasks import _ensure_tasks_initialized, TASKS_STATE_KEY
-    
-    # Use string format for company ID to match tasks storage
-    company_id = str(company.id)
-    
-    # Force initialize tasks state early to ensure it exists
-    _ensure_tasks_initialized(company_id)
-    
-    # Get tasks after initialization
-    tasks = st.session_state.get(TASKS_STATE_KEY, {}).get(company_id, [])
-    
-    # Always calculate summary (will have empty fields if no tasks)
-    if tasks:
-        summary = get_pipeline_summary(company_id)
-    else:
-        # Empty summary to show the structure
-        summary = {
-            'last_discussed': [],
-            'outcomes': [],
-            'next_step': None,
-            'next_step_assignee': None,
-            'next_step_due': None,
-            'active_tasks_count': 0,
-            'overdue_count': 0
-        }
-    
-    # Get current date for display
-    from datetime import timedelta
-    today = date_type.today()
-    seven_days_ago = today - timedelta(days=7)
-    summary_period = f"{seven_days_ago.strftime('%b %d')} – {today.strftime('%b %d')}"
-    
-    # Build stats with labels
-    stats_parts = []
-    if summary.get('completed_count', 0) > 0:
-        stats_parts.append(f"✅ {summary['completed_count']} completed")
-    if summary.get('overdue_count', 0) > 0:
-        stats_parts.append(f"⚠️ {summary['overdue_count']} overdue")
-    if summary.get('active_tasks_count', 0) > 0:
-        stats_parts.append(f"🗓️ {summary['active_tasks_count']} active")
-    
-    # Create clean meta bar with update time and stats
-    meta_parts = []
-    if summary.get('last_updated'):
-        days_since_update = (today - summary['last_updated']).days
-        if days_since_update == 0:
-            updated_text = "Updated today"
-        elif days_since_update == 1:
-            updated_text = "Updated 1 day ago"
-        else:
-            updated_text = f"Updated {days_since_update} days ago"
-        meta_parts.append(updated_text)
-    
-    if stats_parts:
-        meta_parts.extend(stats_parts)
-    
-    # Build clean expander with Notion-like styling - remove "Updated today" from header
-    stats_text = " · ".join([part for part in meta_parts if not part.startswith("Updated")])
-    expander_label = f"🧾 Pipeline Summary ({summary_period}) · {stats_text}"
-    
-    # Use expander with clean content
-    with st.expander(expander_label, expanded=False):
-        st.markdown("""
-        <div style='margin-top:-6px; padding:8px 0 12px 0;'>
-        
-        <div style='font-size:12px; color:#9ca3af; margin-bottom:12px; font-style:italic;'>Last updated: Today</div>
-        
-        <div style='font-size:11px; color:#6b7280; font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;'>Last discussed</div>
-        <div style='margin-left:16px; line-height:1.5;'>
-        • Get technical architecture documentation<br/>
-        • Check references from previous investors<br/>
-        • Review market size and competitive landscape<br/>
-        • Initial screening call with CEO
-        </div>
-
-        <div style='margin:20px 0 16px 0; border-top:1px solid #f3f4f6;'></div>
-
-        <div style='font-size:11px; color:#6b7280; font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;'>Outcome</div>
-        <div style='margin-left:16px; line-height:1.5;'>
-        • Architecture looks solid. Ready to invest.<br/>
-        • All references positive. Team execution is strong.<br/>
-        • Market opportunity validated. TAM $2B and growing.<br/>
-        • Strong founder, clear vision. Moving to diligence.
-        </div>
-
-        <div style='margin:20px 0 16px 0; border-top:1px solid #f3f4f6;'></div>
-
-        <div style='font-size:11px; color:#6b7280; font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;'>Next step</div>
-        <div style='margin-left:16px; line-height:1.5;'>
-        → <strong>Review legal documents</strong> by @Marina <span style='background:#fee2e2; color:#dc2626; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:500;'>Overdue</span>
-        </div>
-
-        </div>
-        """, unsafe_allow_html=True)
 
 
 def show_company_basic_details(company: Company):

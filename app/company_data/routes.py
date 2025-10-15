@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Optional, List
 
 from fastapi import APIRouter, Body, Depends, Response
 from google.cloud import storage
@@ -25,9 +26,9 @@ router = APIRouter(
 
 
 class SyncRequest(BaseModel):
-    sources: list[str]
+    sources: List[str]
     max_items: int = 100000
-    statuses: list[str] | None = Field(default_factory=lambda: ACTIVE_COMPANY_STATUSES)
+    statuses: Optional[List[str]] = Field(default_factory=lambda: ACTIVE_COMPANY_STATUSES)
 
 
 @router.post('/pull', status_code=HTTPStatus.ACCEPTED)

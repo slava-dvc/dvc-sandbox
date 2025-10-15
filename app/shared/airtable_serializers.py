@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Callable
+from typing import Dict, Callable, Union
 from urllib.parse import urlparse
 
 __all__ = ['field_serializers']
@@ -12,7 +12,7 @@ def _boolean_serializer(value):
     return value.lower() in {'1', 'true', 'yes'}
 
 
-def _get_value(value: list | tuple | str | int | float):
+def _get_value(value: Union[list, tuple, str, int, float]):
     if isinstance(value, (list, tuple)):
         if len(value) > 1:
             return None

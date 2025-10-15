@@ -11,7 +11,14 @@ from pydantic import ValidationError
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 from pymongo.asynchronous import database
-from google.cloud import firestore, pubsub, storage
+try:
+    from google.cloud import firestore, pubsub, storage
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    firestore = None
+    pubsub = None
+    storage = None
 from functools import cached_property
 from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware import gzip, trustedhost

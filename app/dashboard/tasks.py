@@ -5,17 +5,74 @@ import streamlit as st
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 import re
+import pandas as pd
 from app.shared.task import Task
 from app.dashboard.data import get_tasks, add_task, update_task, delete_task
 
 
-def parse_task_input(input_text: str) -> Tuple[str, Optional[date], Optional[str]]:
+def prepare_tasks_dataframe(tasks: List[Task]) -> pd.DataFrame:
+    """
+    Convert Task objects to a pandas DataFrame for st.data_editor
+    Sort order: completed ASC, due_date NULLS LAST ASC, created_at DESC
+    """
+    if not tasks:
+        return pd.DataFrame(columns=['id', 'completed', 'title', 'owner', 'due_date', 'due_display', 'status', 'created_at', 'notes', 'outcome'])
+    
+    today = date.today()
+    data = []
+    for task in tasks:
+        # Create readable due date with emoji indicator
+        if task.due_date:
+            days_diff = (task.due_date - today).days
+            if days_diff == 0:
+                due_display = "🟢 Today"
+            elif days_diff == 1:
+                due_display = "🟡 Tomorrow"
+            elif days_diff < 0:
+                due_display = f"🔴 {task.due_date.strftime('%b %d')}"
+            elif days_diff <= 2:
+                due_display = f"🟠 {task.due_date.strftime('%b %d')}"
+            else:
+                due_display = task.due_date.strftime('%b %d, %Y')
+        else:
+            due_display = "No date"
+        
+        data.append({
+            'id': task.id,
+            'completed': task.status == 'completed',
+            'title': task.text,
+            'owner': task.assignee if task.assignee else 'Unassigned',
+            'due_date': task.due_date,
+            'due_display': due_display,
+            'status': task.status,
+            'created_at': task.created_at,
+            'notes': task.notes or '',
+            'outcome': task.outcome or ''
+        })
+    
+    df = pd.DataFrame(data)
+    
+    # Sort: completed ASC (False first), then by due_date (nulls last), then by created_at DESC
+    df['due_date_sort'] = df['due_date'].fillna(pd.Timestamp.max.date())
+    df = df.sort_values(
+        by=['completed', 'due_date_sort', 'created_at'],
+        ascending=[True, True, False]
+    )
+    df = df.drop(columns=['due_date_sort'])
+    
+    # Reset index to avoid index mismatch issues
+    df = df.reset_index(drop=True)
+    
+    return df
+
+
+def parse_task_input(input_text: str) -> Tuple[str, Optional[date], Optional[str], Optional[str]]:
     """
     Parse task input in format: "setup call on 10/11 @Nick"
-    Returns: (title, due_date, assignee)
+    Returns: (title, due_date, assignee, error_message)
     """
     if not input_text or not input_text.strip():
-        return "", None, None
+        return "", None, None, None
     
     text = input_text.strip()
     assignee = None
@@ -38,6 +95,32 @@ def parse_task_input(input_text: str) -> Tuple[str, Optional[date], Optional[str
     elif re.search(r'\btoday\b', text, re.IGNORECASE):
         due_date = today
         text = re.sub(r'\s*\b(on\s+)?today\b', '', text, flags=re.IGNORECASE).strip()
+    # Check for "next week"
+    elif re.search(r'\bnext\s+week\b', text, re.IGNORECASE):
+        due_date = today + timedelta(days=7)
+        text = re.sub(r'\s*\b(on\s+)?next\s+week\b', '', text, flags=re.IGNORECASE).strip()
+    # Check for weekday names (Monday, Tuesday, etc.)
+    elif (weekday_match := re.search(r'\b(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b', text, re.IGNORECASE)):
+        is_next_week = bool(weekday_match.group(1))
+        day_name = weekday_match.group(2).lower()
+        
+        # Map day names to weekday numbers (0 = Monday, 6 = Sunday)
+        weekday_map = {
+            'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+            'friday': 4, 'saturday': 5, 'sunday': 6
+        }
+        target_weekday = weekday_map[day_name]
+        current_weekday = today.weekday()
+        
+        # Calculate days until target weekday
+        days_ahead = target_weekday - current_weekday
+        if days_ahead <= 0 or is_next_week:
+            # If the day has passed this week or "next" is specified, go to next week
+            days_ahead += 7
+        
+        due_date = today + timedelta(days=days_ahead)
+        text = text.replace(weekday_match.group(0), '').strip()
+        text = re.sub(r'\s*\bon\b\s*', ' ', text).strip()
     # Check for date patterns like 10/11 or 10/11/25
     else:
         date_match = re.search(r'(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?', text)
@@ -63,81 +146,31 @@ def parse_task_input(input_text: str) -> Tuple[str, Optional[date], Optional[str
     if due_date is None:
         due_date = today
     
+    # Validate that due_date is not in the past
+    if due_date < today:
+        error_msg = f"Cannot create task with past due date: {due_date.strftime('%m/%d/%Y')}. Please use today or a future date."
+        return "", due_date, assignee, error_msg
+    
     # Clean up title
     title = re.sub(r'\s+', ' ', text).strip()
     
-    return title, due_date, assignee
+    return title, due_date, assignee, None
 
 
 def show_tasks_section(company):
-    """Main tasks section for company pages"""
-    # Remove the Tasks header to match wireframe
-    
-    # Add CSS for clean, airy task cards (only once per section)
+    """Main tasks section for company pages with data editor"""
+    # Minimal CSS for data editor
     st.markdown("""
     <style>
-    .task-card {
-        background: #FAFAFA !important;
-        border: 1px solid #E9E9E9 !important;
-        border-radius: 8px !important;
-        margin: 8px 0 !important;
+    /* Compact row styling */
+    [data-testid="stDataFrame"] td {
         padding: 12px 16px !important;
-        cursor: pointer !important;
-        transition: all 0.2s ease !important;
+        min-height: 40px !important;
     }
-    .task-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-        transform: translateY(-1px) !important;
-    }
-    .task-title {
-        font-weight: 500 !important;
-        font-size: 16px !important;
-        line-height: 1.4 !important;
-        margin: 0 0 8px 0 !important;
-        color: #1a1a1a !important;
-    }
-    .task-metadata {
-        font-size: 14px !important;
-        color: #666 !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-    }
-    .task-owner {
-        display: flex !important;
-        align-items: center !important;
-        gap: 4px !important;
-    }
-    .task-due-date {
-        display: flex !important;
-        align-items: center !important;
-        gap: 4px !important;
-    }
-    .due-date-overdue { color: #ef4444 !important; }
-    .due-date-soon { color: #f97316 !important; }
-    .due-date-upcoming { color: #22c55e !important; }
-    .due-date-gray { color: #9ca3af !important; }
-    .task-expanded {
-        background: white !important;
-        border: 1px solid #E9E9E9 !important;
-        border-radius: 8px !important;
-        margin: 8px 0 !important;
-        padding: 16px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    }
-    .task-actions {
-        opacity: 0;
-        transition: opacity 0.2s ease;
-    }
-    .task-card:hover .task-actions {
-        opacity: 1;
-    }
-    
-    /* Hide empty button containers that appear as gray boxes */
-    [data-testid="stBaseButton-secondary"] {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
+    /* Completed row styling - strikethrough and opacity */
+    [data-testid="stDataFrame"] tbody tr:has(input[type="checkbox"]:checked) td {
+        opacity: 0.6;
+        text-decoration: line-through !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -151,29 +184,29 @@ def show_tasks_section(company):
     # Get tasks for this company
     all_tasks = get_tasks(company_id)
     
-    # Add task form (separate from filter)
+    # Add task form at the top
     show_add_task_form(company_id)
     
-    # Add filter as separate component
-    col_filter_header, col_filter_dropdown = st.columns([4, 1])
-    with col_filter_header:
-        pass  # Empty space for alignment - no rendering
-    with col_filter_dropdown:
+    # Header and filter row
+    col_header, col_filter = st.columns([3, 1])
+    
+    with col_header:
+        tasks_header = st.empty()
+        
+    with col_filter:
         filter_option = st.selectbox(
-            "Filter",
+            "View",
             options=["All tasks", "Active", "Completed", "Overdue", "My tasks"],
-            label_visibility="collapsed",
-            key="task_filter",
+            label_visibility="visible",
+            key="task_filter_view",
             index=0
         )
     
     # Apply filters
     today = date.today()
-    # Get current user name safely
     current_user = None
     if hasattr(st, 'user'):
         try:
-            # Try to get user name from different possible attributes
             if hasattr(st.user, 'given_name') and hasattr(st.user, 'family_name'):
                 current_user = f"{st.user.given_name} {st.user.family_name}"
             elif hasattr(st.user, 'name'):
@@ -183,117 +216,44 @@ def show_tasks_section(company):
         except:
             current_user = None
     
+    filtered_tasks = all_tasks
     if filter_option == "Active":
-        tasks = [t for t in all_tasks if t.status == "active" and (t.due_date is None or t.due_date >= today)]
+        filtered_tasks = [t for t in all_tasks if t.status == "active"]
     elif filter_option == "Completed":
-        tasks = [t for t in all_tasks if t.status == "completed"]
+        filtered_tasks = [t for t in all_tasks if t.status == "completed"]
     elif filter_option == "Overdue":
-        tasks = [t for t in all_tasks if t.status == "active" and t.due_date and t.due_date < today]
+        filtered_tasks = [t for t in all_tasks if t.status == "active" and t.due_date and t.due_date < today]
     elif filter_option == "My tasks":
         if current_user:
-            # Match assignee with current user (flexible matching)
-            tasks = [t for t in all_tasks if t.assignee and current_user.lower() in t.assignee.lower()]
-        else:
-            tasks = all_tasks
-    else:  # "All tasks"
-        tasks = all_tasks
+            filtered_tasks = [t for t in all_tasks if t.assignee and current_user.lower() in t.assignee.lower()]
     
-    # Separate active and completed tasks
-    active_tasks = [t for t in tasks if t.status == "active"]
-    completed_tasks = [t for t in tasks if t.status == "completed"]
+    # Count active tasks for header
+    active_count = len([t for t in filtered_tasks if t.status == "active"])
+    tasks_header.subheader(f"Active Tasks ({active_count})")
     
-    # Sort tasks
-    active_tasks.sort(key=lambda t: t.due_date if t.due_date else date.max)
-    completed_tasks.sort(key=lambda t: t.completed_at if t.completed_at else datetime.min, reverse=True)
-    
-    # Show active tasks
-    if active_tasks:
-        st.subheader(f"📋 Active Tasks ({len(active_tasks)})")
-        show_task_list(active_tasks, company_id, is_completed=False)
+    # Show tasks in data editor
+    if filtered_tasks:
+        show_tasks_data_editor(filtered_tasks, company_id)
     else:
-        st.info("No active tasks")
-    
-    # Show completed tasks (collapsible)
-    if completed_tasks:
-        with st.expander(f"✅ Completed Tasks ({len(completed_tasks)})", expanded=False):
-            show_task_list(completed_tasks, company_id, is_completed=True)
-    
-    # Handle complete modal trigger (inline editing is handled in show_task_list)
-    for task in all_tasks:
-        if st.session_state.get(f"completing_task_{task.id}", False):
-            show_complete_task_modal(task)
+        st.info("No tasks yet. Add the first follow-up.")
 
 
 def show_add_task_form(company_id: str):
-    """Form to add a new task with auto-parsing"""
-    # Add sticky positioning CSS for the input bar with comprehensive styling
+    """Compact form to add a new task with auto-parsing"""
     st.markdown("""
     <style>
-    /* Sticky positioning and layout */
     [data-testid="stForm"] {
-        position: sticky;
-        top: 0;
-        background: white;
-        z-index: 100;
-        padding: 16px 20px;
-        border-bottom: 1px solid #e5e7eb;
-        margin-bottom: 20px;
-        display: flex !important;
-        align-items: center !important;
+        padding: 16px !important;
+        margin-bottom: 16px !important;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
     }
-    
-    /* Consistent heights */
-    [data-testid="stForm"] input,
-    [data-testid="stForm"] button,
-    [data-testid="stForm"] [data-baseweb="select"] {
-        min-height: 40px !important;
-        height: 40px !important;
-    }
-    
-    /* Input field styling */
-    [data-testid="stForm"] input {
-        padding: 12px 16px !important;
-        background: #F7F8FA !important;
-        border-radius: 6px !important;
-        border: 1px solid #e5e7eb !important;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
-    }
-    
-    /* Primary Add button - emphasized with white background */
-    [data-testid="stForm"] button[kind="primary"],
-    [data-testid="stForm"] button[data-testid="baseButton-primary"],
-    [data-testid="stForm"] button[data-testid="stBaseButton-primary"],
-    [data-testid="stForm"] button[data-testid="stBaseButton-primaryFormSubmit"] {
-        background: white !important;
-        color: #1a1a1a !important;
-        border: 1px solid #e5e7eb !important;
-        font-weight: 500 !important;
-        border-radius: 6px !important;
-    }
-    
-    /* Override Streamlit's default primary button styling */
-    [data-testid="stForm"] button[data-testid="baseButton-primary"]:hover,
-    [data-testid="stForm"] button[data-testid="stBaseButton-primary"]:hover,
-    [data-testid="stForm"] button[data-testid="stBaseButton-primaryFormSubmit"]:hover {
-        background: #f8f9fa !important;
-        color: #1a1a1a !important;
-        border: 1px solid #e5e7eb !important;
-    }
-    
-    /* Filter dropdown - secondary styling */
-    [data-testid="stForm"] [data-baseweb="select"] {
-        background: #F7F8FA !important;
-        border-radius: 6px !important;
-    }
-    
-    /* Add spacing between elements */
-    [data-testid="stForm"] [data-testid="column"] {
+    [data-testid="stForm"] > div {
         gap: 12px !important;
     }
-    
-    /* Ensure form content has proper padding */
-    [data-testid="stForm"] > div {
-        padding: 0 4px !important;
+    [data-testid="stForm"] [data-testid="column"] {
+        padding: 0 8px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -304,19 +264,22 @@ def show_add_task_form(company_id: str):
         with col_input:
             task_input = st.text_input(
                 "Add new task",
-                placeholder='e.g., "setup call on 10/11 @Nick" or "review deck tomorrow @Marina"',
+                placeholder="Add a task…",
                 key=f"task_input_{company_id}",
                 label_visibility="collapsed"
             )
         
         with col_add:
-            submitted = st.form_submit_button("➕ Add", use_container_width=True, type="primary")
+            submitted = st.form_submit_button("+ Add", use_container_width=True, type="secondary")
         
         if submitted and task_input and task_input.strip():
             # Parse the input
-            title, due_date, assignee = parse_task_input(task_input)
+            title, due_date, assignee, error_msg = parse_task_input(task_input)
             
-            if title:
+            # Check if there's a validation error
+            if error_msg:
+                st.error(error_msg)
+            elif title:
                 # Get current user as creator
                 creator = "Anonymous"
                 if hasattr(st, 'user'):
@@ -326,7 +289,7 @@ def show_add_task_form(company_id: str):
                         elif hasattr(st.user, 'name'):
                             creator = st.user.name
                         elif hasattr(st.user, 'email'):
-                            creator = st.user.email.split('@')[0]  # Use email prefix as name
+                            creator = st.user.email.split('@')[0]
                     except:
                         creator = "Anonymous"
                 
@@ -336,297 +299,710 @@ def show_add_task_form(company_id: str):
                 
                 try:
                     task = add_task(company_id, title, due_date, assignee, created_by=creator)
-                    st.success(f"✅ Task added: '{title}' → @{assignee} (Due: {due_date.strftime('%m/%d')})")
+                    # Store success message in session state to persist across rerun
+                    st.session_state[f"task_added_success_{company_id}"] = title
                     st.rerun()
                 except Exception as e:
-                    st.error(f"❌ Error adding task: {str(e)}")
+                    st.error(f"Error adding task: {str(e)}")
             else:
                 st.warning("Please enter a task description")
+        
+        # Show success message if task was just added (at bottom of form for consistency)
+        if f"task_added_success_{company_id}" in st.session_state:
+            st.success(f"✅ Task added: {st.session_state[f'task_added_success_{company_id}']}")
+            # Clear the success message after displaying
+            del st.session_state[f"task_added_success_{company_id}"]
+
+
+def format_due_date_readable(due_date: Optional[date]) -> str:
+    """Format due date as human-readable text (Today, Tomorrow, or date)"""
+    if not due_date:
+        return "No date"
     
-    # Filter is now handled separately, no need to return it
+    today = date.today()
+    days_diff = (due_date - today).days
+    
+    if days_diff == 0:
+        return "Today"
+    elif days_diff == 1:
+        return "Tomorrow"
+    else:
+        return due_date.strftime('%b %d, %Y')
 
 
-def show_task_list(tasks: List[Task], company_id: str, is_completed: bool = False):
-    """Display a list of tasks with clean Todoist-style design"""
+def show_tasks_data_editor(tasks: List[Task], company_id: str):
+    """Display tasks using st.data_editor with inline editing"""
+    # Prepare DataFrame
+    df = prepare_tasks_dataframe(tasks)
+    
+    if df.empty:
+        st.info("No tasks yet. Add the first follow-up.")
+        return
+    
+    # Team members for owner selection
+    team_members = ["Unassigned", "Nick", "Alex", "Sarah", "Jordan", "Anonymous"]
+    
+    # Configure columns
+    column_config = {
+        "id": None,  # Hide ID column
+        "status": None,  # Hide status column
+        "created_at": None,  # Hide created_at column
+        "outcome": None,  # Hide outcome column
+        "completed": st.column_config.CheckboxColumn(
+            "Done",
+            help="Mark task as completed",
+            default=False,
+            width="small"
+        ),
+        "title": st.column_config.TextColumn(
+            "Task",
+            help="Task description",
+            max_chars=200,
+            width="large"
+        ),
+        "owner": st.column_config.SelectboxColumn(
+            "Owner",
+            help="Task assignee",
+            options=team_members,
+            default="Unassigned",
+            width="medium"
+        ),
+        "due_display": st.column_config.TextColumn(
+            "Due",
+            help="Due date with color coding",
+            width="medium",
+            disabled=True
+        ),
+        "due_date": st.column_config.DateColumn(
+            "Edit Due",
+            help="Click to edit due date",
+            format="MMM D, YYYY",
+            width="medium"
+        ),
+        "notes": st.column_config.TextColumn(
+            "Notes",
+            help="Task notes and context",
+            max_chars=500,
+            width="large"
+        ),
+    }
+    
+    # Initialize session state with current DataFrame if not exists or if task count changed
+    session_key = f"tasks_df_{company_id}"
+    if session_key not in st.session_state or len(st.session_state[session_key]) != len(df):
+        st.session_state[session_key] = df.copy()
+    
+    # Display data editor
+    edited_df = st.data_editor(
+        df,
+        column_config=column_config,
+        hide_index=True,
+        use_container_width=True,
+        num_rows="fixed",
+        disabled=["id", "status", "created_at", "outcome", "due_display"],
+        key=f"tasks_editor_{company_id}"
+    )
+    
+    # Handle edits - only process if there are actual changes
+    if not edited_df.equals(st.session_state[session_key]):
+        handle_task_edits(edited_df, st.session_state[session_key], company_id)
+        st.session_state[session_key] = edited_df.copy()
+        st.rerun()
+
+
+def handle_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, company_id: str):
+    """Process changes from data_editor and update tasks"""
+    # Track if any changes were made
+    changes_made = False
+    
+    # Compare DataFrames to find changes
+    for idx in range(len(edited_df)):
+        task_id = edited_df.iloc[idx]['id']
+        
+        # Get values for comparison
+        edited_completed = bool(edited_df.iloc[idx]['completed'])
+        orig_completed = bool(original_df.iloc[idx]['completed'])
+        edited_title = str(edited_df.iloc[idx]['title'])
+        orig_title = str(original_df.iloc[idx]['title'])
+        edited_owner = str(edited_df.iloc[idx]['owner'])
+        orig_owner = str(original_df.iloc[idx]['owner'])
+        edited_due = edited_df.iloc[idx]['due_date']
+        orig_due = original_df.iloc[idx]['due_date']
+        edited_notes = str(edited_df.iloc[idx]['notes']) if pd.notna(edited_df.iloc[idx]['notes']) else ''
+        orig_notes = str(original_df.iloc[idx]['notes']) if pd.notna(original_df.iloc[idx]['notes']) else ''
+        
+        # Collect updates for this task
+        task_updates = {}
+        
+        # Check if completed status changed
+        if edited_completed != orig_completed:
+            if edited_completed:
+                task_updates['status'] = "completed"
+                task_updates['completed_at'] = datetime.now(timezone.utc)
+            else:
+                task_updates['status'] = "active"
+                task_updates['completed_at'] = None
+                task_updates['outcome'] = None
+        
+        # Check if title changed
+        if edited_title != orig_title:
+            task_updates['text'] = edited_title
+        
+        # Check if owner changed
+        if edited_owner != orig_owner:
+            task_updates['assignee'] = edited_owner if edited_owner != 'Unassigned' else None
+        
+        # Check if due_date changed (handle NaN comparison and type conversion)
+        edited_due_normalized = None
+        orig_due_normalized = None
+        
+        if not pd.isna(edited_due):
+            # Convert to date object if it's a Timestamp
+            if isinstance(edited_due, pd.Timestamp):
+                edited_due_normalized = edited_due.date()
+            elif isinstance(edited_due, date):
+                edited_due_normalized = edited_due
+        
+        if not pd.isna(orig_due):
+            # Convert to date object if it's a Timestamp
+            if isinstance(orig_due, pd.Timestamp):
+                orig_due_normalized = orig_due.date()
+            elif isinstance(orig_due, date):
+                orig_due_normalized = orig_due
+        
+        # Only update due_date if it actually changed AND is not in the past
+        # (or if it's being cleared)
+        if edited_due_normalized != orig_due_normalized:
+            # Only validate for past dates if we're setting a new date (not just keeping the old one)
+            if edited_due_normalized is not None and edited_due_normalized < date.today():
+                # Skip this update - don't allow setting past due dates
+                # (but allow keeping existing past dates)
+                pass
+            else:
+                task_updates['due_date'] = edited_due_normalized
+        
+        # Check if notes changed
+        if edited_notes != orig_notes:
+            task_updates['notes'] = edited_notes.strip() if edited_notes.strip() else None
+        
+        # Apply all updates for this task at once
+        if task_updates:
+            update_task(task_id, **task_updates)
+            changes_made = True
+    
+    return changes_made
+
+
+def get_due_date_color_class(due_date: Optional[date]) -> str:
+    """Get CSS color class for due date status"""
+    if not due_date:
+        return "due-date-gray"
+    
+    today = date.today()
+    days_diff = (due_date - today).days
+    
+    if days_diff < 0:
+        return "due-date-overdue"   # 🔴 #ef4444 red
+    elif days_diff <= 2:
+        return "due-date-soon"      # 🟠 #f97316 orange  
+    else:
+        return "due-date-upcoming"  # 🟢 #22c55e green
+
+
+def get_due_date_dot_class(due_date: Optional[date]) -> str:
+    """Get emoji indicator for due date status (Todoist-style)"""
+    if not due_date:
+        return ""  # No indicator
+    
+    today = date.today()
+    days_diff = (due_date - today).days
+    
+    if days_diff < 0:
+        return "🔴"  # Red circle - Overdue
+    elif days_diff == 0:
+        return "🟢"  # Green circle - Today
+    elif days_diff == 1:
+        return "🟡"  # Yellow circle - Tomorrow
+    elif days_diff <= 7:
+        return "🟣"  # Purple circle - 2-7 days (THIS WAS THE BUG!)
+    else:
+        return "⚪"  # White/gray circle - 8+ days
+
+
+def show_active_tasks_list(tasks: List[Task], company_id: str):
+    """Display active tasks as clean 1-line Todoist-style cards"""
+    
+    # Add CSS to force left-alignment of all task elements using Streamlit theme variables
+    st.markdown("""
+    <style>
+    /* Force left alignment for task list container */
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+    }
+    
+    /* Force left alignment for task buttons */
+    [data-testid="stBaseButton-secondary"] {
+        margin-left: 0 !important;
+        margin-right: auto !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+    }
+    
+    /* Ensure button content is left-aligned */
+    [data-testid="stBaseButton-secondary"] > div {
+        text-align: left !important;
+        width: 100% !important;
+    }
+    
+    /* Remove any centering from containers */
+    div[data-testid="column"] {
+        align-items: flex-start !important;
+    }
+    
+    /* Style checkbox buttons - make them square and minimal */
+    button[data-testid*="complete_checkbox"] {
+        width: 32px !important;
+        min-width: 32px !important;
+        height: 32px !important;
+        padding: 4px !important;
+        font-size: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-top: 8px !important;
+        background: var(--secondary-background-color) !important;
+        border: 1px solid #d1d5db !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Task card button - one-line layout with chip styling */
+    [data-testid="stBaseButton-secondary"]:has([data-testid*="task_card"]) {
+        min-height: 44px !important;
+        height: 44px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        line-height: 1.4 !important;
+        text-align: left !important;
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        background: var(--secondary-background-color) !important;
+        border: 1px solid #d1d5db !important;
+        margin: 2px 0 !important;
+    }
+    
+    /* Task card text styling */
+    [data-testid="stBaseButton-secondary"]:has([data-testid*="task_card"]) > div {
+        color: var(--text-color) !important;
+        line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     for task in tasks:
-        if is_completed:
-            # Completed task display with inline editing
+        # Check if this task is being edited inline
+        is_editing = st.session_state.get(f"inline_editing_{task.id}", False)
+        
+        if is_editing:
+            # Store original text for comparison if not already stored
+            if f"original_text_{task.id}" not in st.session_state:
+                st.session_state[f"original_text_{task.id}"] = task.text
             
-            # Check if this task is being edited inline
-            is_editing = st.session_state.get(f"inline_editing_{task.id}", False)
-            
-            if is_editing:
-                # Inline edit mode for completed task
-                col_title, col_date = st.columns([3, 2])
+            # Expanded edit mode - using form with Enter key support
+            with st.form(key=f"edit_task_{task.id}"):
+                # Row 1: Full-width task text input
+                new_title = st.text_input(
+                    "Task text",
+                    value=task.text,
+                    key=f"edit_title_{task.id}",
+                    placeholder="Enter task title...",
+                    label_visibility="collapsed"
+                )
                 
-                with col_title:
-                    new_title = st.text_input(
-                        "Title",
-                        value=task.text,
-                        key=f"inline_title_{task.id}",
-                        label_visibility="collapsed"
-                    )
+                # Row 2: Inline metadata - due date and assignee
+                col_due, col_assignee, col_spacer = st.columns([3, 3, 6], gap="small")
                 
-                with col_date:
+                with col_due:
                     new_due_date = st.date_input(
                         "Due date",
                         value=task.due_date if task.due_date else date.today(),
-                        key=f"inline_date_{task.id}",
+                        min_value=date.today(),
+                        key=f"edit_due_date_{task.id}",
+                        label_visibility="visible"
+                    )
+                
+                with col_assignee:
+                    # Mock team members for selectbox
+                    team_members = ["Anonymous", "Nick", "Alex", "Sarah", "Jordan"]
+                    current_assignee = task.assignee if task.assignee in team_members else "Anonymous"
+                    new_assignee = st.selectbox(
+                        "Assignee",
+                        options=team_members,
+                        index=team_members.index(current_assignee),
+                        key=f"edit_assignee_{task.id}",
+                        label_visibility="visible"
+                    )
+                
+                # Notes field (collapsed by default for compact layout)
+                with st.expander("Notes", expanded=False):
+                    new_notes = st.text_area(
+                        "Notes",
+                        value=task.notes or "",
+                        key=f"edit_notes_{task.id}",
+                        placeholder="Add notes, updates, or context here…",
                         label_visibility="collapsed"
                     )
                 
-                # Notes section
-                new_notes = st.text_area(
-                    "Notes / Description",
-                    value=task.notes if task.notes else "",
-                    key=f"inline_notes_{task.id}",
-                    height=80,
-                    placeholder="Add notes or description..."
+                # Footer: Right-aligned buttons with spacer
+                col_spacer, col_save, col_cancel, col_delete = st.columns([8, 1, 1, 1], gap="small")
+                
+                # Determine if Save should be disabled
+                title_changed = new_title != st.session_state[f"original_text_{task.id}"]
+                title_empty = not new_title or not new_title.strip()
+                save_disabled = title_empty or not title_changed
+                
+                with col_save:
+                    save_clicked = st.form_submit_button("Save", type="primary", disabled=save_disabled, use_container_width=True)
+                
+                with col_cancel:
+                    cancel_clicked = st.form_submit_button("Cancel", type="secondary", use_container_width=True)
+                
+                with col_delete:
+                    delete_clicked = st.form_submit_button("Delete", type="secondary", use_container_width=True)
+                
+                # Status message placeholder
+                status_placeholder = st.empty()
+                if not title_changed and not title_empty:
+                    status_placeholder.caption("No changes to save")
+                elif title_empty:
+                    status_placeholder.caption("Title cannot be empty")
+                else:
+                    status_placeholder.caption("Press Enter to save")
+                
+                # Handle form submission (including Enter key press)
+                if save_clicked:
+                    if new_title and new_title.strip():
+                        try:
+                            update_task(
+                                task.id, 
+                                text=new_title.strip(), 
+                                due_date=new_due_date, 
+                                assignee=new_assignee if new_assignee else None,
+                                notes=new_notes.strip() or None
+                            )
+                            # Clear session state
+                            st.session_state[f"inline_editing_{task.id}"] = False
+                            if f"original_text_{task.id}" in st.session_state:
+                                del st.session_state[f"original_text_{task.id}"]
+                            status_placeholder.success("Saved ✓")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error updating task: {str(e)}")
+                    else:
+                        st.warning("Please enter a task title")
+                elif cancel_clicked:
+                    st.session_state[f"inline_editing_{task.id}"] = False
+                    if f"original_text_{task.id}" in st.session_state:
+                        del st.session_state[f"original_text_{task.id}"]
+                    st.rerun()
+                elif delete_clicked:
+                    # Show confirmation before deleting
+                    if st.session_state.get(f"confirm_delete_{task.id}", False):
+                        try:
+                            delete_task(task.id)
+                            st.session_state[f"inline_editing_{task.id}"] = False
+                            if f"original_text_{task.id}" in st.session_state:
+                                del st.session_state[f"original_text_{task.id}"]
+                            if f"confirm_delete_{task.id}" in st.session_state:
+                                del st.session_state[f"confirm_delete_{task.id}"]
+                            st.success("Task deleted!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error deleting task: {str(e)}")
+                    else:
+                        st.session_state[f"confirm_delete_{task.id}"] = True
+                        st.warning("Click Delete again to confirm")
+                        st.rerun()
+        else:
+            # Collapsed view - checkbox + task card
+            # Layout: Checkbox button on left, task card on right
+            col_checkbox, col_task = st.columns([0.8, 11.2], vertical_alignment="top")
+            
+            with col_checkbox:
+                # Checkbox button to complete task
+                if st.button(
+                    "☐",
+                    key=f"complete_checkbox_{task.id}",
+                    help="Complete task",
+                    type="secondary"
+                ):
+                    # When clicked, trigger completion dialog
+                    st.session_state[f"completing_task_{task.id}"] = True
+                    st.rerun()
+            
+            with col_task:
+                # Create clickable task card with semantic metadata (no emojis)
+                # Format owner chip - calm styling
+                owner_text = task.assignee if task.assignee else "Unassigned"
+                owner_chip = f"Owner: {owner_text}"
+                
+                # Format due date chip - show overdue in context, not with emoji
+                today = date.today()
+                if task.due_date:
+                    due_str = task.due_date.strftime('%b %d, %Y')
+                    if task.due_date < today:
+                        # Overdue - will be styled red via CSS
+                        due_chip = f"Due: {due_str}"
+                    else:
+                        due_chip = f"Due: {due_str}"
+                else:
+                    due_chip = "Due: Not set"
+                
+                task_card_clicked = st.button(
+                    f"{task.text}  •  {owner_chip}  •  {due_chip}",
+                    key=f"task_card_{task.id}",
+                    use_container_width=True,
+                    type="secondary"
                 )
                 
-                # Action buttons
-                col_save, col_cancel = st.columns([1, 1])
-                with col_save:
-                    if st.button("💾 Save", key=f"save_inline_{task.id}", use_container_width=True):
-                        update_task(task.id, text=new_title, due_date=new_due_date, notes=new_notes)
-                        st.session_state[f"inline_editing_{task.id}"] = False
-                        st.success("✅ Task updated!")
-                        st.rerun()
-                with col_cancel:
-                    if st.button("❌ Cancel", key=f"cancel_inline_{task.id}", use_container_width=True):
-                        st.session_state[f"inline_editing_{task.id}"] = False
-                        st.rerun()
-            else:
-                # Normal display mode
-                col_title, col_actions = st.columns([5, 1])
-                
-                with col_title:
-                    # Use a clickable button with strikethrough styling for completed tasks
-                    if st.button(
-                        f"~~{task.text}~~",
-                        key=f"title_btn_{task.id}",
-                        help="Click to edit completed task",
-                        use_container_width=True,
-                        type="secondary"
-                    ):
-                        st.session_state[f"inline_editing_{task.id}"] = True
-                        st.rerun()
+                if task_card_clicked:
+                    st.session_state[f"inline_editing_{task.id}"] = True
+                    st.rerun()
+            
+            # Handle inline completion mode
+            if st.session_state.get(f"completing_task_{task.id}", False):
+                # Inline completion form - using form for Enter key support
+                with st.form(key=f"complete_form_{task.id}"):
+                    st.markdown(f"**Complete Task: {task.text}**")
                     
-                    # Notes/description if exists
-                    if task.notes and task.notes.strip():
-                        st.markdown(f"""
-                        <div style='color: #495057; font-size: 14px; margin-top: 4px; padding: 8px; 
-                                    background-color: #f8f9fa; border-left: 3px solid #adb5bd; border-radius: 3px;'>
-                            📝 {task.notes}
-                        </div>
-                        """, unsafe_allow_html=True)
+                    # Outcome/Result field - changed to text_input
+                    outcome = st.text_input(
+                        "Outcome / Result (optional):",
+                        placeholder="Enter the outcome or result from this task...",
+                        key=f"complete_outcome_{task.id}"
+                    )
                     
-                    # Outcome box
-                    if task.outcome:
-                        st.markdown(f"""
-                        <div style='background-color: #d4edda; color: #155724; padding: 8px 12px; 
-                                    border-radius: 4px; margin-top: 8px; border: 1px solid #c3e6cb;'>
-                            ✅ <strong>Outcome:</strong> {task.outcome}
-                        </div>
-                        """, unsafe_allow_html=True)
+                    # Action buttons
+                    col_complete, col_cancel = st.columns([1, 1])
                     
-                    # Metadata
-                    created_date = task.created_at.strftime('%b %d, %Y') if task.created_at else 'Unknown'
-                    st.markdown(f"<div style='color: #6c757d; font-size: 14px; margin-top: 8px;'>👤 {task.assignee} · 🧾 Created by {task.created_by} on {created_date}</div>", unsafe_allow_html=True)
-                
-                with col_actions:
-                    st.markdown('<div class="task-actions">', unsafe_allow_html=True)
-                    if st.button("↩️", key=f"reopen_{task.id}", help="Reopen task", type="secondary"):
-                        update_task(task.id, status="active", outcome=None, completed_at=None)
-                        st.success("Task reopened!")
+                    with col_complete:
+                        complete_clicked = st.form_submit_button("✅ Complete", type="primary")
+                    
+                    with col_cancel:
+                        cancel_clicked = st.form_submit_button("❌ Cancel", type="secondary")
+                    
+                    # Handle form submission
+                    if complete_clicked:
+                        try:
+                            update_task(
+                                task.id,
+                                status="completed",
+                                outcome=outcome if outcome.strip() else None,
+                                completed_at=datetime.now(timezone.utc)
+                            )
+                            st.success("✅ Task completed!")
+                            st.session_state[f"completing_task_{task.id}"] = False
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error completing task: {str(e)}")
+                    
+                    if cancel_clicked:
+                        st.session_state[f"completing_task_{task.id}"] = False
                         st.rerun()
-                    st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            # Active task display with inline editing
+
+
+def show_completed_tasks_section(tasks: List[Task], company_id: str, expanded: bool = False):
+    """Display completed tasks in collapsible section with inline editing support"""
+    if not tasks:
+        return
+    
+    with st.expander(f"✅ Completed Tasks ({len(tasks)})", expanded=expanded):
+        for task in tasks:
+            # Format dates for display
+            created_date = task.created_at.strftime('%b %d, %Y') if task.created_at else 'Unknown'
+            completed_date = task.completed_at.strftime('%b %d, %Y') if task.completed_at else 'Unknown'
             
             # Check if this task is being edited inline
             is_editing = st.session_state.get(f"inline_editing_{task.id}", False)
             
             if is_editing:
-                # Expanded edit mode
-                with st.container():
-                    st.markdown(f'<div class="task-expanded">', unsafe_allow_html=True)
+                # Store original text for comparison if not already stored
+                if f"original_text_{task.id}" not in st.session_state:
+                    st.session_state[f"original_text_{task.id}"] = task.text
+                
+                # Expanded edit mode - using form with Enter key support
+                with st.form(key=f"edit_completed_task_{task.id}"):
+                    # Row 1: Full-width task text input
+                    new_title = st.text_input(
+                        "Task text",
+                        value=task.text,
+                        key=f"edit_completed_title_{task.id}",
+                        placeholder="Enter task title...",
+                        label_visibility="collapsed"
+                    )
                     
-                    with st.form(key=f"edit_task_{task.id}"):
-                        # Edit mode - show form fields
-                        new_title = st.text_input(
-                            "Title",
-                            value=task.text,
-                            key=f"edit_title_{task.id}",
-                            placeholder="Enter task title..."
+                    # Row 2: Inline metadata - due date and assignee
+                    col_due, col_assignee, col_spacer = st.columns([3, 3, 6], gap="small")
+                    
+                    with col_due:
+                        new_due_date = st.date_input(
+                            "Due date",
+                            value=task.due_date if task.due_date else date.today(),
+                            min_value=date.today(),
+                            key=f"edit_completed_due_date_{task.id}",
+                            label_visibility="visible"
                         )
-                        
-                        # Notes/description
+                    
+                    with col_assignee:
+                        # Mock team members for selectbox
+                        team_members = ["Anonymous", "Nick", "Alex", "Sarah", "Jordan"]
+                        current_assignee = task.assignee if task.assignee in team_members else "Anonymous"
+                        new_assignee = st.selectbox(
+                            "Assignee",
+                            options=team_members,
+                            index=team_members.index(current_assignee),
+                            key=f"edit_completed_assignee_{task.id}",
+                            label_visibility="visible"
+                        )
+                    
+                    # Notes and Outcome in expanders for compact layout
+                    with st.expander("Notes", expanded=False):
                         new_notes = st.text_area(
-                            "Description",
+                            "Notes",
                             value=task.notes or "",
-                            key=f"edit_notes_{task.id}",
-                            placeholder="Add notes or description..."
+                            key=f"edit_completed_notes_{task.id}",
+                            placeholder="Add notes, updates, or context here…",
+                            label_visibility="collapsed"
                         )
-                        
-                        # Due date picker
-                        col_date, col_actions = st.columns([3, 1])
-                        with col_date:
-                            new_due_date = st.date_input(
-                                "⏰ Due date",
-                                value=task.due_date,
-                                key=f"edit_due_date_{task.id}"
-                            )
-                        
-                        with col_actions:
-                            st.markdown('<br>', unsafe_allow_html=True)  # Spacer
-                            col_save, col_cancel = st.columns([1, 1])
-                            with col_save:
-                                if st.form_submit_button("Save", type="primary"):
-                                    if new_title and new_title.strip():
-                                        update_task(task.id, text=new_title.strip(), due_date=new_due_date, notes=new_notes.strip() or None)
-                                        st.session_state[f"inline_editing_{task.id}"] = False
-                                        st.success("Task updated!")
-                                        st.rerun()
-                                    else:
-                                        st.warning("Please enter a task title")
-                            
-                            with col_cancel:
-                                if st.form_submit_button("Cancel"):
-                                    st.session_state[f"inline_editing_{task.id}"] = False
-                                    st.rerun()
                     
-                    st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                # Collapsed view - clean two-line card
-                # Determine due date color class
-                today = date.today()
-                due_date_class = "due-date-gray"
-                due_date_str = "No due date"
-                
-                if task.due_date:
-                    days_until_due = (task.due_date - today).days
-                    due_date_str = task.due_date.strftime('%m/%d/%Y')
+                    with st.expander("Outcome", expanded=bool(task.outcome)):
+                        new_outcome = st.text_area(
+                            "Outcome",
+                            value=task.outcome or "",
+                            key=f"edit_completed_outcome_{task.id}",
+                            placeholder="Enter the outcome or result from this task...",
+                            label_visibility="collapsed"
+                        )
                     
-                    if days_until_due < 0:
-                        due_date_class = "due-date-overdue"
-                    elif days_until_due <= 2:
-                        due_date_class = "due-date-soon"
+                    # Footer: Right-aligned buttons with spacer
+                    col_spacer, col_save, col_cancel, col_delete = st.columns([8, 1, 1, 1], gap="small")
+                    
+                    # Determine if Save should be disabled
+                    title_changed = new_title != st.session_state[f"original_text_{task.id}"]
+                    title_empty = not new_title or not new_title.strip()
+                    save_disabled = title_empty or not title_changed
+                    
+                    with col_save:
+                        save_clicked = st.form_submit_button("Save", type="primary", disabled=save_disabled, use_container_width=True)
+                    
+                    with col_cancel:
+                        cancel_clicked = st.form_submit_button("Cancel", type="secondary", use_container_width=True)
+                    
+                    with col_delete:
+                        delete_clicked = st.form_submit_button("Delete", type="secondary", use_container_width=True)
+                    
+                    # Status message placeholder
+                    status_placeholder = st.empty()
+                    if not title_changed and not title_empty:
+                        status_placeholder.caption("No changes to save")
+                    elif title_empty:
+                        status_placeholder.caption("Title cannot be empty")
                     else:
-                        due_date_class = "due-date-upcoming"
+                        status_placeholder.caption("Press Enter to save")
+                    
+                    # Handle form submission (including Enter key press)
+                    if save_clicked:
+                        if new_title and new_title.strip():
+                            try:
+                                update_task(
+                                    task.id, 
+                                    text=new_title.strip(), 
+                                    due_date=new_due_date, 
+                                    assignee=new_assignee if new_assignee else None,
+                                    notes=new_notes.strip() or None,
+                                    outcome=new_outcome.strip() or None
+                                )
+                                # Clear session state
+                                st.session_state[f"inline_editing_{task.id}"] = False
+                                if f"original_text_{task.id}" in st.session_state:
+                                    del st.session_state[f"original_text_{task.id}"]
+                                status_placeholder.success("Saved ✓")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error updating task: {str(e)}")
+                        else:
+                            st.warning("Please enter a task title")
+                    elif cancel_clicked:
+                        st.session_state[f"inline_editing_{task.id}"] = False
+                        if f"original_text_{task.id}" in st.session_state:
+                            del st.session_state[f"original_text_{task.id}"]
+                        st.rerun()
+                    elif delete_clicked:
+                        # Show confirmation before deleting
+                        if st.session_state.get(f"confirm_delete_{task.id}", False):
+                            try:
+                                delete_task(task.id)
+                                st.session_state[f"inline_editing_{task.id}"] = False
+                                if f"original_text_{task.id}" in st.session_state:
+                                    del st.session_state[f"original_text_{task.id}"]
+                                if f"confirm_delete_{task.id}" in st.session_state:
+                                    del st.session_state[f"confirm_delete_{task.id}"]
+                                st.success("Task deleted!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error deleting task: {str(e)}")
+                        else:
+                            st.session_state[f"confirm_delete_{task.id}"] = True
+                            st.warning("Click Delete again to confirm")
+                            st.rerun()
+            else:
+                # View mode - show completed task as clickable card
+                # Create a clickable container for the task
+                if st.button(
+                    f"~~{task.text}~~",
+                    key=f"completed_task_card_{task.id}",
+                    help="Click to edit task",
+                    use_container_width=True,
+                    type="secondary"
+                ):
+                    st.session_state[f"inline_editing_{task.id}"] = True
+                    st.rerun()
                 
-                # Clean task card without buttons - just display
-                st.markdown(f'<div class="task-card">', unsafe_allow_html=True)
-                
-                # Two-line layout
+            # Metadata
+            st.markdown(f"Owner: {task.assignee} · Created by {task.created_by} on {created_date} · Completed on {completed_date}")
+            
+            # Outcome if exists
+            if task.outcome:
                 st.markdown(f"""
-                <div class="task-title">{task.text}</div>
-                <div class="task-metadata">
-                    <div class="task-owner">👤 {task.assignee}</div>
-                    <div class="task-due-date {due_date_class}">⏰ {due_date_str}</div>
+                <div style='background-color: #d4edda; color: #155724; padding: 8px 12px; 
+                            border-radius: 4px; margin: 8px 0; border: 1px solid #c3e6cb;'>
+                    ✅ <strong>Outcome:</strong> {task.outcome}
                 </div>
                 """, unsafe_allow_html=True)
-                
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                # Add action buttons below the card
-                col_edit, col_complete = st.columns([1, 1])
-                
-                with col_edit:
-                    if st.button("✏️ Edit", key=f"edit_{task.id}", help="Edit task", type="secondary"):
-                        st.session_state[f"inline_editing_{task.id}"] = True
-                        st.rerun()
-                
-                with col_complete:
-                    if st.button("✓ Complete", key=f"complete_{task.id}", help="Complete task", type="secondary"):
-                        st.session_state[f"completing_task_{task.id}"] = True
-                        st.rerun()
-
-
-@st.dialog("Edit Task")
-def show_task_edit_modal(task: Task):
-    """Modal to edit an existing task"""
-    st.markdown(f"**{task.text}**")
-    st.markdown("---")
-    
-    # Edit fields
-    new_title = st.text_input("Task Title", value=task.text, key=f"modal_edit_title_{task.id}")
-    new_assignee = st.text_input("Assignee", value=task.assignee, key=f"modal_edit_assignee_{task.id}")
-    new_due_date = st.date_input("Due Date", value=task.due_date if task.due_date else date.today(), key=f"modal_edit_due_{task.id}")
-    new_notes = st.text_area("Notes", value=task.notes if task.notes else "", key=f"modal_edit_notes_{task.id}")
-    
-    st.markdown("---")
-    
-    # Action buttons
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("💾 Save", type="primary", use_container_width=True, key=f"modal_save_{task.id}"):
-            try:
-                update_task(task.id, 
-                          text=new_title,
-                          assignee=new_assignee,
-                          due_date=new_due_date,
-                          notes=new_notes)
-                st.success("✅ Task updated successfully!")
-                st.session_state[f"editing_task_{task.id}"] = False
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error updating task: {str(e)}")
-    
-    with col2:
-        if st.button("❌ Cancel", use_container_width=True, key=f"modal_cancel_{task.id}"):
-            st.session_state[f"editing_task_{task.id}"] = False
-            st.rerun()
-    
-    with col3:
-        if st.button("🗑️ Delete", use_container_width=True, key=f"modal_delete_{task.id}"):
-            try:
-                delete_task(task.id)
-                st.success("✅ Task deleted successfully!")
-                st.session_state[f"editing_task_{task.id}"] = False
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error deleting task: {str(e)}")
-
-
-@st.dialog("Complete Task")
-def show_complete_task_modal(task: Task):
-    """Modal to complete a task with outcome"""
-    st.markdown(f"**{task.text}**")
-    st.markdown("---")
-    
-    outcome = st.text_area(
-        "Outcome / Decision:",
-        placeholder="Enter the outcome or decision from this task...",
-        key=f"modal_outcome_{task.id}"
-    )
-    
-    st.markdown("---")
-    
-    # Action buttons
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("✅ Complete Task", type="primary", use_container_width=True, key=f"modal_complete_{task.id}"):
-            try:
-                update_task(
-                    task.id,
-                    status="completed",
-                    outcome=outcome if outcome.strip() else None,
-                    completed_at=datetime.now(timezone.utc)
-                )
-                st.success("✅ Task completed!")
-                st.session_state[f"completing_task_{task.id}"] = False
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error completing task: {str(e)}")
-    
-    with col2:
-        if st.button("❌ Cancel", use_container_width=True, key=f"modal_complete_cancel_{task.id}"):
-            st.session_state[f"completing_task_{task.id}"] = False
-            st.rerun()
+            
+            # Notes if exists
+            if task.notes and task.notes.strip():
+                st.markdown(f"""
+                <div style='color: var(--text-color); font-size: 14px; margin: 4px 0; padding: 8px; 
+                            background-color: var(--secondary-background-color); border-left: 3px solid var(--border-color); border-radius: 3px;'>
+                    Notes: {task.notes}
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Reopen button
+            if st.button("↩️ Reopen", key=f"reopen_{task.id}", help="Reopen task", type="secondary"):
+                try:
+                    update_task(task.id, status="active", outcome=None, completed_at=None)
+                    st.success("Task reopened!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error reopening task: {str(e)}")
+            
+            st.markdown("---")  # Separator between tasks
 
 
 def get_due_date_color(due_date: date) -> str:
@@ -720,7 +1096,7 @@ def show_pipeline_summary(company):
         time_ago = "3h ago" if last_updated.date() == now.date() else last_updated.strftime("%b %d")
         
         st.markdown("""
-        <div style="text-align: left; font-size: 13px; color: #7a7d81; margin-bottom: 12px; font-weight: normal; font-style: italic;">
+        <div style="text-align: left; font-size: 13px; color: var(--text-color); margin-bottom: 12px; font-weight: normal; font-style: italic; opacity: 0.7;">
             Last updated: Today {time_ago}
         </div>
         """.format(time_ago=time_ago), unsafe_allow_html=True)
@@ -729,11 +1105,12 @@ def show_pipeline_summary(company):
         st.markdown("""
         <div style="
             font-size: 12px; 
-            color: #8c9a9e; 
+            color: var(--text-color); 
             font-variant: all-small-caps; 
             letter-spacing: 0.4px; 
             margin-bottom: 6px;
             margin-left: 0;
+            opacity: 0.8;
         ">
             LAST DISCUSSED
         </div>
@@ -744,13 +1121,13 @@ def show_pipeline_summary(company):
                 # Normalize bullet content tone - short declarative sentences
                 task_text = task.text.rstrip('.') + '.' if not task.text.endswith('.') else task.text
                 st.markdown(f"""
-                <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px;">
+                <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px; color: var(--text-color);">
                     • {task_text}
                 </div>
                 """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px;">
+            <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px; color: var(--text-color);">
                 • No completed tasks in the past week.
             </div>
             """, unsafe_allow_html=True)
@@ -759,48 +1136,59 @@ def show_pipeline_summary(company):
         st.markdown("""
         <div style="
             font-size: 12px; 
-            color: #8c9a9e; 
+            color: var(--text-color); 
             font-variant: all-small-caps; 
             letter-spacing: 0.4px; 
             margin-bottom: 6px;
             margin-top: 12px;
             margin-left: 0;
+            opacity: 0.8;
         ">
             OUTCOME
         </div>
         """, unsafe_allow_html=True)
         
         if completed_tasks_last_week:
-            for task in completed_tasks_last_week:
-                # Enforce consistent capitalization and period use in Outcomes
-                outcome_text = task.outcome if task.outcome else "(no notes)"
-                outcome_text = outcome_text.rstrip('.') + '.' if outcome_text != "(no notes)" and not outcome_text.endswith('.') else outcome_text
-                st.markdown(f"""
-                <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px;">
-                    • {outcome_text}
+            # Filter to only tasks with actual outcomes
+            tasks_with_outcomes = [t for t in completed_tasks_last_week if t.outcome and t.outcome.strip()]
+            
+            if tasks_with_outcomes:
+                for task in tasks_with_outcomes:
+                    # Enforce consistent capitalization and period use in Outcomes
+                    outcome_text = task.outcome.rstrip('.') + '.' if not task.outcome.endswith('.') else task.outcome
+                    st.markdown(f"""
+                    <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px; color: var(--text-color);">
+                        • {outcome_text}
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px; color: var(--text-color);">
+                    • (no outcomes)
                 </div>
                 """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px;">
+            <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px; color: var(--text-color);">
                 • (no outcomes)
             </div>
             """, unsafe_allow_html=True)
         
         # Single divider only between "Outcome" and "Next Step" sections
         st.markdown("""
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; opacity: 0.5;">
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 12px 0; opacity: 0.5;">
         """, unsafe_allow_html=True)
         
         # NEXT STEP section with consistent padding
         st.markdown("""
         <div style="
             font-size: 12px; 
-            color: #8c9a9e; 
+            color: var(--text-color); 
             font-variant: all-small-caps; 
             letter-spacing: 0.4px; 
             margin-bottom: 6px;
             margin-left: 0;
+            opacity: 0.8;
         ">
             NEXT STEP
         </div>
@@ -815,23 +1203,23 @@ def show_pipeline_summary(company):
             status_badge = ""
             if next_task.due_date:
                 color = get_due_date_color(next_task.due_date)
-                if color == "🔴":  # Overdue
+                if color == "#ef4444":  # Overdue
                     status_badge = '<span style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-left: 8px;">Overdue</span>'
-                elif color == "🟡":  # Due today
+                elif color == "#22c55e":  # Due today (green)
                     status_badge = '<span style="background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-left: 8px;">Today</span>'
-                elif color == "🟠":  # Due soon (1-3 days)
+                elif color == "#f97316":  # Due soon (1-3 days)
                     status_badge = '<span style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-left: 8px;">Soon</span>'
-                elif color == "🟢":  # Not urgent (4+ days)
+                else:  # Not urgent (4+ days)
                     status_badge = '<span style="background: #e9d5ff; color: #9333ea; border: 1px solid #ddd6fe; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-left: 8px;">This Week</span>'
             
             st.markdown(f"""
-            <div style="color: #2f2f2f; font-weight: 500; line-height: 1.3; font-size: 16px; margin-bottom: 10px;">
+            <div style="color: var(--text-color); font-weight: 500; line-height: 1.3; font-size: 16px; margin-bottom: 10px;">
                 → <strong>{task_text}</strong> {assignee_text} {status_badge}
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div style="color: #2f2f2f; font-weight: 500; line-height: 1.3; font-size: 16px; margin-bottom: 10px;">
+            <div style="color: var(--text-color); font-weight: 500; line-height: 1.3; font-size: 16px; margin-bottom: 10px;">
                 → Add the next step below.
             </div>
             """, unsafe_allow_html=True)

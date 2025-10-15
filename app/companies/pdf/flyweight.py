@@ -6,6 +6,7 @@ import time
 from argparse import ArgumentParser
 import asyncio
 from pathlib import Path
+from typing import Union, Optional
 
 import fitz
 import openai
@@ -18,7 +19,7 @@ __all__ = ["PDFlyweight"]
 class PDFlyweight:
     def __init__(
         self, 
-        working_dir: Path | str, 
+        working_dir: Union[Path, str], 
         openai_client: openai.AsyncOpenAI,
         logger: Logger,
         vision_model="gpt-4o", 
@@ -78,7 +79,7 @@ class PDFlyweight:
         ]
         contents = []
         for attempt in range(1, 6):
-            response: chat.ChatCompletion | None = None
+            response: Optional[chat.ChatCompletion] = None
             try:
                 response = await self._openai_client.chat.completions.create(
                     model=self._vision_model,

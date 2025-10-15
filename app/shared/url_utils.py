@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 __all__ = ['normalize_url', 'is_valid_website_url', 'extract_domain']
@@ -33,7 +34,7 @@ def normalize_url(url: str) -> str:
     return normalized
 
 
-def is_valid_website_url(url: str | None) -> bool:
+def is_valid_website_url(url: Optional[str]) -> bool:
     """Check if URL is a valid website URL"""
     if not url:
         return False
@@ -75,7 +76,7 @@ def is_valid_website_url(url: str | None) -> bool:
         return False
 
 
-def extract_domain(url: str) -> str | None:
+def extract_domain(url: str) -> Optional[str]:
     """Extract root domain from URL, handling compound TLDs"""
     try:
         normalized_url = normalize_url(url)

@@ -1,0 +1,163 @@
+{
+  "68e69a2dc32b590896149741": [
+    {
+      "id": "201d3b25-9b7b-4dac-adf0-9767700a597a",
+      "text": "Schedule follow-up call with founders",
+      "assignee": "Nick",
+      "due_date": "2025-10-11",
+      "done": false,
+      "created_at": "2025-10-07T19:20:19.880892",
+      "created_by": "Marina",
+      "created_on": "Oct 07, 2025",
+      "notes": null
+    },
+    {
+      "id": "0774a6a0-8720-42e1-bd52-c24f755a5d28",
+      "text": "Get technical architecture documentation",
+      "assignee": "Slava",
+      "due_date": "2025-10-08",
+      "done": true,
+      "created_at": "2025-10-05T19:20:19.880955",
+      "created_by": "Nick",
+      "created_on": "Oct 05, 2025",
+      "notes": "**Outcome:** Architecture looks solid. Ready to invest.",
+      "completed_outcome": "Architecture looks solid. Ready to invest.",
+      "completed_at": "2025-10-10T19:21:11.792279"
+    },
+    {
+      "id": "5a70965d-f508-4ab5-82d3-98c8626ae2d6",
+      "text": "Initial screening call with CEO",
+      "assignee": "Nick",
+      "due_date": "2025-10-03",
+      "done": true,
+      "created_at": "2025-09-30T19:20:19.880968",
+      "created_by": "Marina",
+      "created_on": "Sep 30, 2025",
+      "notes": null,
+      "completed_outcome": "Strong founder, clear vision. Moving to diligence.",
+      "completed_at": "2025-10-03T19:20:19.880971"
+    },
+    {
+      "id": "c8c6dda7-976e-44f7-9981-fcfc48d125c5",
+      "text": "Review market size and competitive landscape",
+      "assignee": "Marina",
+      "due_date": "2025-10-06",
+      "done": true,
+      "created_at": "2025-10-04T19:20:19.880976",
+      "created_by": "Slava",
+      "created_on": "Oct 04, 2025",
+      "notes": null,
+      "completed_outcome": "Market opportunity validated. TAM $2B and growing.",
+      "completed_at": "2025-10-06T19:20:19.880978"
+    },
+    {
+      "id": "c6a92e8c-cebf-400e-b7ea-6f76e43991e4",
+      "text": "Check references from previous investors",
+      "assignee": "Nick",
+      "due_date": "2025-10-07",
+      "done": true,
+      "created_at": "2025-10-05T19:20:19.880983",
+      "created_by": "Marina",
+      "created_on": "Oct 05, 2025",
+      "notes": null,
+      "completed_outcome": "All references positive. Team execution is strong.",
+      "completed_at": "2025-10-07T19:20:19.880985"
+    },
+    {
+      "id": "59c5d071-7d8d-4878-aae5-484a5a92d2eb",
+      "text": "Review legal documents",
+      "assignee": "Marina",
+      "due_date": "2025-10-08",
+      "done": false,
+      "created_at": "2025-10-10T19:44:10.753230",
+      "created_by": "Anonymous",
+      "created_on": "Oct 10, 2025",
+      "notes": null
+    }
+  ],
+  "68e69a2dc32b590896149740": [
+    {
+      "id": "eb93825d-1af5-4f4f-bb50-9a361de31f6d",
+      "text": "Review pitch deck and financials",
+      "assignee": "Marina",
+      "due_date": "2025-10-10",
+      "done": false,
+      "created_at": "2025-10-08T19:33:58.587273",
+      "created_by": "Nick",
+      "created_on": "Oct 08, 2025",
+      "notes": null
+    },
+    {
+      "id": "f85708c9-54f1-4d5d-b6fc-7c7ba6ead68c",
+      "text": "Schedule follow-up call with founders",
+      "assignee": "Nick",
+      "due_date": "2025-10-11",
+      "done": false,
+      "created_at": "2025-10-07T19:33:58.587304",
+      "created_by": "Marina",
+      "created_on": "Oct 07, 2025",
+      "notes": null
+    },
+    {
+      "id": "88f57b08-ba8f-4ec0-9067-3735e6368e29",
+      "text": "Get technical architecture documentation",
+      "assignee": "Slava",
+      "due_date": "2025-10-08",
+      "done": false,
+      "created_at": "2025-10-05T19:33:58.587321",
+      "created_by": "Nick",
+      "created_on": "Oct 05, 2025",
+      "notes": null
+    },
+    {
+      "id": "c391fae7-844f-4b27-82fb-fe0046418de1",
+      "text": "Draft IC memo for investment committee",
+      "assignee": "Marina",
+      "due_date": "2025-10-15",
+      "done": false,
+      "created_at": "2025-10-09T19:33:58.587337",
+      "created_by": "Nick",
+      "created_on": "Oct 09, 2025",
+      "notes": null
+    },
+    {
+      "id": "6a6663b9-f877-4d7d-824c-349577af7bcf",
+      "text": "Initial screening call with CEO",
+      "assignee": "Nick",
+      "due_date": "2025-10-03",
+      "done": true,
+      "created_at": "2025-09-30T19:33:58.587352",
+      "created_by": "Marina",
+      "created_on": "Sep 30, 2025",
+      "notes": null,
+      "completed_outcome": "Strong founder, clear vision. Moving to diligence.",
+      "completed_at": "2025-10-03T19:33:58.587357"
+    },
+    {
+      "id": "48031ca0-3997-453d-9c01-5766467e0f01",
+      "text": "Review market size and competitive landscape",
+      "assignee": "Marina",
+      "due_date": "2025-10-06",
+      "done": true,
+      "created_at": "2025-10-04T19:33:58.587369",
+      "created_by": "Slava",
+      "created_on": "Oct 04, 2025",
+      "notes": null,
+      "completed_outcome": "Market opportunity validated. TAM $2B and growing.",
+      "completed_at": "2025-10-06T19:33:58.587375"
+    },
+    {
+      "id": "0fe06662-671c-49cc-b967-a940a3851f58",
+      "text": "Check references from previous investors",
+      "assignee": "Nick",
+      "due_date": "2025-10-07",
+      "done": true,
+      "created_at": "2025-10-05T19:33:58.587386",
+      "created_by": "Marina",
+      "created_on": "Oct 05, 2025",
+      "notes": null,
+      "completed_outcome": "All references positive. Team execution is strong.",
+      "completed_at": "2025-10-07T19:33:58.587392"
+    }
+  ]
+}

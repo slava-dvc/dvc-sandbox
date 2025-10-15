@@ -1,6 +1,16 @@
 import re
+from typing import TYPE_CHECKING, Any
 from fastapi import Depends, Query, Body, Request
-from google.cloud import firestore
+try:
+    from google.cloud import firestore
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    firestore = None
+
+if TYPE_CHECKING:
+    from google.cloud import firestore
+
 from app.foundation.server.dependencies import get_logger, get_http_client, get_firestore_client, get_dataset_bucket
 
 from .spectr_client import SpectrClient
@@ -47,7 +57,7 @@ def get_genai_client(request: Request):
 
 def workspace_collection(
         firestore_client = Depends(get_firestore_client)
-) -> firestore.AsyncCollectionReference:
+) -> Any:  # firestore.AsyncCollectionReference
     return firestore_client.collection("workspaces")
 
 
@@ -55,7 +65,7 @@ async def workspace_by_user_email(
     request: Request,
     user_email: str = Query(None),
     # body: dict = Body(default_factory=dict),
-    workspace_collection: firestore.AsyncCollectionReference = Depends(workspace_collection)
+    workspace_collection: Any = Depends(workspace_collection)  # firestore.AsyncCollectionReference
 ):
     body = await request.json()
     # Fetch email from user_email parameter or body
@@ -74,7 +84,7 @@ async def workspace_by_user_email(
 
     # Query workspaces where relay_email matches the domain
     async for workspace in workspace_collection.where("domain", "==", domain).stream():
-        w: firestore.DocumentSnapshot = workspace
+        w: Any = workspace  # firestore.DocumentSnapshot
         return w.to_dict()
     return None
 

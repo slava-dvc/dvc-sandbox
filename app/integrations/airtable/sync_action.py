@@ -101,7 +101,7 @@ class AirSyncAction(object):
 
 
     def _make_fields_for_table(self, data, air_table_id, mapping_table_id, sources: List[models.Source]) -> typing.Dict:
-        target_table: AirTable | None = self._tables.get(air_table_id) or None
+        target_table: typing.Optional[AirTable] = self._tables.get(air_table_id) or None
         if target_table is None:
             self.logger.error(f"Table {self.deal_table_id} not found in base {self.airtable_client.base_id}")
             return {}

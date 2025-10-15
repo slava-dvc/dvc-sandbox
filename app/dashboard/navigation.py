@@ -1,8 +1,15 @@
 import streamlit as st
 import json
 from uuid import uuid4
-from google.cloud import storage, pubsub
-from google.auth import default
+try:
+    from google.cloud import storage, pubsub
+    from google.auth import default
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    storage = None
+    pubsub = None
+    default = None
 from infrastructure.queues.company_creation import company_create_from_docs_topic_name
 from app.shared.company import CompanyStatus
 from app.shared.url_utils import extract_domain
@@ -196,7 +203,20 @@ def add_new_company():
         company_email = st.text_input("Company Email", placeholder="contact@company.com")
         website = st.text_input("Website", placeholder="https://company.com")
         source = st.selectbox("Source", options=['Introduction', 'Cold email', 'Direct from Founder', 'YC'])
-        introduced_by = st.text_input("Introduced By", value=st.user.given_name + ' ' + st.user.family_name)
+        
+        # Get default introduced_by value safely
+        default_introduced_by = ""
+        try:
+            if hasattr(st.user, 'given_name') and hasattr(st.user, 'family_name'):
+                default_introduced_by = st.user.given_name + ' ' + st.user.family_name
+            elif hasattr(st.user, 'name'):
+                default_introduced_by = st.user.name
+            elif hasattr(st.user, 'email'):
+                default_introduced_by = st.user.email.split('@')[0]
+        except:
+            default_introduced_by = ""
+        
+        introduced_by = st.text_input("Introduced By", value=default_introduced_by)
 
         st.subheader("Pitch Deck")
         pitch_deck_file = st.file_uploader(
