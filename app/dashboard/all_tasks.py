@@ -381,21 +381,110 @@ def handle_completed_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFra
 @st.dialog("Add Task Results", width="large")
 def show_results_dialog(task: Task):
     """Show dialog to collect results for a completed task"""
-    # Add responsive CSS for auto-sizing dialog
+    # Add responsive CSS for auto-sizing dialog with enhanced styling
     st.markdown("""
     <style>
+    /* Enhanced responsive dialog styling */
     div[data-testid="stDialog"] {
         width: auto !important;
         min-width: 500px !important;
         max-width: 90vw !important;
         height: auto !important;
         max-height: 90vh !important;
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        z-index: 999999 !important;
+        background: white !important;
+        border: 1px solid #e1e5e9 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+        overflow: hidden !important;
     }
     
+    /* Add backdrop overlay */
+    div[data-testid="stDialog"]::before {
+        content: '' !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: -1 !important;
+    }
+    
+    /* Style dialog content */
+    div[data-testid="stDialog"] > div {
+        padding: 32px !important;
+        background: white !important;
+        border-radius: 12px !important;
+        position: relative !important;
+        z-index: 1 !important;
+    }
+    
+    /* Style dialog header */
+    div[data-testid="stDialog"] h3 {
+        margin: 0 0 20px 0 !important;
+        padding: 0 !important;
+        font-size: 20px !important;
+        font-weight: 600 !important;
+        color: #1f2937 !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        padding-bottom: 16px !important;
+    }
+    
+    /* Style close button */
+    div[data-testid="stDialog"] button[aria-label="Close"] {
+        position: absolute !important;
+        top: 16px !important;
+        right: 16px !important;
+        background: none !important;
+        border: none !important;
+        font-size: 18px !important;
+        color: #6b7280 !important;
+        cursor: pointer !important;
+        padding: 8px !important;
+        border-radius: 4px !important;
+    }
+    
+    div[data-testid="stDialog"] button[aria-label="Close"]:hover {
+        background: #f3f4f6 !important;
+        color: #374151 !important;
+    }
+    
+    /* Enhanced text area styling */
     div[data-testid="stDialog"] textarea {
         width: 100% !important;
         min-height: 120px !important;
         resize: vertical !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+    }
+    
+    div[data-testid="stDialog"] textarea:focus {
+        outline: none !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+    
+    /* Style disabled save button */
+    div[data-testid="stDialog"] button[kind="primary"]:disabled {
+        background-color: #e5e7eb !important;
+        color: #9ca3af !important;
+        cursor: not-allowed !important;
+        opacity: 0.6 !important;
+    }
+    
+    /* Help text styling */
+    div[data-testid="stDialog"] .st-caption {
+        font-size: 12px !important;
+        color: #6b7280 !important;
+        font-style: italic !important;
+        margin-top: 4px !important;
     }
     
     /* Mobile responsiveness */
@@ -404,6 +493,10 @@ def show_results_dialog(task: Task):
             width: 95vw !important;
             min-width: 300px !important;
             max-width: 95vw !important;
+        }
+        
+        div[data-testid="stDialog"] > div {
+            padding: 20px !important;
         }
     }
     </style>
