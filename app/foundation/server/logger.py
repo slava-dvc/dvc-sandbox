@@ -3,7 +3,18 @@ import logging as python_logging
 import os
 import traceback
 from typing import TYPE_CHECKING, Any
-from fastapi import Request
+
+# Only import FastAPI if available (not needed for Streamlit)
+try:
+    from fastapi import Request
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    FASTAPI_AVAILABLE = False
+    # Create a minimal Request mock for Streamlit
+    class Request:
+        def __init__(self, *args, **kwargs):
+            pass
+
 try:
     from google.cloud import logging as google_logging
     GOOGLE_CLOUD_AVAILABLE = True
@@ -14,8 +25,21 @@ except ImportError:
 if TYPE_CHECKING:
     from google.cloud import logging as google_logging
 
-from fastapi.encoders import jsonable_encoder
-from ..primitives import json
+# Only import FastAPI encoders if available
+try:
+    from fastapi.encoders import jsonable_encoder
+except ImportError:
+    # Create a minimal jsonable_encoder for Streamlit
+    def jsonable_encoder(obj, **kwargs):
+        import json
+        return json.dumps(obj) if obj else None
+
+try:
+    from ..primitives import json
+except ImportError:
+    # Create minimal json module if not available
+    import json as json_module
+    json = json_module
 
 __all__ = ["Logger", "CloudLogger", "LocalLogger"]
 

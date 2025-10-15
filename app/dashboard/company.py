@@ -7,7 +7,15 @@ import streamlit as st
 from dataclasses import fields
 
 from bson import ObjectId
-from fastapi.encoders import jsonable_encoder
+
+# Only import FastAPI encoders if available (not needed for Streamlit)
+try:
+    from fastapi.encoders import jsonable_encoder
+except ImportError:
+    # Create a minimal jsonable_encoder for Streamlit
+    def jsonable_encoder(obj, **kwargs):
+        import json
+        return json.dumps(obj) if obj else None
 
 from app.dashboard.highlights import TractionMetric, TractionMetrics, NewsItem, show_highlights_for_company
 from app.dashboard.tasks import show_tasks_section, show_pipeline_summary

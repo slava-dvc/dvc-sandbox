@@ -2,11 +2,28 @@ import logging
 from collections import UserDict
 from pathlib import Path
 
-import yaml
-from google.api_core.exceptions import PermissionDenied
-from google.cloud import firestore
+# Only import what's available for Streamlit
+try:
+    import yaml
+    from google.api_core.exceptions import PermissionDenied
+    from google.cloud import firestore
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_AVAILABLE = False
+    yaml = None
+    PermissionDenied = Exception
+    firestore = None
 
-from app.foundation.pattern import Singleton
+try:
+    from app.foundation.pattern import Singleton
+except ImportError:
+    # Create a minimal Singleton if pattern module isn't available
+    class Singleton(type):
+        _instances = {}
+        def __call__(cls, *args, **kwargs):
+            if cls not in cls._instances:
+                cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            return cls._instances[cls]
 
 
 class Config(UserDict):
@@ -65,6 +82,11 @@ class AppConfig(metaclass=Singleton):
         self.db_loaded = False
 
     def load_yml(self, file_path):
+        if not GOOGLE_CLOUD_AVAILABLE or yaml is None:
+            # For Streamlit, just mark as loaded without doing anything
+            self.yml_loaded = True
+            return self
+            
         file_path = Path(file_path)
         if not file_path.exists():
             return self
@@ -74,7 +96,12 @@ class AppConfig(metaclass=Singleton):
         self.yml_loaded = True
         return self
 
-    def load_db(self, db: firestore.Client):
+    def load_db(self, db):
+        if not GOOGLE_CLOUD_AVAILABLE or firestore is None:
+            # For Streamlit, just mark as loaded without doing anything
+            self.db_loaded = True
+            return False
+            
         changed = False
         try:
             for doc in db.collection('config').stream():
@@ -85,7 +112,7 @@ class AppConfig(metaclass=Singleton):
                 self[doc.id] = Config(data={**old, **new}, path=doc.id)
             self.yml_loaded = True
             self.db_loaded = True
-        except PermissionDenied as e:
+        except Exception as e:
             logging.error(f'Failed to load config from Firestore: {e}')
         return changed
 
