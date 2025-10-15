@@ -285,10 +285,10 @@ def show_navigation():
     """
 
     pages = [
-        st.Page(all_tasks_page, title=f"Tasks ({get_user_active_task_count()})"),
+        st.Page(fund_page, title="Funds"),
         st.Page(company_page, title="Companies"),
         st.Page(pipeline_page, title="Pipeline"),
-        st.Page(fund_page, title="Funds"),
+        st.Page(all_tasks_page, title=f"Tasks ({get_user_active_task_count()})"),
         st.Page(jobs_page, title="Jobs"),
     ]
     pg = st.navigation(pages, )

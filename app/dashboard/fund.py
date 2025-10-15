@@ -244,20 +244,17 @@ def fund_page():
     with col1:
         st.markdown("**📋 Tasks**")
         st.write("Manage and track tasks across all companies")
-        if st.button("Go to Tasks", type="primary"):
-            st.switch_page("all_tasks_page")
+        st.markdown("[Go to Tasks →](/all_tasks_page)")
     
     with col2:
         st.markdown("**🏢 Companies**")
         st.write("View detailed company information and metrics")
-        if st.button("Go to Companies"):
-            st.switch_page("company_page")
+        st.markdown("[Go to Companies →](/company_page)")
     
     with col3:
         st.markdown("**📈 Pipeline**")
         st.write("Track companies through investment pipeline")
-        if st.button("Go to Pipeline"):
-            st.switch_page("pipeline_page")
+        st.markdown("[Go to Pipeline →](/pipeline_page)")
     
     st.markdown("---")
     
