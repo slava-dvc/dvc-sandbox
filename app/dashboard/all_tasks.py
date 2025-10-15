@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple, Dict
 import pandas as pd
 from app.shared.task import Task
 from app.dashboard.data import get_all_tasks, update_task, delete_task, get_companies_v2
+from app.dashboard.dialog_utils import show_task_results_dialog
 
 
 def get_company_name_lookup() -> Dict[str, str]:
@@ -134,7 +135,7 @@ def show_all_tasks_data_editor(tasks: List[Task]):
                     notes=task_info['notes'],
                     outcome=task_info['outcome']
                 )
-                show_results_dialog(temp_task)
+                show_task_results_dialog(temp_task)
                 # Clear the dialog flags after showing
                 del st.session_state[dialog_flag]
                 del st.session_state[task_info_key]
@@ -378,109 +379,110 @@ def handle_completed_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFra
     return changes_made
 
 
-@st.dialog("Add Task Results")
-def show_results_dialog(task: Task):
-    """Refactored dialog with minimal CSS and better state management"""
-    
-    # Minimal, focused CSS - only what's absolutely necessary
-    st.markdown("""
-    <style>
-    /* Only essential dialog styling - no conflicts */
-    .stDialog > div {
-        width: min(600px, 90vw) !important;
-        max-height: 80vh !important;
-        overflow-y: auto !important;
-    }
-    
-    .stDialog textarea {
-        width: 100% !important;
-        min-height: 120px !important;
-        resize: vertical !important;
-    }
-    
-    @media (max-width: 768px) {
-        .stDialog > div {
-            width: 95vw !important;
-            margin: 20px !important;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Simplified content structure
-    st.markdown("### Add Task Results")
-    
-    # Task display
-    with st.container():
-        st.markdown(f"**Task:** {task.text}")
-    
-    st.markdown("---")
-    
-    # Check if this task has a stored outcome from reactivation
-    stored_outcome = st.session_state.get(f"reactivated_task_outcome_{task.id}", "")
-    
-    # Results form with better state management
-    import time
-    form_key = f"results_form_{task.id}_{int(time.time())}"  # Unique key
-    
-    with st.form(key=form_key, clear_on_submit=False):
-        results = st.text_area(
-            "Results",
-            placeholder="Describe the outcome, findings, or results from completing this task...",
-            height=150,
-            help="Enter detailed results or findings from completing this task"
-        )
-        
-        # Action buttons in a single row
-        col1, col2, col3 = st.columns([1, 1, 1])
-        
-        with col1:
-            save_clicked = st.form_submit_button("💾 Save", type="primary", use_container_width=True)
-        
-        with col2:
-            cancel_clicked = st.form_submit_button("❌ Cancel", use_container_width=True)
-        
-        with col3:
-            # Empty column for spacing
-            pass
-        
-        # Handle form submission with better error handling
-        if save_clicked:
-            if results and results.strip():
-                try:
-                    update_task(
-                        task.id,
-                        status="completed",
-                        completed_at=datetime.now(timezone.utc),
-                        outcome=results.strip()
-                    )
-                    # Clean up stored outcome since task is now completed with new results
-                    if f"reactivated_task_outcome_{task.id}" in st.session_state:
-                        del st.session_state[f"reactivated_task_outcome_{task.id}"]
-                    st.success("✅ Results saved successfully!")
-                    time.sleep(1)  # Brief success message
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error saving results: {str(e)}")
-            else:
-                st.warning("⚠️ Please provide meaningful results before saving")
-        
-        if cancel_clicked:
-            try:
-                update_task(
-                    task.id,
-                    status="active",
-                    completed_at=None,
-                    outcome=None
-                )
-                # Clean up stored outcome since user cancelled
-                if f"reactivated_task_outcome_{task.id}" in st.session_state:
-                    del st.session_state[f"reactivated_task_outcome_{task.id}"]
-                st.info("ℹ️ Task reverted to active status")
-                time.sleep(1)
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error reverting task: {str(e)}")
+# OLD DIALOG - COMMENTED OUT - REPLACED BY UNIFIED DIALOG IN dialog_utils.py
+# @st.dialog("Add Task Results")
+# def show_results_dialog(task: Task):
+#     """Refactored dialog with minimal CSS and better state management"""
+#     
+#     # Minimal, focused CSS - only what's absolutely necessary
+#     st.markdown("""
+#     <style>
+#     /* Only essential dialog styling - no conflicts */
+#     .stDialog > div {
+#         width: min(600px, 90vw) !important;
+#         max-height: 80vh !important;
+#         overflow-y: auto !important;
+#     }
+#     
+#     .stDialog textarea {
+#         width: 100% !important;
+#         min-height: 120px !important;
+#         resize: vertical !important;
+#     }
+#     
+#     @media (max-width: 768px) {
+#         .stDialog > div {
+#             width: 95vw !important;
+#             margin: 20px !important;
+#         }
+#     }
+#     </style>
+#     """, unsafe_allow_html=True)
+#     
+#     # Simplified content structure
+#     st.markdown("### Add Task Results")
+#     
+#     # Task display
+#     with st.container():
+#         st.markdown(f"**Task:** {task.text}")
+#     
+#     st.markdown("---")
+#     
+#     # Check if this task has a stored outcome from reactivation
+#     stored_outcome = st.session_state.get(f"reactivated_task_outcome_{task.id}", "")
+#     
+#     # Results form with better state management
+#     import time
+#     form_key = f"results_form_{task.id}_{int(time.time())}"  # Unique key
+#     
+#     with st.form(key=form_key, clear_on_submit=False):
+#         results = st.text_area(
+#             "Results",
+#             placeholder="Describe the outcome, findings, or results from completing this task...",
+#             height=150,
+#             help="Enter detailed results or findings from completing this task"
+#         )
+#         
+#         # Action buttons in a single row
+#         col1, col2, col3 = st.columns([1, 1, 1])
+#         
+#         with col1:
+#             save_clicked = st.form_submit_button("💾 Save", type="primary", use_container_width=True)
+#         
+#         with col2:
+#             cancel_clicked = st.form_submit_button("❌ Cancel", use_container_width=True)
+#         
+#         with col3:
+#             # Empty column for spacing
+#             pass
+#         
+#         # Handle form submission with better error handling
+#         if save_clicked:
+#             if results and results.strip():
+#                 try:
+#                     update_task(
+#                         task.id,
+#                         status="completed",
+#                         completed_at=datetime.now(timezone.utc),
+#                         outcome=results.strip()
+#                     )
+#                     # Clean up stored outcome since task is now completed with new results
+#                     if f"reactivated_task_outcome_{task.id}" in st.session_state:
+#                         del st.session_state[f"reactivated_task_outcome_{task.id}"]
+#                     st.success("✅ Results saved successfully!")
+#                     time.sleep(1)  # Brief success message
+#                     st.rerun()
+#                 except Exception as e:
+#                     st.error(f"❌ Error saving results: {str(e)}")
+#             else:
+#                 st.warning("⚠️ Please provide meaningful results before saving")
+#         
+#         if cancel_clicked:
+#             try:
+#                 update_task(
+#                     task.id,
+#                     status="active",
+#                     completed_at=None,
+#                     outcome=None
+#                 )
+#                 # Clean up stored outcome since user cancelled
+#                 if f"reactivated_task_outcome_{task.id}" in st.session_state:
+#                     del st.session_state[f"reactivated_task_outcome_{task.id}"]
+#                 st.info("ℹ️ Task reverted to active status")
+#                 time.sleep(1)
+#                 st.rerun()
+#             except Exception as e:
+#                 st.error(f"❌ Error reverting task: {str(e)}")
 
 
 def show_completed_tasks_section(all_tasks: List[Task]):
