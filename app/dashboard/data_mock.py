@@ -147,7 +147,8 @@ MOCK_INVESTMENTS = [
         "investment_amount": "$500K",
         "investment_date": "2024-01-15",
         "stage": "Pre-seed",
-        "status": "Active"
+        "status": "Active",
+        "Fund": "DVC Fund I"
     },
     {
         "id": "inv_002", 
@@ -155,7 +156,8 @@ MOCK_INVESTMENTS = [
         "investment_amount": "$1.2M",
         "investment_date": "2024-02-20",
         "stage": "Seed",
-        "status": "Active"
+        "status": "Active",
+        "Fund": "DVC Fund I"
     },
     {
         "id": "inv_003",
@@ -163,7 +165,8 @@ MOCK_INVESTMENTS = [
         "investment_amount": "$2.5M",
         "investment_date": "2024-03-10",
         "stage": "Series A",
-        "status": "Active"
+        "status": "Active",
+        "Fund": "DVC Fund I"
     },
     {
         "id": "inv_004",
@@ -171,7 +174,8 @@ MOCK_INVESTMENTS = [
         "investment_amount": "$3.8M",
         "investment_date": "2024-10-14",
         "stage": "Series A",
-        "status": "Active"
+        "status": "Active",
+        "Fund": "DVC Fund I"
     }
 ]
 
@@ -293,7 +297,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_001",
                 "company_id": company_id,
                 "text": "Draft IC memo for investment committee",
-                "due_date": date.today() + timedelta(days=5),  # Green (This Week)
+                "due_date": date.today() + timedelta(days=5),
                 "assignee": "Marina",
                 "status": "active",
                 "outcome": None,
@@ -306,7 +310,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_002", 
                 "company_id": company_id,
                 "text": "Review pitch deck and financials",
-                "due_date": date.today(),  # Orange (Today - Due Soon)
+                "due_date": date.today(),
                 "assignee": "Marina",
                 "status": "active",
                 "outcome": None,
@@ -319,7 +323,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_003",
                 "company_id": company_id,
                 "text": "Schedule follow-up call with founders",
-                "due_date": date.today() + timedelta(days=1),  # Orange (Tomorrow - Due Soon)
+                "due_date": date.today() + timedelta(days=1),
                 "assignee": "Nick",
                 "status": "active",
                 "outcome": None,
@@ -332,8 +336,8 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_004",
                 "company_id": company_id,
                 "text": "Get technical architecture documentation",
-                "due_date": date.today() - timedelta(days=1),  # Red (Overdue)
-                "assignee": "Slava",
+                "due_date": date.today() - timedelta(days=1),
+                "assignee": "Vlad",
                 "status": "active",
                 "outcome": None,
                 "notes": "Need to understand scalability for 400+ gift card brands integration.",
@@ -345,53 +349,14 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_005",
                 "company_id": company_id,
                 "text": "Check references from previous investors",
-                "due_date": date.today() - timedelta(days=2),  # Red (Overdue)
+                "due_date": date.today() - timedelta(days=2),
                 "assignee": "Nick",
                 "status": "completed",
                 "outcome": "All references positive. Team execution is strong.",
                 "notes": "Spoke with 3 previous investors, all had positive feedback about founder execution and market timing.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=5),
                 "created_by": "Marina",
-                "completed_at": datetime.now(timezone.utc) - timedelta(days=1)  # Completed yesterday
-            },
-            {
-                "id": "task_006",
-                "company_id": company_id,
-                "text": "Review financial projections",
-                "due_date": date.today() - timedelta(days=3),
-                "assignee": "Marina",
-                "status": "completed",
-                "outcome": "Financials look solid. Revenue projections are conservative and achievable.",
-                "notes": "Reviewed 3-year projections. Team has realistic assumptions about market penetration.",
-                "created_at": datetime.now(timezone.utc) - timedelta(days=6),
-                "created_by": "Nick",
-                "completed_at": datetime.now(timezone.utc) - timedelta(days=2)  # Completed 2 days ago
-            },
-            {
-                "id": "task_007",
-                "company_id": company_id,
-                "text": "Validate AI recommendation accuracy",
-                "due_date": date.today() + timedelta(days=3),  # Green (This Week)
-                "assignee": "Slava",
-                "status": "active",
-                "outcome": None,
-                "notes": "Test AI gifting recommendations against human preferences. Target 80%+ accuracy.",
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=12),
-                "created_by": "Marina",
-                "completed_at": None
-            },
-            {
-                "id": "task_008",
-                "company_id": company_id,
-                "text": "Market research on gifting anxiety statistics",
-                "due_date": date.today() + timedelta(days=7),  # Green (Future)
-                "assignee": "Marina",
-                "status": "active",
-                "outcome": None,
-                "notes": "Verify the 71% gifting anxiety claim and find additional supporting data.",
-                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
-                "created_by": "Nick",
-                "completed_at": None
+                "completed_at": datetime.now(timezone.utc) - timedelta(days=1)
             }
         ]
     
@@ -402,7 +367,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_009",
                 "company_id": company_id,
                 "text": "Analyze competitive landscape",
-                "due_date": date.today() + timedelta(days=3),  # Green (This Week)
+                "due_date": date.today() + timedelta(days=3),
                 "assignee": "Nick",
                 "status": "active",
                 "outcome": None,
@@ -415,8 +380,8 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_010",
                 "company_id": company_id,
                 "text": "Review technical architecture",
-                "due_date": date.today() + timedelta(days=8),  # Green (Future)
-                "assignee": "Slava",
+                "due_date": date.today() + timedelta(days=8),
+                "assignee": "Alexey",
                 "status": "active",
                 "outcome": None,
                 "notes": "Assess scalability for 100+ integrations and 2,500+ users. Check API rate limits.",
@@ -428,8 +393,8 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_011",
                 "company_id": company_id,
                 "text": "Validate MRR growth metrics",
-                "due_date": date.today() + timedelta(days=1),  # Orange (Tomorrow)
-                "assignee": "Marina",
+                "due_date": date.today() + timedelta(days=1),
+                "assignee": "Mel",
                 "status": "active",
                 "outcome": None,
                 "notes": "Verify the $50K MRR claim and analyze churn rates.",
@@ -441,14 +406,14 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_012",
                 "company_id": company_id,
                 "text": "Schedule demo with founders",
-                "due_date": date.today() - timedelta(days=1),  # Red (Overdue)
-                "assignee": "Nick",
+                "due_date": date.today() - timedelta(days=1),
+                "assignee": "Charles",
                 "status": "completed",
                 "outcome": "Demo completed successfully. Product shows strong potential.",
                 "notes": "Demo went well. Team is impressive and product has clear market fit.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=3),
                 "created_by": "Marina",
-                "completed_at": datetime.now(timezone.utc) - timedelta(hours=2)  # Completed 2 hours ago
+                "completed_at": datetime.now(timezone.utc) - timedelta(hours=2)
             }
         ]
     
@@ -459,7 +424,7 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_013",
                 "company_id": company_id,
                 "text": "Due diligence on HIPAA compliance",
-                "due_date": date.today() + timedelta(days=14),  # Green (Future)
+                "due_date": date.today() + timedelta(days=14),
                 "assignee": "Marina",
                 "status": "active",
                 "outcome": None,
@@ -472,8 +437,8 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_014",
                 "company_id": company_id,
                 "text": "Verify health system partnerships",
-                "due_date": date.today() + timedelta(days=7),  # Green (This Week)
-                "assignee": "Nick",
+                "due_date": date.today() + timedelta(days=7),
+                "assignee": "Mel",
                 "status": "active",
                 "outcome": None,
                 "notes": "Confirm the 15+ health systems claim. Get partnership agreements and integration details.",
@@ -485,8 +450,8 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_015",
                 "company_id": company_id,
                 "text": "Review FDA fast-track designation",
-                "due_date": date.today() + timedelta(days=2),  # Orange (Tomorrow)
-                "assignee": "Marina",
+                "due_date": date.today() + timedelta(days=2),
+                "assignee": "Charles",
                 "status": "active",
                 "outcome": None,
                 "notes": "Verify FDA fast-track status and understand regulatory timeline implications.",
@@ -498,40 +463,224 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
                 "id": "task_016",
                 "company_id": company_id,
                 "text": "Technical assessment of data sync platform",
-                "due_date": date.today() + timedelta(days=10),  # Green (Future)
-                "assignee": "Slava",
+                "due_date": date.today() + timedelta(days=10),
+                "assignee": "Vlad",
                 "status": "active",
                 "outcome": None,
                 "notes": "Evaluate scalability for 100K+ patient records monthly. Check real-time sync capabilities.",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=18),
                 "created_by": "Marina",
                 "completed_at": None
+            }
+        ]
+    
+    # Mock tasks for AI Startup company (68e69a2dc32b590896149742)
+    elif company_id == "68e69a2dc32b590896149742":
+        return [
+            {
+                "id": "task_020",
+                "company_id": company_id,
+                "text": "Review AI model performance metrics",
+                "due_date": date.today() + timedelta(days=4),
+                "assignee": "Alexey",
+                "status": "active",
+                "outcome": None,
+                "notes": "Evaluate accuracy, latency, and cost metrics for production deployment.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=2),
+                "created_by": "Marina",
+                "completed_at": None
             },
             {
-                "id": "task_017",
+                "id": "task_021",
                 "company_id": company_id,
-                "text": "Initial founder meeting",
-                "due_date": date.today() - timedelta(days=2),  # Red (Overdue)
+                "text": "Platform automation improvements",
+                "due_date": date.today() + timedelta(days=6),
+                "assignee": "Tony",
+                "status": "active",
+                "outcome": None,
+                "notes": "Implement automated workflow triggers for investor updates and portfolio monitoring.",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=12),
+                "created_by": "Marina",
+                "completed_at": None
+            },
+            {
+                "id": "task_022",
+                "company_id": company_id,
+                "text": "Investor relations update",
+                "due_date": date.today() + timedelta(days=3),
+                "assignee": "Elena",
+                "status": "active",
+                "outcome": None,
+                "notes": "Prepare monthly portfolio update and community engagement metrics for LPs.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
+                "created_by": "Nick",
+                "completed_at": None
+            },
+            {
+                "id": "task_023",
+                "company_id": company_id,
+                "text": "Build AI agent for deal sourcing",
+                "due_date": date.today() + timedelta(days=14),
+                "assignee": "Vlad",
+                "status": "active",
+                "outcome": None,
+                "notes": "Develop automated workflow to connect data sources and enhance deal pipeline efficiency.",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=24),
+                "created_by": "Marina",
+                "completed_at": None
+            },
+            {
+                "id": "task_024",
+                "company_id": company_id,
+                "text": "Board meeting preparation",
+                "due_date": date.today() - timedelta(days=1),
+                "assignee": "Slava",
+                "status": "completed",
+                "outcome": "Board materials prepared. All metrics and KPIs updated for Q4 review.",
+                "notes": "Completed financial review and prepared strategic recommendations for board discussion.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=5),
+                "created_by": "Marina",
+                "completed_at": datetime.now(timezone.utc) - timedelta(hours=4)
+            }
+        ]
+    
+    # Mock tasks for FinTech company (68e69a2dc32b590896149743)
+    elif company_id == "68e69a2dc32b590896149743":
+        return [
+            {
+                "id": "task_025",
+                "company_id": company_id,
+                "text": "Regulatory compliance review",
+                "due_date": date.today() + timedelta(days=10),
+                "assignee": "Mel",
+                "status": "active",
+                "outcome": None,
+                "notes": "Review SEC compliance and banking regulations for fintech operations.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=3),
+                "created_by": "Charles",
+                "completed_at": None
+            },
+            {
+                "id": "task_026",
+                "company_id": company_id,
+                "text": "Technical security audit",
+                "due_date": date.today() + timedelta(days=7),
+                "assignee": "Alexey",
+                "status": "active",
+                "outcome": None,
+                "notes": "Conduct penetration testing and security review for payment processing systems.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=2),
+                "created_by": "Vlad",
+                "completed_at": None
+            },
+            {
+                "id": "task_027",
+                "company_id": company_id,
+                "text": "Community event planning",
+                "due_date": date.today() + timedelta(days=5),
+                "assignee": "Elena",
+                "status": "active",
+                "outcome": None,
+                "notes": "Plan fintech startup showcase event for portfolio companies and potential LPs.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
+                "created_by": "Marina",
+                "completed_at": None
+            },
+            {
+                "id": "task_028",
+                "company_id": company_id,
+                "text": "Product roadmap review",
+                "due_date": date.today() + timedelta(days=2),
+                "assignee": "Tony",
+                "status": "active",
+                "outcome": None,
+                "notes": "Review product analytics and user feedback to prioritize next quarter features.",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=18),
+                "created_by": "Alexey",
+                "completed_at": None
+            },
+            {
+                "id": "task_029",
+                "company_id": company_id,
+                "text": "Due diligence call with founders",
+                "due_date": date.today() - timedelta(days=2),
                 "assignee": "Nick",
                 "status": "completed",
-                "outcome": "Meeting completed. Strong team with deep healthcare experience.",
-                "notes": "Dr. Thompson has impressive background. Lisa Park's technical expertise is evident.",
+                "outcome": "Call completed. Strong technical team with clear go-to-market strategy.",
+                "notes": "Founders demonstrated deep understanding of compliance requirements and market opportunity.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=4),
                 "created_by": "Marina",
-                "completed_at": datetime.now(timezone.utc) - timedelta(days=2)  # Completed 2 days ago
+                "completed_at": datetime.now(timezone.utc) - timedelta(days=2)
+            }
+        ]
+    
+    # Mock tasks for SaaS company (68e69a2dc32b590896149744)
+    elif company_id == "68e69a2dc32b590896149744":
+        return [
+            {
+                "id": "task_030",
+                "company_id": company_id,
+                "text": "Customer success metrics analysis",
+                "due_date": date.today() + timedelta(days=6),
+                "assignee": "Marina",
+                "status": "active",
+                "outcome": None,
+                "notes": "Analyze churn rates, NPS scores, and expansion revenue trends.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=2),
+                "created_by": "Nick",
+                "completed_at": None
             },
             {
-                "id": "task_018",
+                "id": "task_031",
                 "company_id": company_id,
-                "text": "Market size validation",
-                "due_date": date.today() - timedelta(days=1),  # Red (Overdue)
-                "assignee": "Marina",
+                "text": "Platform scalability assessment",
+                "due_date": date.today() + timedelta(days=12),
+                "assignee": "Vlad",
+                "status": "active",
+                "outcome": None,
+                "notes": "Evaluate infrastructure capacity for 10x user growth and enterprise features.",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=24),
+                "created_by": "Alexey",
+                "completed_at": None
+            },
+            {
+                "id": "task_032",
+                "company_id": company_id,
+                "text": "Enterprise sales strategy review",
+                "due_date": date.today() + timedelta(days=8),
+                "assignee": "Charles",
+                "status": "active",
+                "outcome": None,
+                "notes": "Review enterprise sales process and pricing strategy for large customers.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
+                "created_by": "Mel",
+                "completed_at": None
+            },
+            {
+                "id": "task_033",
+                "company_id": company_id,
+                "text": "Product analytics dashboard",
+                "due_date": date.today() + timedelta(days=4),
+                "assignee": "Tony",
+                "status": "active",
+                "outcome": None,
+                "notes": "Build real-time dashboard for tracking product usage and feature adoption.",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=12),
+                "created_by": "Vlad",
+                "completed_at": None
+            },
+            {
+                "id": "task_034",
+                "company_id": company_id,
+                "text": "LP quarterly report",
+                "due_date": date.today() - timedelta(days=3),
+                "assignee": "Elena",
                 "status": "completed",
-                "outcome": "Market size validated. $4.2B healthcare data integration market is accurate.",
-                "notes": "Confirmed market size through multiple sources. 12% annual growth rate is conservative.",
-                "created_at": datetime.now(timezone.utc) - timedelta(days=3),
-                "created_by": "Nick",
-                "completed_at": datetime.now(timezone.utc) - timedelta(hours=6)  # Completed 6 hours ago
+                "outcome": "Report completed and sent to all LPs. Strong portfolio performance highlighted.",
+                "notes": "Included portfolio company updates, financial metrics, and market analysis.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=7),
+                "created_by": "Marina",
+                "completed_at": datetime.now(timezone.utc) - timedelta(days=3)
             }
         ]
     
