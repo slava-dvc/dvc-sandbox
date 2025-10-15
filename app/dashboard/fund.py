@@ -229,40 +229,40 @@ def show_companies(companies: list[Company]):
 
 
 def fund_page():
-    with st.spinner("Loading investments..."):
-        investments = get_investments()
-
-    selected_funds = show_fund_selector(investments)
+    """Fund page - disabled in test mode"""
+    st.title("📊 Funds")
+    
+    st.info("🚧 **Fund page is not working in test mode**")
+    st.write("The fund analytics require additional data columns that aren't available in the mock data.")
+    
     st.markdown("---")
-
-    # Build MongoDB query for companies
-    query = {
-        'status': {'$in': [str(CompanyStatus.INVESTED), str(CompanyStatus.EXIT), str(CompanyStatus.WRITE_OFF)]},
-        'ourData.investingFund': {'$exists': True, '$ne': None}
-    }
-
-    # Add fund filtering to query if funds are selected
-    if selected_funds:
-        query['ourData.investingFund'] = {'$in': selected_funds}
-        investments = investments[investments['Fund'].isin(selected_funds)]
-
-    with st.spinner("Loading companies..."):
-        companies = get_companies_v2(query)
-
-    show_key_metrics(investments, companies)
+    
+    st.subheader("🎯 Try these pages instead:")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("**📋 Tasks**")
+        st.write("Manage and track tasks across all companies")
+        if st.button("Go to Tasks", type="primary"):
+            st.switch_page("all_tasks_page")
+    
+    with col2:
+        st.markdown("**🏢 Companies**")
+        st.write("View detailed company information and metrics")
+        if st.button("Go to Companies"):
+            st.switch_page("company_page")
+    
+    with col3:
+        st.markdown("**📈 Pipeline**")
+        st.write("Track companies through investment pipeline")
+        if st.button("Go to Pipeline"):
+            st.switch_page("pipeline_page")
+    
     st.markdown("---")
-    chart_col1, chart_col2 = st.columns([1, 1])
-    with chart_col1:
-        show_counted_pie(
-            companies=companies,
-            title="Stage when we invested",
-            column="entryStage"
-        )
-    with chart_col2:
-        show_counted_pie(
-            companies=companies,
-            title="Companies by industry",
-            column="mainIndustry"
-        )
-    st.divider()
-    show_companies(companies)
+    
+    st.write("**💡 Note:** In production mode with real data, this page would show:")
+    st.write("• Fund performance metrics")
+    st.write("• Investment analytics and charts") 
+    st.write("• Portfolio company tracking")
+    st.write("• Financial reporting dashboards")
