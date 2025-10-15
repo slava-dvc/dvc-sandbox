@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+import os
 from uuid import uuid4
 try:
     from google.cloud import storage, pubsub
@@ -14,13 +15,51 @@ from infrastructure.queues.company_creation import company_create_from_docs_topi
 from app.shared.company import CompanyStatus
 from app.shared.url_utils import extract_domain
 from app.foundation.primitives import datetime
-from .data import mongo_collection
+from .data import mongo_collection, get_all_tasks
 from .fund import fund_page
 from .company import company_page
 from .jobs import jobs_page
 from .pipeline import pipeline_page
+from .all_tasks import all_tasks_page
 
 __all__ = ['show_navigation']
+
+
+def get_current_user_for_tasks():
+    """Get current user for task assignment - checks session state first (testing), then st.user"""
+    # Check session state first (for testing with user selector)
+    if 'current_user' in st.session_state and st.session_state['current_user']:
+        return st.session_state['current_user']
+    
+    # Default to "Nick" if no user is set yet (matches the default in the selector)
+    # This handles the case where navigation is initialized before sidebar is processed
+    return "Nick"
+
+
+def get_user_active_task_count():
+    """Get count of active tasks assigned to the current user"""
+    try:
+        # Get all tasks
+        all_tasks = get_all_tasks()
+        
+        # Get current user
+        current_user = get_current_user_for_tasks()
+        if not current_user:
+            return 0
+        
+        # Filter for active tasks assigned to current user
+        # Use exact match (case-insensitive) for better accuracy
+        active_tasks = [
+            task for task in all_tasks 
+            if task.status == "active" 
+            and task.assignee 
+            and task.assignee.strip().lower() == current_user.strip().lower()
+        ]
+        
+        return len(active_tasks)
+    except Exception as e:
+        # If there's an error, return 0 to avoid breaking the navigation
+        return 0
 
 
 @st.cache_resource()
@@ -249,10 +288,28 @@ def show_navigation():
         st.Page(fund_page, title="Funds"),
         st.Page(company_page, title="Companies"),
         st.Page(pipeline_page, title="Pipeline"),
+        st.Page(all_tasks_page, title=f"Tasks ({get_user_active_task_count()})"),
         st.Page(jobs_page, title="Jobs"),
     ]
     pg = st.navigation(pages, )
 
-    st.sidebar.markdown("**Actions:**")
-    st.sidebar.button('➕ Add Company', on_click=add_new_company, width=192)
+    # Only show Add Company button in production mode (requires Google Cloud)
+    LOCAL_DEV = os.getenv('LOCAL_DEV', 'False').lower() == 'true'
+    if not LOCAL_DEV and GOOGLE_CLOUD_AVAILABLE:
+        st.sidebar.markdown("**Actions:**")
+        st.sidebar.button('➕ Add Company', on_click=add_new_company, width=192)
+    
+    # User selector for testing purposes (only in LOCAL_DEV mode)
+    if LOCAL_DEV:
+        st.sidebar.markdown("**Testing:**")
+        team_members = ["Marina", "Nick", "Mel", "Charles", "Alexey", "Tony", "Elena", "Vlad", "Slava"]
+        current_user = st.sidebar.selectbox(
+            "Testing as:",
+            options=team_members,
+            index=team_members.index("Nick"),  # Default to Nick
+            key="current_user_selector",
+            help="Select user identity for testing 'My tasks' filter"
+        )
+        st.session_state['current_user'] = current_user
+    
     pg.run()
