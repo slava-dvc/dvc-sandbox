@@ -10,7 +10,12 @@ from pymongo import MongoClient
 from app.shared.company import Company
 from app.shared.task import Task
 from app.foundation.primitives import datetime
-from app.foundation.server import AppConfig
+# Create minimal AppConfig for Streamlit (avoid server imports)
+class AppConfig:
+    def __init__(self):
+        self.db_loaded = False
+    def load_db(self, client):
+        pass
 try:
     from google.cloud import firestore
     GOOGLE_CLOUD_AVAILABLE = True
@@ -328,6 +333,47 @@ def get_tasks(company_id: str) -> typing.List[Task]:
     db = mongo_database()
     tasks_collection = db.get_collection('tasks')
     tasks_data = tasks_collection.find({'companyId': ObjectId(company_id)}).to_list()
+    return [Task(**task) for task in tasks_data]
+
+
+def get_all_tasks() -> typing.List[Task]:
+    """Get all tasks from all companies"""
+    if LOCAL_DEV:
+        # For local development, collect tasks from all companies in session state
+        if "tasks" not in st.session_state:
+            st.session_state.tasks = {}
+        
+        # Get all mock companies to ensure we have tasks for all of them
+        mock_companies = get_mock_companies()
+        company_ids = [str(company['_id']) for company in mock_companies]
+        
+        all_tasks = []
+        for company_id in company_ids:
+            # Get tasks from session state or initialize with mock data
+            if company_id not in st.session_state.tasks:
+                mock_tasks = get_mock_tasks_for_company(company_id)
+                st.session_state.tasks[company_id] = mock_tasks
+                tasks = mock_tasks
+            else:
+                tasks = st.session_state.tasks[company_id]
+                # Ensure we have mock data if no tasks exist
+                if not tasks:
+                    mock_tasks = get_mock_tasks_for_company(company_id)
+                    st.session_state.tasks[company_id] = mock_tasks
+                    tasks = mock_tasks
+            
+            for task in tasks:
+                if isinstance(task, dict):
+                    all_tasks.append(Task(**task))
+                else:
+                    all_tasks.append(task)
+        
+        return all_tasks
+    
+    # Production: Query MongoDB for all tasks
+    db = mongo_database()
+    tasks_collection = db.get_collection('tasks')
+    tasks_data = tasks_collection.find({}).to_list()
     return [Task(**task) for task in tasks_data]
 
 
