@@ -378,177 +378,95 @@ def handle_completed_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFra
     return changes_made
 
 
-@st.dialog("Add Task Results", width="large")
+@st.dialog("Add Task Results")
 def show_results_dialog(task: Task):
-    """Show dialog to collect results for a completed task"""
-    # Add responsive CSS for auto-sizing dialog with enhanced styling
+    """Refactored dialog with minimal CSS and better state management"""
+    
+    # Minimal, focused CSS - only what's absolutely necessary
     st.markdown("""
     <style>
-    /* Enhanced responsive dialog styling */
-    div[data-testid="stDialog"] {
-        width: auto !important;
-        min-width: 500px !important;
-        max-width: 90vw !important;
-        height: auto !important;
-        max-height: 90vh !important;
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        z-index: 999999 !important;
-        background: white !important;
-        border: 1px solid #e1e5e9 !important;
-        border-radius: 12px !important;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-        overflow: hidden !important;
+    /* Only essential dialog styling - no conflicts */
+    .stDialog > div {
+        width: min(600px, 90vw) !important;
+        max-height: 80vh !important;
+        overflow-y: auto !important;
     }
     
-    /* Add backdrop overlay */
-    div[data-testid="stDialog"]::before {
-        content: '' !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        background: rgba(0, 0, 0, 0.5) !important;
-        z-index: -1 !important;
-    }
-    
-    /* Style dialog content */
-    div[data-testid="stDialog"] > div {
-        padding: 32px !important;
-        background: white !important;
-        border-radius: 12px !important;
-        position: relative !important;
-        z-index: 1 !important;
-    }
-    
-    /* Style dialog header */
-    div[data-testid="stDialog"] h3 {
-        margin: 0 0 20px 0 !important;
-        padding: 0 !important;
-        font-size: 20px !important;
-        font-weight: 600 !important;
-        color: #1f2937 !important;
-        border-bottom: 1px solid #e5e7eb !important;
-        padding-bottom: 16px !important;
-    }
-    
-    /* Style close button */
-    div[data-testid="stDialog"] button[aria-label="Close"] {
-        position: absolute !important;
-        top: 16px !important;
-        right: 16px !important;
-        background: none !important;
-        border: none !important;
-        font-size: 18px !important;
-        color: #6b7280 !important;
-        cursor: pointer !important;
-        padding: 8px !important;
-        border-radius: 4px !important;
-    }
-    
-    div[data-testid="stDialog"] button[aria-label="Close"]:hover {
-        background: #f3f4f6 !important;
-        color: #374151 !important;
-    }
-    
-    /* Enhanced text area styling */
-    div[data-testid="stDialog"] textarea {
+    .stDialog textarea {
         width: 100% !important;
         min-height: 120px !important;
         resize: vertical !important;
-        border: 1px solid #d1d5db !important;
-        border-radius: 8px !important;
-        padding: 12px !important;
-        font-size: 14px !important;
     }
     
-    div[data-testid="stDialog"] textarea:focus {
-        outline: none !important;
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-    }
-    
-    /* Style disabled save button */
-    div[data-testid="stDialog"] button[kind="primary"]:disabled {
-        background-color: #e5e7eb !important;
-        color: #9ca3af !important;
-        cursor: not-allowed !important;
-        opacity: 0.6 !important;
-    }
-    
-    /* Help text styling */
-    div[data-testid="stDialog"] .st-caption {
-        font-size: 12px !important;
-        color: #6b7280 !important;
-        font-style: italic !important;
-        margin-top: 4px !important;
-    }
-    
-    /* Mobile responsiveness */
     @media (max-width: 768px) {
-        div[data-testid="stDialog"] {
+        .stDialog > div {
             width: 95vw !important;
-            min-width: 300px !important;
-            max-width: 95vw !important;
-        }
-        
-        div[data-testid="stDialog"] > div {
-            padding: 20px !important;
+            margin: 20px !important;
         }
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # Simple task display
-    st.write("**Task:**")
-    st.write(task.text)
+    # Simplified content structure
+    st.markdown("### Add Task Results")
+    
+    # Task display
+    with st.container():
+        st.markdown(f"**Task:** {task.text}")
+    
+    st.markdown("---")
     
     # Check if this task has a stored outcome from reactivation
     stored_outcome = st.session_state.get(f"reactivated_task_outcome_{task.id}", "")
     
-    # Use form to enable Enter key submission
-    with st.form(key=f"results_form_{task.id}"):
-        # Results text area - pre-fill with stored outcome if available
+    # Results form with better state management
+    import time
+    form_key = f"results_form_{task.id}_{int(time.time())}"  # Unique key
+    
+    with st.form(key=form_key, clear_on_submit=False):
         results = st.text_area(
             "Results",
-            value=stored_outcome,  # Pre-fill with stored outcome if available
             placeholder="Describe the outcome, findings, or results from completing this task...",
-            height=120,
-            key=f"results_input_{task.id}"
+            height=150,
+            help="Enter detailed results or findings from completing this task"
         )
         
-        # Action buttons
-        col_save, col_cancel = st.columns([1, 1], gap="medium")
+        # Action buttons in a single row
+        col1, col2, col3 = st.columns([1, 1, 1])
         
-        with col_save:
-            save_clicked = st.form_submit_button("Save Results", type="primary", use_container_width=True)
+        with col1:
+            save_clicked = st.form_submit_button("💾 Save", type="primary", use_container_width=True)
         
-        with col_cancel:
-            cancel_clicked = st.form_submit_button("Cancel", type="secondary", use_container_width=True)
+        with col2:
+            cancel_clicked = st.form_submit_button("❌ Cancel", use_container_width=True)
         
-        # Handle form submission (both Enter key and button clicks)
+        with col3:
+            # Empty column for spacing
+            pass
+        
+        # Handle form submission with better error handling
         if save_clicked:
-            try:
-                update_task(
-                    task.id,
-                    status="completed",
-                    completed_at=datetime.now(timezone.utc),
-                    outcome=results.strip() if results.strip() else None
-                )
-                # Clean up stored outcome since task is now completed with new results
-                if f"reactivated_task_outcome_{task.id}" in st.session_state:
-                    del st.session_state[f"reactivated_task_outcome_{task.id}"]
-                st.success("Results saved!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error saving results: {str(e)}")
+            if results and results.strip():
+                try:
+                    update_task(
+                        task.id,
+                        status="completed",
+                        completed_at=datetime.now(timezone.utc),
+                        outcome=results.strip()
+                    )
+                    # Clean up stored outcome since task is now completed with new results
+                    if f"reactivated_task_outcome_{task.id}" in st.session_state:
+                        del st.session_state[f"reactivated_task_outcome_{task.id}"]
+                    st.success("✅ Results saved successfully!")
+                    time.sleep(1)  # Brief success message
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error saving results: {str(e)}")
+            else:
+                st.warning("⚠️ Please provide meaningful results before saving")
         
         if cancel_clicked:
             try:
-                # Revert task back to active status
                 update_task(
                     task.id,
                     status="active",
@@ -558,10 +476,11 @@ def show_results_dialog(task: Task):
                 # Clean up stored outcome since user cancelled
                 if f"reactivated_task_outcome_{task.id}" in st.session_state:
                     del st.session_state[f"reactivated_task_outcome_{task.id}"]
-                st.success("Task reverted to active!")
+                st.info("ℹ️ Task reverted to active status")
+                time.sleep(1)
                 st.rerun()
             except Exception as e:
-                st.error(f"Error reverting task: {str(e)}")
+                st.error(f"❌ Error reverting task: {str(e)}")
 
 
 def show_completed_tasks_section(all_tasks: List[Task]):
