@@ -169,7 +169,7 @@ def show_all_tasks_data_editor(tasks: List[Task]):
         "company_name": st.column_config.TextColumn(
             "Company",
             help="Company this task belongs to",
-            width="medium",
+            width="small",
             disabled=True
         ),
         "owner": st.column_config.SelectboxColumn(
@@ -177,12 +177,12 @@ def show_all_tasks_data_editor(tasks: List[Task]):
             help="Task assignee",
             options=team_members,
             default="Unassigned",
-            width="small"
+            width="medium"
         ),
         "due_display": st.column_config.TextColumn(
             "Due",
             help="Due date with color coding",
-            width="small",
+            width="medium",
             disabled=True
         ),
         "notes": st.column_config.TextColumn(
@@ -384,7 +384,7 @@ def handle_completed_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFra
     return changes_made
 
 
-@st.dialog("Add Task Results", width="small")
+@st.dialog("Add Task Results", width="large")
 def show_results_dialog(task: Task):
     """Show dialog to collect results for a completed task"""
     # Simple task display
@@ -514,7 +514,7 @@ def show_completed_tasks_section(all_tasks: List[Task]):
                 help="Task assignee",
                 options=team_members,
                 default="Unassigned",
-                width="small"
+                width="medium"
             ),
             "due_date": st.column_config.TextColumn(
                 "Due",

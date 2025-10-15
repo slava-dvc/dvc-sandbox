@@ -10,6 +10,27 @@ from app.shared.task import Task
 from app.dashboard.data import get_tasks, add_task, update_task, delete_task
 
 
+def get_current_user_for_tasks() -> Optional[str]:
+    """Get current user for task assignment - checks session state first (testing), then st.user"""
+    # Check session state first (for testing with user selector)
+    if 'current_user' in st.session_state and st.session_state['current_user']:
+        return st.session_state['current_user']
+    
+    # Fall back to st.user (production)
+    if hasattr(st, 'user'):
+        try:
+            if hasattr(st.user, 'given_name') and hasattr(st.user, 'family_name'):
+                return f"{st.user.given_name} {st.user.family_name}"
+            elif hasattr(st.user, 'name'):
+                return st.user.name
+            elif hasattr(st.user, 'email'):
+                return st.user.email
+        except:
+            pass
+    
+    return None
+
+
 def prepare_tasks_dataframe(tasks: List[Task]) -> pd.DataFrame:
     """
     Convert Task objects to a pandas DataFrame for st.data_editor
@@ -302,25 +323,15 @@ def show_tasks_section(company):
     with col_filter:
         filter_option = st.selectbox(
             "View",
-            options=["All tasks", "Active", "Completed", "Overdue", "My tasks"],
+            options=["All tasks", "Active", "Completed", "Overdue", "Created by me", "Assigned to me"],
             label_visibility="visible",
             key="task_filter_view",
-            index=0
+            index=0  # Default to "All tasks" for company Tasks tabs
         )
     
     # Apply filters
     today = date.today()
-    current_user = None
-    if hasattr(st, 'user'):
-        try:
-            if hasattr(st.user, 'given_name') and hasattr(st.user, 'family_name'):
-                current_user = f"{st.user.given_name} {st.user.family_name}"
-            elif hasattr(st.user, 'name'):
-                current_user = st.user.name
-            elif hasattr(st.user, 'email'):
-                current_user = st.user.email
-        except:
-            current_user = None
+    current_user = get_current_user_for_tasks()
     
     filtered_tasks = all_tasks
     if filter_option == "Active":
@@ -329,9 +340,16 @@ def show_tasks_section(company):
         filtered_tasks = [t for t in all_tasks if t.status == "completed"]
     elif filter_option == "Overdue":
         filtered_tasks = [t for t in all_tasks if t.status == "active" and t.due_date and t.due_date < today]
-    elif filter_option == "My tasks":
+    elif filter_option == "Created by me":
+        if current_user:
+            filtered_tasks = [t for t in all_tasks if t.created_by and current_user.lower() in t.created_by.lower()]
+        else:
+            filtered_tasks = []
+    elif filter_option == "Assigned to me":
         if current_user:
             filtered_tasks = [t for t in all_tasks if t.assignee and current_user.lower() in t.assignee.lower()]
+        else:
+            filtered_tasks = []
     
     # Count active tasks for header (from filtered tasks)
     active_count = len([t for t in filtered_tasks if t.status == "active"])
@@ -342,12 +360,12 @@ def show_tasks_section(company):
         show_tasks_data_editor(filtered_tasks, company_id)
         
         # Show completed tasks section below active tasks
-        show_completed_tasks_section(all_tasks, company_id)
+        show_completed_tasks_section(filtered_tasks, company_id)
     else:
         st.info("No tasks yet. Add the first follow-up.")
         
         # Show completed tasks section even if no active tasks
-        show_completed_tasks_section(all_tasks, company_id)
+        show_completed_tasks_section(filtered_tasks, company_id)
 
 
 def show_add_task_form(company_id: str):
@@ -393,21 +411,12 @@ def show_add_task_form(company_id: str):
                 st.error(error_msg)
             elif title:
                 # Get current user as creator
-                creator = "Anonymous"
-                if hasattr(st, 'user'):
-                    try:
-                        if hasattr(st.user, 'given_name') and hasattr(st.user, 'family_name'):
-                            creator = f"{st.user.given_name} {st.user.family_name}"
-                        elif hasattr(st.user, 'name'):
-                            creator = st.user.name
-                        elif hasattr(st.user, 'email'):
-                            creator = st.user.email.split('@')[0]
-                    except:
-                        creator = "Anonymous"
+                creator = get_current_user_for_tasks() or "Anonymous"
                 
-                # If no assignee was parsed, default to creator
+                # If no assignee was parsed, default to current user
                 if not assignee:
                     assignee = creator
+                
                 
                 try:
                     task = add_task(company_id, title, due_date, assignee, created_by=creator)
@@ -484,7 +493,7 @@ def show_tasks_data_editor(tasks: List[Task], company_id: str):
         return
     
     # Team members for owner selection
-    team_members = ["Unassigned", "Nick", "Alex", "Sarah", "Jordan", "Anonymous"]
+    team_members = ["Unassigned", "Marina", "Nick", "Mel", "Charles", "Alexey", "Tony", "Elena", "Vlad", "Slava"]
     
     # Configure columns
     column_config = {
@@ -510,7 +519,7 @@ def show_tasks_data_editor(tasks: List[Task], company_id: str):
             help="Task assignee",
             options=team_members,
             default="Unassigned",
-            width="small"
+            width="medium"
         ),
         "due_display": st.column_config.TextColumn(
             "Due",
@@ -576,11 +585,7 @@ def handle_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, compan
         # Check if completed status changed
         if edited_completed != orig_completed:
             if edited_completed:
-                # Complete the task immediately
-                task_updates['status'] = "completed"
-                task_updates['completed_at'] = datetime.now(timezone.utc)
-                # Show dialog to collect results after completion
-                # Store task info for dialog before completing
+                # Don't complete immediately - show dialog first
                 task = next((t for t in all_tasks if t.id == task_id), None)
                 if task:
                     # Check if this task was previously completed and has a stored outcome
@@ -597,6 +602,9 @@ def handle_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, compan
                         'outcome': stored_outcome or task.outcome  # Use stored outcome if available
                     }
                     st.session_state[f"show_results_dialog_{task_id}"] = True
+                    # Don't add completion to task_updates - let dialog handle it
+                    # Dialog will be shown on the next render cycle
+                    return changes_made  # Exit early
             else:
                 task_updates['status'] = "active"
                 task_updates['completed_at'] = None
@@ -718,7 +726,7 @@ def handle_completed_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFra
     return changes_made
 
 
-@st.dialog("Add Task Results", width="small")
+@st.dialog("Add Task Results", width="large")
 def show_results_dialog(task: Task):
     """Show dialog to collect results for a completed task"""
     # Simple task display
@@ -753,6 +761,8 @@ def show_results_dialog(task: Task):
             try:
                 update_task(
                     task.id,
+                    status="completed",
+                    completed_at=datetime.now(timezone.utc),
                     outcome=results.strip() if results.strip() else None
                 )
                 # Clean up stored outcome since task is now completed with new results
@@ -925,7 +935,7 @@ def show_active_tasks_list(tasks: List[Task], company_id: str):
                 
                 with col_assignee:
                     # Mock team members for selectbox
-                    team_members = ["Anonymous", "Nick", "Alex", "Sarah", "Jordan"]
+                    team_members = ["Marina", "Nick", "Mel", "Charles", "Alexey", "Tony", "Elena", "Vlad", "Slava"]
                     current_assignee = task.assignee if task.assignee in team_members else "Anonymous"
                     new_assignee = st.selectbox(
                         "Assignee",
@@ -1135,7 +1145,7 @@ def show_completed_tasks_section(all_tasks: List[Task], company_id: str):
         completed_df = pd.DataFrame(completed_data)
         
         # Team members for owner selection
-        team_members = ["Unassigned", "Nick", "Alex", "Sarah", "Jordan", "Anonymous"]
+        team_members = ["Unassigned", "Marina", "Nick", "Mel", "Charles", "Alexey", "Tony", "Elena", "Vlad", "Slava"]
         
         # Configure columns for editable display
         column_config = {
@@ -1157,7 +1167,7 @@ def show_completed_tasks_section(all_tasks: List[Task], company_id: str):
                 help="Task assignee",
                 options=team_members,
                 default="Unassigned",
-                width="small"
+                width="medium"
             ),
             "due_date": st.column_config.TextColumn(
                 "Due",
