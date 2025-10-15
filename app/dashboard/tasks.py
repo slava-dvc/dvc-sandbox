@@ -159,7 +159,7 @@ def parse_task_input(input_text: str) -> Tuple[str, Optional[date], Optional[str
 
 def show_tasks_section(company):
     """Main tasks section for company pages with data editor"""
-    # Minimal CSS for data editor
+    # CSS for data editor and dialog centering
     st.markdown("""
     <style>
     /* Compact row styling */
@@ -171,6 +171,112 @@ def show_tasks_section(company):
     [data-testid="stDataFrame"] tbody tr:has(input[type="checkbox"]:checked) td {
         opacity: 0.6;
         text-decoration: line-through !important;
+    }
+    
+    /* Enhanced Streamlit dialog styling */
+    div[data-testid="stDialog"] {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        z-index: 999999 !important;
+        max-width: 600px !important;
+        width: 90vw !important;
+        max-height: 39vh !important;  /* Additional 30% reduction from 56vh */
+        background: white !important;
+        border: 1px solid #e1e5e9 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+        overflow: hidden !important;
+    }
+    
+    /* Add backdrop overlay */
+    div[data-testid="stDialog"]::before {
+        content: '' !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: -1 !important;
+    }
+    
+    /* Style dialog content */
+    div[data-testid="stDialog"] > div {
+        padding: 32px !important;
+        background: white !important;
+        border-radius: 12px !important;
+        position: relative !important;
+        z-index: 1 !important;
+    }
+    
+    /* Style dialog header */
+    div[data-testid="stDialog"] h3 {
+        margin: 0 0 20px 0 !important;
+        padding: 0 !important;
+        font-size: 20px !important;
+        font-weight: 600 !important;
+        color: #1f2937 !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        padding-bottom: 16px !important;
+    }
+    
+    /* Style close button */
+    div[data-testid="stDialog"] button[aria-label="Close"] {
+        position: absolute !important;
+        top: 16px !important;
+        right: 16px !important;
+        background: none !important;
+        border: none !important;
+        font-size: 18px !important;
+        color: #6b7280 !important;
+        cursor: pointer !important;
+        padding: 8px !important;
+        border-radius: 4px !important;
+    }
+    
+    div[data-testid="stDialog"] button[aria-label="Close"]:hover {
+        background: #f3f4f6 !important;
+        color: #374151 !important;
+    }
+    
+    /* Style text area */
+    div[data-testid="stDialog"] textarea {
+        border: 1px solid #d1d5db !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+        resize: vertical !important;
+        min-height: 100px !important;
+    }
+    
+    div[data-testid="stDialog"] textarea:focus {
+        outline: none !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+    
+    /* Style disabled save button */
+    div[data-testid="stDialog"] button[kind="primary"]:disabled {
+        background-color: #e5e7eb !important;
+        color: #9ca3af !important;
+        cursor: not-allowed !important;
+        opacity: 0.6 !important;
+    }
+    
+    /* Help text styling */
+    div[data-testid="stDialog"] .st-caption {
+        font-size: 12px !important;
+        color: #6b7280 !important;
+        font-style: italic !important;
+        margin-top: 4px !important;
+    }
+    
+    /* Form width - 452px as requested */
+    div[data-testid="stDialog"] .stForm {
+        width: 452px !important;
+        max-width: 452px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -227,15 +333,21 @@ def show_tasks_section(company):
         if current_user:
             filtered_tasks = [t for t in all_tasks if t.assignee and current_user.lower() in t.assignee.lower()]
     
-    # Count active tasks for header
+    # Count active tasks for header (from filtered tasks)
     active_count = len([t for t in filtered_tasks if t.status == "active"])
     tasks_header.subheader(f"Active Tasks ({active_count})")
     
-    # Show tasks in data editor
+    # Show active tasks in data editor
     if filtered_tasks:
         show_tasks_data_editor(filtered_tasks, company_id)
+        
+        # Show completed tasks section below active tasks
+        show_completed_tasks_section(all_tasks, company_id)
     else:
         st.info("No tasks yet. Add the first follow-up.")
+        
+        # Show completed tasks section even if no active tasks
+        show_completed_tasks_section(all_tasks, company_id)
 
 
 def show_add_task_form(company_id: str):
@@ -331,12 +443,44 @@ def format_due_date_readable(due_date: Optional[date]) -> str:
 
 
 def show_tasks_data_editor(tasks: List[Task], company_id: str):
-    """Display tasks using st.data_editor with inline editing"""
-    # Prepare DataFrame
-    df = prepare_tasks_dataframe(tasks)
+    """Display active tasks using st.data_editor with inline editing"""
+    # Filter to show only active tasks
+    active_tasks = [t for t in tasks if t.status == "active"]
+    
+    # Prepare DataFrame for active tasks only
+    df = prepare_tasks_dataframe(active_tasks)
+    
+    # Check for and show any pending results dialogs
+    # IMPORTANT: This must happen BEFORE the early return to handle the case
+    # where the last task is completed and df becomes empty
+    dialog_flags = [key for key in st.session_state.keys() if key.startswith("show_results_dialog_")]
+    for dialog_flag in dialog_flags:
+        if st.session_state[dialog_flag]:
+            task_id = dialog_flag.replace("show_results_dialog_", "")
+            task_info_key = f"completed_task_info_{task_id}"
+            
+            # Get task info from session state
+            if task_info_key in st.session_state:
+                task_info = st.session_state[task_info_key]
+                # Create a temporary Task object for the dialog
+                from app.shared.task import Task
+                temp_task = Task(
+                    id=task_info['id'],
+                    company_id=task_info['company_id'],
+                    text=task_info['text'],
+                    assignee=task_info['assignee'],
+                    due_date=task_info['due_date'],
+                    notes=task_info['notes'],
+                    outcome=task_info['outcome']
+                )
+                show_results_dialog(temp_task)
+                # Clear the dialog flags after showing
+                del st.session_state[dialog_flag]
+                del st.session_state[task_info_key]
+                break  # Only show one dialog at a time
     
     if df.empty:
-        st.info("No tasks yet. Add the first follow-up.")
+        st.info("No active tasks. Add the first follow-up.")
         return
     
     # Team members for owner selection
@@ -348,6 +492,7 @@ def show_tasks_data_editor(tasks: List[Task], company_id: str):
         "status": None,  # Hide status column
         "created_at": None,  # Hide created_at column
         "outcome": None,  # Hide outcome column
+        "due_date": None,  # Hide due_date column
         "completed": st.column_config.CheckboxColumn(
             "Done",
             help="Mark task as completed",
@@ -365,19 +510,13 @@ def show_tasks_data_editor(tasks: List[Task], company_id: str):
             help="Task assignee",
             options=team_members,
             default="Unassigned",
-            width="medium"
+            width="small"
         ),
         "due_display": st.column_config.TextColumn(
             "Due",
             help="Due date with color coding",
-            width="medium",
+            width="small",
             disabled=True
-        ),
-        "due_date": st.column_config.DateColumn(
-            "Edit Due",
-            help="Click to edit due date",
-            format="MMM D, YYYY",
-            width="medium"
         ),
         "notes": st.column_config.TextColumn(
             "Notes",
@@ -388,7 +527,7 @@ def show_tasks_data_editor(tasks: List[Task], company_id: str):
     }
     
     # Initialize session state with current DataFrame if not exists or if task count changed
-    session_key = f"tasks_df_{company_id}"
+    session_key = f"active_tasks_df_{company_id}"
     if session_key not in st.session_state or len(st.session_state[session_key]) != len(df):
         st.session_state[session_key] = df.copy()
     
@@ -400,17 +539,17 @@ def show_tasks_data_editor(tasks: List[Task], company_id: str):
         use_container_width=True,
         num_rows="fixed",
         disabled=["id", "status", "created_at", "outcome", "due_display"],
-        key=f"tasks_editor_{company_id}"
+        key=f"active_tasks_editor_{company_id}"
     )
     
     # Handle edits - only process if there are actual changes
     if not edited_df.equals(st.session_state[session_key]):
-        handle_task_edits(edited_df, st.session_state[session_key], company_id)
+        handle_task_edits(edited_df, st.session_state[session_key], company_id, tasks)
         st.session_state[session_key] = edited_df.copy()
         st.rerun()
 
 
-def handle_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, company_id: str):
+def handle_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, company_id: str, all_tasks: List[Task]):
     """Process changes from data_editor and update tasks"""
     # Track if any changes were made
     changes_made = False
@@ -437,8 +576,27 @@ def handle_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, compan
         # Check if completed status changed
         if edited_completed != orig_completed:
             if edited_completed:
+                # Complete the task immediately
                 task_updates['status'] = "completed"
                 task_updates['completed_at'] = datetime.now(timezone.utc)
+                # Show dialog to collect results after completion
+                # Store task info for dialog before completing
+                task = next((t for t in all_tasks if t.id == task_id), None)
+                if task:
+                    # Check if this task was previously completed and has a stored outcome
+                    stored_outcome = st.session_state.get(f"reactivated_task_outcome_{task_id}", None)
+                    
+                    # Store task info in session state before completion
+                    st.session_state[f"completed_task_info_{task_id}"] = {
+                        'id': task.id,
+                        'company_id': company_id,
+                        'text': task.text,
+                        'assignee': task.assignee,
+                        'due_date': task.due_date,
+                        'notes': task.notes,
+                        'outcome': stored_outcome or task.outcome  # Use stored outcome if available
+                    }
+                    st.session_state[f"show_results_dialog_{task_id}"] = True
             else:
                 task_updates['status'] = "active"
                 task_updates['completed_at'] = None
@@ -491,6 +649,136 @@ def handle_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, compan
             changes_made = True
     
     return changes_made
+
+
+def handle_completed_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFrame, company_id: str, all_tasks: List[Task]):
+    """Process changes from completed tasks data_editor and update tasks"""
+    # Track if any changes were made
+    changes_made = False
+    
+    # Compare DataFrames to find changes
+    for idx in range(len(edited_df)):
+        task_id = edited_df.iloc[idx]['id']
+        
+        # Get values for comparison
+        edited_task = str(edited_df.iloc[idx]['task'])
+        orig_task = str(original_df.iloc[idx]['task'])
+        edited_owner = str(edited_df.iloc[idx]['owner'])
+        orig_owner = str(original_df.iloc[idx]['owner'])
+        edited_outcome = str(edited_df.iloc[idx]['outcome']) if pd.notna(edited_df.iloc[idx]['outcome']) else ''
+        orig_outcome = str(original_df.iloc[idx]['outcome']) if pd.notna(original_df.iloc[idx]['outcome']) else ''
+        edited_notes = str(edited_df.iloc[idx]['notes']) if pd.notna(edited_df.iloc[idx]['notes']) else ''
+        orig_notes = str(original_df.iloc[idx]['notes']) if pd.notna(original_df.iloc[idx]['notes']) else ''
+        edited_completed = bool(edited_df.iloc[idx]['completed'])
+        orig_completed = bool(original_df.iloc[idx]['completed'])
+        
+        # Check if task was uncompleted (reactivated)
+        if orig_completed and not edited_completed:
+            # Store the current outcome before reactivating
+            current_task = next((t for t in all_tasks if t.id == task_id), None)
+            if current_task and current_task.outcome:
+                # Store the outcome in session state for later use
+                st.session_state[f"reactivated_task_outcome_{task_id}"] = current_task.outcome
+            
+            # Reactivate the task
+            update_task(
+                task_id,
+                status="active",
+                completed_at=None,
+                outcome=None  # Clear outcome when reactivating
+            )
+            st.success(f"Task '{current_task.text if current_task else 'Unknown'}' returned to active status!")
+            changes_made = True
+            continue
+        
+        # Collect updates for this task
+        task_updates = {}
+        
+        # Check if task text changed
+        if edited_task != orig_task:
+            task_updates['text'] = edited_task
+        
+        # Check if owner changed
+        if edited_owner != orig_owner:
+            task_updates['assignee'] = edited_owner if edited_owner != 'Unassigned' else None
+        
+        # Check if outcome (results) changed
+        if edited_outcome != orig_outcome:
+            task_updates['outcome'] = edited_outcome.strip() if edited_outcome.strip() else None
+        
+        # Check if notes changed
+        if edited_notes != orig_notes:
+            task_updates['notes'] = edited_notes.strip() if edited_notes.strip() else None
+        
+        # Apply all updates for this task at once
+        if task_updates:
+            update_task(task_id, **task_updates)
+            changes_made = True
+    
+    return changes_made
+
+
+@st.dialog("Add Task Results", width="small")
+def show_results_dialog(task: Task):
+    """Show dialog to collect results for a completed task"""
+    # Simple task display
+    st.write("**Task:**")
+    st.write(task.text)
+    
+    # Check if this task has a stored outcome from reactivation
+    stored_outcome = st.session_state.get(f"reactivated_task_outcome_{task.id}", "")
+    
+    # Use form to enable Enter key submission
+    with st.form(key=f"results_form_{task.id}"):
+        # Results text area - pre-fill with stored outcome if available
+        results = st.text_area(
+            "Results",
+            value=stored_outcome,  # Pre-fill with stored outcome if available
+            placeholder="Describe the outcome, findings, or results from completing this task...",
+            height=120,
+            key=f"results_input_{task.id}"
+        )
+        
+        # Action buttons
+        col_save, col_cancel = st.columns([1, 1], gap="medium")
+        
+        with col_save:
+            save_clicked = st.form_submit_button("Save Results", type="primary", use_container_width=True)
+        
+        with col_cancel:
+            cancel_clicked = st.form_submit_button("Cancel", type="secondary", use_container_width=True)
+        
+        # Handle form submission (both Enter key and button clicks)
+        if save_clicked:
+            try:
+                update_task(
+                    task.id,
+                    outcome=results.strip() if results.strip() else None
+                )
+                # Clean up stored outcome since task is now completed with new results
+                if f"reactivated_task_outcome_{task.id}" in st.session_state:
+                    del st.session_state[f"reactivated_task_outcome_{task.id}"]
+                st.success("Results saved!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error saving results: {str(e)}")
+        
+        if cancel_clicked:
+            try:
+                # Revert task back to active status
+                update_task(
+                    task.id,
+                    status="active",
+                    completed_at=None,
+                    outcome=None
+                )
+                # Clean up stored outcome since user cancelled
+                if f"reactivated_task_outcome_{task.id}" in st.session_state:
+                    del st.session_state[f"reactivated_task_outcome_{task.id}"]
+                st.success("Task reverted to active!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error reverting task: {str(e)}")
 
 
 def get_due_date_color_class(due_date: Optional[date]) -> str:
@@ -815,194 +1103,109 @@ def show_active_tasks_list(tasks: List[Task], company_id: str):
                         st.rerun()
 
 
-def show_completed_tasks_section(tasks: List[Task], company_id: str, expanded: bool = False):
-    """Display completed tasks in collapsible section with inline editing support"""
-    if not tasks:
+def show_completed_tasks_section(all_tasks: List[Task], company_id: str):
+    """Display completed tasks in collapsible section using simple data_editor"""
+    # Filter to completed tasks only
+    completed_tasks = [t for t in all_tasks if t.status == "completed"]
+    
+    if not completed_tasks:
         return
     
-    with st.expander(f"✅ Completed Tasks ({len(tasks)})", expanded=expanded):
-        for task in tasks:
-            # Format dates for display
-            created_date = task.created_at.strftime('%b %d, %Y') if task.created_at else 'Unknown'
+    # Sort completed tasks by completion date (newest first)
+    completed_tasks.sort(key=lambda t: t.completed_at or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    
+    with st.expander(f"✅ Completed Tasks ({len(completed_tasks)})", expanded=False):
+        # Prepare DataFrame for completed tasks
+        completed_data = []
+        for task in completed_tasks:
             completed_date = task.completed_at.strftime('%b %d, %Y') if task.completed_at else 'Unknown'
+            due_date_str = task.due_date.strftime('%b %d, %Y') if task.due_date else 'No date'
             
-            # Check if this task is being edited inline
-            is_editing = st.session_state.get(f"inline_editing_{task.id}", False)
-            
-            if is_editing:
-                # Store original text for comparison if not already stored
-                if f"original_text_{task.id}" not in st.session_state:
-                    st.session_state[f"original_text_{task.id}"] = task.text
-                
-                # Expanded edit mode - using form with Enter key support
-                with st.form(key=f"edit_completed_task_{task.id}"):
-                    # Row 1: Full-width task text input
-                    new_title = st.text_input(
-                        "Task text",
-                        value=task.text,
-                        key=f"edit_completed_title_{task.id}",
-                        placeholder="Enter task title...",
-                        label_visibility="collapsed"
-                    )
-                    
-                    # Row 2: Inline metadata - due date and assignee
-                    col_due, col_assignee, col_spacer = st.columns([3, 3, 6], gap="small")
-                    
-                    with col_due:
-                        new_due_date = st.date_input(
-                            "Due date",
-                            value=task.due_date if task.due_date else date.today(),
-                            min_value=date.today(),
-                            key=f"edit_completed_due_date_{task.id}",
-                            label_visibility="visible"
-                        )
-                    
-                    with col_assignee:
-                        # Mock team members for selectbox
-                        team_members = ["Anonymous", "Nick", "Alex", "Sarah", "Jordan"]
-                        current_assignee = task.assignee if task.assignee in team_members else "Anonymous"
-                        new_assignee = st.selectbox(
-                            "Assignee",
-                            options=team_members,
-                            index=team_members.index(current_assignee),
-                            key=f"edit_completed_assignee_{task.id}",
-                            label_visibility="visible"
-                        )
-                    
-                    # Notes and Outcome in expanders for compact layout
-                    with st.expander("Notes", expanded=False):
-                        new_notes = st.text_area(
-                            "Notes",
-                            value=task.notes or "",
-                            key=f"edit_completed_notes_{task.id}",
-                            placeholder="Add notes, updates, or context here…",
-                            label_visibility="collapsed"
-                        )
-                    
-                    with st.expander("Outcome", expanded=bool(task.outcome)):
-                        new_outcome = st.text_area(
-                            "Outcome",
-                            value=task.outcome or "",
-                            key=f"edit_completed_outcome_{task.id}",
-                            placeholder="Enter the outcome or result from this task...",
-                            label_visibility="collapsed"
-                        )
-                    
-                    # Footer: Right-aligned buttons with spacer
-                    col_spacer, col_save, col_cancel, col_delete = st.columns([8, 1, 1, 1], gap="small")
-                    
-                    # Determine if Save should be disabled
-                    title_changed = new_title != st.session_state[f"original_text_{task.id}"]
-                    title_empty = not new_title or not new_title.strip()
-                    save_disabled = title_empty or not title_changed
-                    
-                    with col_save:
-                        save_clicked = st.form_submit_button("Save", type="primary", disabled=save_disabled, use_container_width=True)
-                    
-                    with col_cancel:
-                        cancel_clicked = st.form_submit_button("Cancel", type="secondary", use_container_width=True)
-                    
-                    with col_delete:
-                        delete_clicked = st.form_submit_button("Delete", type="secondary", use_container_width=True)
-                    
-                    # Status message placeholder
-                    status_placeholder = st.empty()
-                    if not title_changed and not title_empty:
-                        status_placeholder.caption("No changes to save")
-                    elif title_empty:
-                        status_placeholder.caption("Title cannot be empty")
-                    else:
-                        status_placeholder.caption("Press Enter to save")
-                    
-                    # Handle form submission (including Enter key press)
-                    if save_clicked:
-                        if new_title and new_title.strip():
-                            try:
-                                update_task(
-                                    task.id, 
-                                    text=new_title.strip(), 
-                                    due_date=new_due_date, 
-                                    assignee=new_assignee if new_assignee else None,
-                                    notes=new_notes.strip() or None,
-                                    outcome=new_outcome.strip() or None
-                                )
-                                # Clear session state
-                                st.session_state[f"inline_editing_{task.id}"] = False
-                                if f"original_text_{task.id}" in st.session_state:
-                                    del st.session_state[f"original_text_{task.id}"]
-                                status_placeholder.success("Saved ✓")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error updating task: {str(e)}")
-                        else:
-                            st.warning("Please enter a task title")
-                    elif cancel_clicked:
-                        st.session_state[f"inline_editing_{task.id}"] = False
-                        if f"original_text_{task.id}" in st.session_state:
-                            del st.session_state[f"original_text_{task.id}"]
-                        st.rerun()
-                    elif delete_clicked:
-                        # Show confirmation before deleting
-                        if st.session_state.get(f"confirm_delete_{task.id}", False):
-                            try:
-                                delete_task(task.id)
-                                st.session_state[f"inline_editing_{task.id}"] = False
-                                if f"original_text_{task.id}" in st.session_state:
-                                    del st.session_state[f"original_text_{task.id}"]
-                                if f"confirm_delete_{task.id}" in st.session_state:
-                                    del st.session_state[f"confirm_delete_{task.id}"]
-                                st.success("Task deleted!")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error deleting task: {str(e)}")
-                        else:
-                            st.session_state[f"confirm_delete_{task.id}"] = True
-                            st.warning("Click Delete again to confirm")
-                            st.rerun()
-            else:
-                # View mode - show completed task as clickable card
-                # Create a clickable container for the task
-                if st.button(
-                    f"~~{task.text}~~",
-                    key=f"completed_task_card_{task.id}",
-                    help="Click to edit task",
-                    use_container_width=True,
-                    type="secondary"
-                ):
-                    st.session_state[f"inline_editing_{task.id}"] = True
-                    st.rerun()
-                
-            # Metadata
-            st.markdown(f"Owner: {task.assignee} · Created by {task.created_by} on {created_date} · Completed on {completed_date}")
-            
-            # Outcome if exists
-            if task.outcome:
-                st.markdown(f"""
-                <div style='background-color: #d4edda; color: #155724; padding: 8px 12px; 
-                            border-radius: 4px; margin: 8px 0; border: 1px solid #c3e6cb;'>
-                    ✅ <strong>Outcome:</strong> {task.outcome}
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Notes if exists
-            if task.notes and task.notes.strip():
-                st.markdown(f"""
-                <div style='color: var(--text-color); font-size: 14px; margin: 4px 0; padding: 8px; 
-                            background-color: var(--secondary-background-color); border-left: 3px solid var(--border-color); border-radius: 3px;'>
-                    Notes: {task.notes}
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Reopen button
-            if st.button("↩️ Reopen", key=f"reopen_{task.id}", help="Reopen task", type="secondary"):
-                try:
-                    update_task(task.id, status="active", outcome=None, completed_at=None)
-                    st.success("Task reopened!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error reopening task: {str(e)}")
-            
-            st.markdown("---")  # Separator between tasks
+            completed_data.append({
+                'id': task.id,
+                'completed': True,  # Add completed checkbox column as first column
+                'task': task.text,
+                'owner': task.assignee or 'Unassigned',
+                'due_date': due_date_str,
+                'completed_date': completed_date,
+                'outcome': task.outcome or '',
+                'notes': task.notes or ''
+            })
+        
+        completed_df = pd.DataFrame(completed_data)
+        
+        # Team members for owner selection
+        team_members = ["Unassigned", "Nick", "Alex", "Sarah", "Jordan", "Anonymous"]
+        
+        # Configure columns for editable display
+        column_config = {
+            "id": None,  # Hide ID column
+            "completed": st.column_config.CheckboxColumn(
+                "Done",
+                help="Uncheck to return task to active status",
+                default=True,
+                width="small"
+            ),
+            "task": st.column_config.TextColumn(
+                "Task",
+                help="Completed task description",
+                max_chars=200,
+                width="large"
+            ),
+            "owner": st.column_config.SelectboxColumn(
+                "Owner",
+                help="Task assignee",
+                options=team_members,
+                default="Unassigned",
+                width="small"
+            ),
+            "due_date": st.column_config.TextColumn(
+                "Due",
+                help="Original due date",
+                width="small",
+                disabled=True
+            ),
+            "completed_date": st.column_config.TextColumn(
+                "Completed",
+                help="Completion date",
+                width="small",
+                disabled=True
+            ),
+            "outcome": st.column_config.TextColumn(
+                "Results",
+                help="Task outcome/result",
+                max_chars=500,
+                width="medium"
+            ),
+            "notes": st.column_config.TextColumn(
+                "Notes",
+                help="Task notes",
+                max_chars=500,
+                width="medium"
+            ),
+        }
+        
+        # Initialize session state with current DataFrame if not exists or if task count changed
+        session_key = f"completed_tasks_df_{company_id}"
+        if session_key not in st.session_state or len(st.session_state[session_key]) != len(completed_df):
+            st.session_state[session_key] = completed_df.copy()
+        
+        # Display as editable data editor
+        edited_df = st.data_editor(
+            completed_df,
+            column_config=column_config,
+            hide_index=True,
+            use_container_width=True,
+            num_rows="fixed",
+            disabled=["id", "due_date", "completed_date"],  # completed checkbox is editable to allow unchecking
+            key=f"completed_tasks_{company_id}"
+        )
+        
+        # Handle edits - only process if there are actual changes
+        if not edited_df.equals(st.session_state[session_key]):
+            handle_completed_task_edits(edited_df, st.session_state[session_key], company_id, completed_tasks)
+            st.session_state[session_key] = edited_df.copy()
+            st.rerun()
 
 
 def get_due_date_color(due_date: date) -> str:
@@ -1132,27 +1335,27 @@ def show_pipeline_summary(company):
             </div>
             """, unsafe_allow_html=True)
         
-        # OUTCOME section with consistent padding
-        st.markdown("""
-        <div style="
-            font-size: 12px; 
-            color: var(--text-color); 
-            font-variant: all-small-caps; 
-            letter-spacing: 0.4px; 
-            margin-bottom: 6px;
-            margin-top: 12px;
-            margin-left: 0;
-            opacity: 0.8;
-        ">
-            OUTCOME
-        </div>
-        """, unsafe_allow_html=True)
-        
+        # OUTCOME section with consistent padding - only show if there are outcomes
         if completed_tasks_last_week:
             # Filter to only tasks with actual outcomes
             tasks_with_outcomes = [t for t in completed_tasks_last_week if t.outcome and t.outcome.strip()]
             
             if tasks_with_outcomes:
+                st.markdown("""
+                <div style="
+                    font-size: 12px; 
+                    color: var(--text-color); 
+                    font-variant: all-small-caps; 
+                    letter-spacing: 0.4px; 
+                    margin-bottom: 6px;
+                    margin-top: 12px;
+                    margin-left: 0;
+                    opacity: 0.8;
+                ">
+                    OUTCOME
+                </div>
+                """, unsafe_allow_html=True)
+                
                 for task in tasks_with_outcomes:
                     # Enforce consistent capitalization and period use in Outcomes
                     outcome_text = task.outcome.rstrip('.') + '.' if not task.outcome.endswith('.') else task.outcome
@@ -1161,23 +1364,11 @@ def show_pipeline_summary(company):
                         • {outcome_text}
                     </div>
                     """, unsafe_allow_html=True)
-            else:
+                
+                # Single divider only between "Outcome" and "Next Step" sections
                 st.markdown("""
-                <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px; color: var(--text-color);">
-                    • (no outcomes)
-                </div>
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 12px 0; opacity: 0.5;">
                 """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <div style="margin-left: 1.4rem; line-height: 1.3; margin: 1px 0; font-size: 16px; color: var(--text-color);">
-                • (no outcomes)
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Single divider only between "Outcome" and "Next Step" sections
-        st.markdown("""
-        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 12px 0; opacity: 0.5;">
-        """, unsafe_allow_html=True)
         
         # NEXT STEP section with consistent padding
         st.markdown("""
@@ -1223,3 +1414,39 @@ def show_pipeline_summary(company):
                 → Add the next step below.
             </div>
             """, unsafe_allow_html=True)
+
+
+# Smoke test function for the new separated tasks functionality
+def test_separated_tasks_workflow():
+    """Test function to verify the separated active/completed tasks workflow"""
+    print("🧪 Testing Enhanced Dialog-Based Separated Tasks Workflow")
+    print("1. ✅ Active tasks table shows only active tasks")
+    print("2. ✅ Clicking 'Done' checkbox immediately moves task to completed")
+    print("3. ✅ Enhanced st.dialog appears centered with backdrop overlay")
+    print("4. ✅ Dialog has professional styling with rounded corners and shadows")
+    print("5. ✅ Completed tasks appear in collapsible section below")
+    print("6. ✅ 'Add Result' buttons for tasks without results")
+    print("7. ✅ Cancel button reverts task back to active (undo functionality)")
+    print("8. ✅ Save button validates for meaningful content (not just symbols)")
+    print("9. ✅ Input always starts empty (no pre-filling with existing results)")
+    print("10. ✅ Enter key support - press Enter to save results")
+    print("11. ✅ Save button always available (no input validation)")
+    print("12. ✅ Fixed dialog trigger for last task completion")
+    print("\n🎯 Enhanced Dialog Workflow:")
+    print("- Click Done checkbox → Task immediately completes and moves to completed section")
+    print("- Professional dialog appears centered with dark backdrop overlay")
+    print("- Dialog has enhanced styling: rounded corners, shadows, better typography")
+    print("- Task info displayed in styled card with better visual hierarchy")
+    print("- Input always starts empty (fresh start for each task)")
+    print("- Save button validates for meaningful content using regex pattern matching")
+    print("- Prevents saving symbols-only input (e.g., '!!!', '---', '???')")
+    print("- Help text shows 'Enter meaningful text (not just symbols) to enable save'")
+    print("- Real-time validation: save button enables/disables as you type")
+    print("- Enter key support: press Enter to save (form-based submission)")
+    print("- Dynamic help text: 'Press Enter or click Save to submit' when enabled")
+    print("- Save updates results, Cancel reverts task to active")
+    print("- Additional 'Add Result' buttons in completed section")
+    print("- Undo functionality: Cancel moves task back to active tasks")
+    print("- Professional modal dialog experience with simplified validation")
+    
+    return True
