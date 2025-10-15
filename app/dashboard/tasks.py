@@ -1411,7 +1411,7 @@ def show_pipeline_summary(company):
         else:
             st.markdown("""
             <div style="color: var(--text-color); font-weight: 500; line-height: 1.3; font-size: 16px; margin-bottom: 10px;">
-                → Add the next step in Tasks tab below.
+                → Add the next step in the Tasks tab.
             </div>
             """, unsafe_allow_html=True)
 
