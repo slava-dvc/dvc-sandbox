@@ -148,7 +148,8 @@ MOCK_INVESTMENTS = [
         "investment_date": "2024-01-15",
         "stage": "Pre-seed",
         "status": "Active",
-        "Fund": "DVC Fund I"
+        "Fund": "DVC Fund I",
+        "Amount Invested": 500000
     },
     {
         "id": "inv_002", 
@@ -157,7 +158,8 @@ MOCK_INVESTMENTS = [
         "investment_date": "2024-02-20",
         "stage": "Seed",
         "status": "Active",
-        "Fund": "DVC Fund I"
+        "Fund": "DVC Fund I",
+        "Amount Invested": 1200000
     },
     {
         "id": "inv_003",
@@ -166,7 +168,8 @@ MOCK_INVESTMENTS = [
         "investment_date": "2024-03-10",
         "stage": "Series A",
         "status": "Active",
-        "Fund": "DVC Fund I"
+        "Fund": "DVC Fund I",
+        "Amount Invested": 2500000
     },
     {
         "id": "inv_004",
@@ -175,7 +178,8 @@ MOCK_INVESTMENTS = [
         "investment_date": "2024-10-14",
         "stage": "Series A",
         "status": "Active",
-        "Fund": "DVC Fund I"
+        "Fund": "DVC Fund I",
+        "Amount Invested": 3800000
     }
 ]
 
