@@ -157,39 +157,33 @@ def show_all_tasks_data_editor(tasks: List[Task]):
         "completed": st.column_config.CheckboxColumn(
             "Done",
             help="Mark task as completed",
-            default=False,
-            width="small"
+            default=False
         ),
         "title": st.column_config.TextColumn(
             "Task",
             help="Task description",
-            max_chars=200,
-            width="large"
+            max_chars=200
         ),
         "company_name": st.column_config.TextColumn(
             "Company",
             help="Company this task belongs to",
-            width="small",
             disabled=True
         ),
         "owner": st.column_config.SelectboxColumn(
             "Owner",
             help="Task assignee",
             options=team_members,
-            default="Unassigned",
-            width="medium"
+            default="Unassigned"
         ),
         "due_display": st.column_config.TextColumn(
             "Due",
             help="Due date with color coding",
-            width="medium",
             disabled=True
         ),
         "notes": st.column_config.TextColumn(
             "Notes",
             help="Task notes and context",
-            max_chars=500,
-            width="large"
+            max_chars=500
         ),
     }
     
@@ -387,6 +381,34 @@ def handle_completed_task_edits(edited_df: pd.DataFrame, original_df: pd.DataFra
 @st.dialog("Add Task Results", width="large")
 def show_results_dialog(task: Task):
     """Show dialog to collect results for a completed task"""
+    # Add responsive CSS for auto-sizing dialog
+    st.markdown("""
+    <style>
+    div[data-testid="stDialog"] {
+        width: auto !important;
+        min-width: 500px !important;
+        max-width: 90vw !important;
+        height: auto !important;
+        max-height: 90vh !important;
+    }
+    
+    div[data-testid="stDialog"] textarea {
+        width: 100% !important;
+        min-height: 120px !important;
+        resize: vertical !important;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        div[data-testid="stDialog"] {
+            width: 95vw !important;
+            min-width: 300px !important;
+            max-width: 95vw !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Simple task display
     st.write("**Task:**")
     st.write(task.text)
@@ -494,51 +516,43 @@ def show_completed_tasks_section(all_tasks: List[Task]):
             "completed": st.column_config.CheckboxColumn(
                 "Done",
                 help="Uncheck to return task to active status",
-                default=True,
-                width="small"
+                default=True
             ),
             "task": st.column_config.TextColumn(
                 "Task",
                 help="Completed task description",
-                max_chars=200,
-                width="large"
+                max_chars=200
             ),
             "company_name": st.column_config.TextColumn(
                 "Company",
                 help="Company this task belongs to",
-                width="medium",
                 disabled=True
             ),
             "owner": st.column_config.SelectboxColumn(
                 "Owner",
                 help="Task assignee",
                 options=team_members,
-                default="Unassigned",
-                width="medium"
+                default="Unassigned"
             ),
             "due_date": st.column_config.TextColumn(
                 "Due",
                 help="Original due date",
-                width="small",
                 disabled=True
             ),
             "completed_date": st.column_config.TextColumn(
                 "Completed",
                 help="Completion date",
-                width="small",
                 disabled=True
             ),
             "outcome": st.column_config.TextColumn(
                 "Results",
                 help="Task outcome/result",
-                max_chars=500,
-                width="medium"
+                max_chars=500
             ),
             "notes": st.column_config.TextColumn(
                 "Notes",
                 help="Task notes",
-                max_chars=500,
-                width="medium"
+                max_chars=500
             ),
         }
         
