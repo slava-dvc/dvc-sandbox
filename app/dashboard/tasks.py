@@ -60,28 +60,42 @@ def prepare_tasks_dataframe(tasks: List[Task]) -> pd.DataFrame:
     today = date.today()
     data = []
     for task in tasks:
-        # Create readable due date with emoji indicator
-        if task.due_date:
-            days_diff = (task.due_date - today).days
-            if days_diff == 0:
-                due_display = "🟢 Today"
-            elif days_diff == 1:
-                due_display = "🟡 Tomorrow"
-            elif days_diff < 0:
-                due_display = f"🔴 {task.due_date.strftime('%b %d')}"
-            elif days_diff <= 2:
-                due_display = f"🟠 {task.due_date.strftime('%b %d')}"
+        # For completed tasks, use completed_at; for active tasks, use due_date
+        if task.status == 'completed':
+            # Use completed date for completed tasks
+            if task.completed_at:
+                # Convert to date if it's a datetime
+                completed_date = task.completed_at.date() if hasattr(task.completed_at, 'date') else task.completed_at
+                due_display = f"✅ {completed_date.strftime('%b %d, %Y')}"
+                date_value = completed_date
             else:
-                due_display = task.due_date.strftime('%b %d, %Y')
+                due_display = "✅ Completed"
+                date_value = None
         else:
-            due_display = "No date"
+            # Use due date for active tasks
+            if task.due_date:
+                days_diff = (task.due_date - today).days
+                if days_diff == 0:
+                    due_display = "🟢 Today"
+                elif days_diff == 1:
+                    due_display = "🟡 Tomorrow"
+                elif days_diff < 0:
+                    due_display = f"🔴 {task.due_date.strftime('%b %d')}"
+                elif days_diff <= 2:
+                    due_display = f"🟠 {task.due_date.strftime('%b %d')}"
+                else:
+                    due_display = task.due_date.strftime('%b %d, %Y')
+                date_value = task.due_date
+            else:
+                due_display = "No date"
+                date_value = None
         
         data.append({
             'id': task.id,
             'completed': task.status == 'completed',
             'title': task.text,
             'owner': task.assignee if task.assignee else 'Unassigned',
-            'due_date': task.due_date,
+            'due_date': date_value,
             'due_display': due_display,
             'status': task.status,
             'created_at': task.created_at,

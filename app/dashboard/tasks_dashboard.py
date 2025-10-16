@@ -268,6 +268,11 @@ def show_company_tasks_table(tasks: List[Task]):
                 help="Uncheck to return task to active status",
                 default=True
             ),
+            "due_date": st.column_config.DateColumn(
+                "Completed",
+                help="Completion date",
+                format="MMM DD, YYYY"
+            ),
             "outcome": st.column_config.TextColumn(
                 "Results",
                 help="Task outcome/result",
