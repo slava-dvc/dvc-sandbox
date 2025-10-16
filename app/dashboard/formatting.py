@@ -161,4 +161,4 @@ def safe_markdown(text: Optional[str]) -> str:
     """Helper function to safely format text for markdown display by escaping special characters."""
     if not text or not isinstance(text, str):
         return text or ""
-    return text.replace('$', '\$')
+    return text.replace('$', '\\$')
