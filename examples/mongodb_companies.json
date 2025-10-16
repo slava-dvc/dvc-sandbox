@@ -1,0 +1,540 @@
+{
+  "_id": {
+    "$oid": "67f43cc5be9e068481bb8d22"
+  },
+  "airtableId": "recvDr0u3M2UHaHQa",
+  "name": "HyperC",
+  "updatedAt": {
+    "$date": "2025-08-10T17:06:49.845Z"
+  },
+  "website": "https://hyperc.com",
+  "spectrId": "60c208b85e744335aaf16bcc",
+  "spectrUpdatedAt": {
+    "$date": "2025-08-06T00:17:19.905Z"
+  },
+  "spectrData": {
+    "id": "60c208b85e744335aaf16bcc",
+    "organization_name": "HyperC",
+    "organization_rank": 4750545,
+    "organization_name_aliases": [],
+    "primary_role": "company",
+    "roles": [
+      "company"
+    ],
+    "description": "HyperC is an American artificial intelligence research organization founded in March 2019 and based in California. Its mission is to develop ''artificial market intelligence'' that would make financially profitable decisions in any given business environment and outperform the collective market intelligence itself. The final goal is to develop artificial super intelligence which it defines as ''systems capable of outperforming collective intelligence of a public market in any given environment''.",
+    "tagline": "HyperC is an AI research and deployment company that helps businesses with financially optimal scheduling and planning at scale.",
+    "customer_focus": "b2b",
+    "certifications": [],
+    "customer_profile": "",
+    "traction_highlights": "",
+    "reported_clients": [],
+    "last_updated": "2025-07-31",
+    "tags": [],
+    "industries": [
+      "Commerce and Shopping",
+      "Data and Analytics",
+      "DeepTech",
+      "Finance",
+      "Information Technology",
+      "Software"
+    ],
+    "sub_industries": [
+      "Artificial Intelligence (AI)",
+      "E-Commerce",
+      "Finance",
+      "Information Technology",
+      "Retail",
+      "Scheduling"
+    ],
+    "operating_status": "active",
+    "highlights": [
+      "no_funding"
+    ],
+    "new_highlights": [],
+    "regions": [
+      "United States"
+    ],
+    "founded_year": 2019,
+    "founders": [
+      "Andrew Gree",
+      "Vol Goloshuk"
+    ],
+    "founder_info": [
+      {
+        "departments": [
+          "Senior Leadership"
+        ],
+        "full_name": "Andrew Gree",
+        "seniority": "Executive Level",
+        "specter_person_id": "per_890eacadeca135cecdcf69bd",
+        "title": "Founder & CEO"
+      },
+      {
+        "departments": [
+          "Senior Leadership"
+        ],
+        "full_name": "Vol Goloshuk",
+        "seniority": "Executive Level",
+        "specter_person_id": "per_edbb410808980940f49ad76b",
+        "title": "Co-Founder"
+      }
+    ],
+    "founder_count": 2,
+    "employee_count": 14,
+    "employee_count_range": "11-50",
+    "revenue_estimate_usd": 0,
+    "investors": [],
+    "investor_count": null,
+    "patent_count": null,
+    "trademark_count": null,
+    "website": {
+      "domain": "hyperc.com",
+      "url": "https://hyperc.com",
+      "domain_aliases": []
+    },
+    "hq": {
+      "city": "Palo Alto",
+      "state": "California",
+      "country": "United States",
+      "region": "United States"
+    },
+    "contact": {
+      "phone_number": "+1 (650) 388-9499",
+      "email": null
+    },
+    "ipo": [],
+    "growth_stage": "bootstrapped",
+    "funding": {
+      "total_funding_usd": null,
+      "last_funding_usd": null,
+      "last_funding_date": null,
+      "last_funding_type": null,
+      "round_details": [],
+      "round_count": null,
+      "post_money_valuation_usd": null
+    },
+    "web": {
+      "visits": 897,
+      "popularity_rank": 8930381,
+      "top_country": "United States",
+      "bounce_rate": 35.74,
+      "bounce_rate_3mo_change": -3,
+      "pages_per_visit": 2.33965396881104,
+      "pages_per_visit_3mo_change": 1,
+      "session_duration": 55,
+      "session_duration_3mo_change": 52,
+      "traffic_source": "Direct: 81.2%; Referrals: 4.8%; Search: 6.6%; Social: 6.6%; Mail: 0%; Paid Referrals: 0.8%",
+      "country_breakdown": "United States 100%"
+    },
+    "technologies": [
+      "Choopa",
+      "Content Delivery Network",
+      "Embedly",
+      "Knack",
+      "LiveChat",
+      "SiteGround CAPTCHA",
+      "Vultr",
+      "Wistia"
+    ],
+    "it_spend": null,
+    "awards": [],
+    "award_count": null,
+    "news": [],
+    "reviews": {
+      "g2": {
+        "products": [
+          {
+            "product_name": "",
+            "url": "https://www.g2.com/products/hyperc/reviews",
+            "review_count": 3,
+            "rating": 4.5
+          }
+        ],
+        "rating_avg": 4.5,
+        "review_count": 3
+      },
+      "chrome_extensions": {
+        "extensions": [],
+        "rating_avg": 0,
+        "review_count": null,
+        "user_count": null
+      }
+    },
+    "socials": {
+      "twitter": {
+        "url": null,
+        "follower_count": null
+      },
+      "facebook": {
+        "url": "facebook.com/hypercomputation"
+      },
+      "linkedin": {
+        "url": "linkedin.com/company/hyperc",
+        "follower_count": 824
+      },
+      "itunes": {
+        "urls": null,
+        "rating": null,
+        "review_count": null
+      },
+      "googleplay": {
+        "urls": null,
+        "rating": null,
+        "review_count": null
+      },
+      "instagram": {
+        "url": null,
+        "follower_count": null,
+        "following_count": null
+      },
+      "crunchbase": {
+        "url": "crunchbase.com/organization/hyperc-6223"
+      }
+    },
+    "traction_metrics": {
+      "popularity_rank": {
+        "latest": 8930381,
+        "1mo": {
+          "value": 8930381,
+          "change": 0,
+          "percentage": 0
+        },
+        "2mo": {
+          "value": 8930381,
+          "change": 0,
+          "percentage": 0
+        },
+        "3mo": {
+          "value": 11902655,
+          "change": -2972274,
+          "percentage": -24.97
+        },
+        "4mo": {
+          "value": 8715628,
+          "change": 214753,
+          "percentage": 2.46
+        },
+        "5mo": {
+          "value": 8715628,
+          "change": 214753,
+          "percentage": 2.46
+        },
+        "6mo": {
+          "value": 19535881,
+          "change": -10605500,
+          "percentage": -54.29
+        },
+        "12mo": {
+          "value": 19864383,
+          "change": -10934002,
+          "percentage": -55.04
+        },
+        "24mo": {
+          "value": 13906721,
+          "change": -4976340,
+          "percentage": -35.78
+        }
+      },
+      "web_visits": {
+        "latest": 897,
+        "1mo": {
+          "value": 774,
+          "change": 123,
+          "percentage": 15.89
+        },
+        "2mo": {
+          "value": 1052,
+          "change": -155,
+          "percentage": -14.73
+        },
+        "3mo": {
+          "value": 1011,
+          "change": -114,
+          "percentage": -11.28
+        },
+        "4mo": {
+          "value": 119,
+          "change": 778,
+          "percentage": 653.78
+        },
+        "5mo": {
+          "value": 1424,
+          "change": -527,
+          "percentage": -37.01
+        },
+        "6mo": {
+          "value": 936,
+          "change": -39,
+          "percentage": -4.17
+        },
+        "12mo": {
+          "value": 1526,
+          "change": -629,
+          "percentage": -41.22
+        },
+        "24mo": {
+          "value": 2191,
+          "change": -1294,
+          "percentage": -59.06
+        }
+      },
+      "employee_count": {
+        "latest": 14,
+        "1mo": {
+          "value": 15,
+          "change": -1,
+          "percentage": -6.67
+        },
+        "2mo": {
+          "value": 13,
+          "change": 1,
+          "percentage": 7.69
+        },
+        "3mo": {
+          "value": 13,
+          "change": 1,
+          "percentage": 7.69
+        },
+        "4mo": {
+          "value": 13,
+          "change": 1,
+          "percentage": 7.69
+        },
+        "5mo": {
+          "value": 14,
+          "change": 0,
+          "percentage": 0
+        },
+        "6mo": {
+          "value": 13,
+          "change": 1,
+          "percentage": 7.69
+        },
+        "12mo": {
+          "value": 10,
+          "change": 4,
+          "percentage": 40
+        },
+        "24mo": {
+          "value": 12,
+          "change": 2,
+          "percentage": 16.67
+        }
+      },
+      "linkedin_followers": {
+        "latest": 824,
+        "1mo": {
+          "value": 822,
+          "change": 2,
+          "percentage": 0.24
+        },
+        "2mo": {
+          "value": 819,
+          "change": 5,
+          "percentage": 0.61
+        },
+        "3mo": {
+          "value": 817,
+          "change": 7,
+          "percentage": 0.86
+        },
+        "4mo": {
+          "value": 812,
+          "change": 12,
+          "percentage": 1.48
+        },
+        "5mo": {
+          "value": 811,
+          "change": 13,
+          "percentage": 1.6
+        },
+        "6mo": {
+          "value": 804,
+          "change": 20,
+          "percentage": 2.49
+        },
+        "12mo": {
+          "value": 791,
+          "change": 33,
+          "percentage": 4.17
+        },
+        "24mo": {
+          "value": 792,
+          "change": 32,
+          "percentage": 4.04
+        }
+      },
+      "twitter_followers": {},
+      "instagram_followers": {},
+      "itunes_reviews": {},
+      "googleplay_reviews": {},
+      "app_downloads": {},
+      "g2_reviews": {
+        "latest": 3,
+        "1mo": {
+          "value": 3,
+          "change": 0,
+          "percentage": 0
+        },
+        "2mo": {
+          "value": 3,
+          "change": 0,
+          "percentage": 0
+        },
+        "3mo": {
+          "value": 3,
+          "change": 0,
+          "percentage": 0
+        },
+        "4mo": {
+          "value": 3,
+          "change": 0,
+          "percentage": 0
+        },
+        "5mo": {
+          "value": 3,
+          "change": 0,
+          "percentage": 0
+        },
+        "6mo": {
+          "value": 3,
+          "change": 0,
+          "percentage": 0
+        },
+        "12mo": {
+          "value": 3,
+          "change": 0,
+          "percentage": 0
+        },
+        "24mo": {
+          "value": 0,
+          "change": 3
+        }
+      },
+      "trustpilot_reviews": {},
+      "chrome_extensions_reviews": {},
+      "chrome_extensions_users": {}
+    },
+    "specter_strategic_signal_ids": [
+      "87750666-5302-46e6-85ff-6c98968915bd"
+    ]
+  },
+  "linkedInData": {
+    "linkedInId": "38157892",
+    "name": "HYPERC Enterprise AI",
+    "universalName": "hyperc",
+    "linkedInUrl": "https://www.linkedin.com/company/38157892",
+    "employeeCount": 12,
+    "followerCount": 829,
+    "employeeCountRange": {
+      "start": 51,
+      "end": 200
+    },
+    "websiteUrl": "https://hyperc.com",
+    "tagline": "Large-Scale Enterprise AI Model for Real-Time Profit Optimization",
+    "description": "At HYPERC, we turn profit into a real-time metric.\n\nWe help enterprise companies optimize operations by making faster, smarter, and autonomous decisions — powered by 100% of their data. From dynamic stock management in retail to risk-based automation in finance, HYPERC drives measurable growth by optimizing Profit Dollars Per Second.\n\nBuilt for large-scale performance, HYPERC’s Autonomous AI system integrates seamlessly with your existing infrastructure to deliver full-scope operational efficiency — from reducing losses and accelerating revenue to automating key business functions in real time.\n\nHYPERC is the only enterprise AI platform focused on full-profit optimization at speed and scale.",
+    "industry": "Software Development",
+    "phone": null,
+    "specialities": [
+      "Enterprise AI",
+      "AI"
+    ],
+    "headquarter": {
+      "city": "San Francisco",
+      "country": "US",
+      "postalCode": "94108",
+      "geographicArea": "California",
+      "street1": "120 Post St",
+      "street2": null
+    },
+    "logo": "https://media.licdn.com/dms/image/v2/C560BAQFFMeGahyJj6Q/company-logo_400_400/company-logo_400_400/0/1672703981297/hyperc_logo?e=1757548800&v=beta&t=YvIhF-rZjYNOsE9BJoDVvmKVQpp6ejqA6dvZoah_978",
+    "foundedOn": {
+      "year": 2019
+    },
+    "fundingData": null,
+    "backgroundUrl": "https://media.licdn.com/dms/image/v2/D4E1BAQFHUQzqZsNn2g/company-background_400/B4EZcZXQAHHIAY-/0/1748477215248/hyperc_cover?e=1755457200&v=beta&t=WH2ZOaBwDskFOtFYkzGj6TYgQcP13cGaB7HwZIgTdNY",
+    "fetchedAt": {
+      "$date": "2025-08-10T18:12:58.626Z"
+    }
+  },
+  "linkedInId": "38157892",
+  "linkedInUpdatedAt": {
+    "$date": "2025-08-10T18:12:58.626Z"
+  },
+  "googlePlayData": null,
+  "googlePlayId": null,
+  "googlePlayUpdatedAt": {
+    "$date": "2025-06-15T21:45:32.510Z"
+  },
+  "appStoreData": null,
+  "appStoreId": "",
+  "appStoreUpdatedAt": {
+    "$date": "2025-06-22T23:15:42.836Z"
+  },
+  "blurb": "HyperC LMM is an AI-driven system that achieves decision-making supremacy in the Amazon wholesale market by optimizing inventory purchasing and sales processes.\n",
+  "ourData": {
+    "businessModelType": [
+      "B2B",
+      "Transaction Base (fees)"
+    ],
+    "category": [
+      "Digital services"
+    ],
+    "companyHQ": "USA",
+    "distributionModelType": [
+      "Indirect"
+    ],
+    "linkToDeck": "https://api.vcmate.ai/pitch_decks/b1714a01-5abb-4602-b56b-aeac4fed5fe9/48046679-7789-4736-bf29-07b3639f7996/file_13.pdf",
+    "logo": [
+      {
+        "id": "att8UeeAK1hosMbbe",
+        "width": 72,
+        "height": 86,
+        "url": "https://v5.airtableusercontent.com/v3/u/44/44/1755460800000/-3gxRxWm-Gfdo5EXEPNEvw/YqCdlbHpEoNDGfGmWStKarWZIHWrvsO8VRP-RM4dBxNa7T4LfpJN-3HWRifqqh2cRJfuw80hilz-3F4VM13VR_1RZbXiBYSzZZhYVjTvl6j3NnXuaQCHYYKhMsHX5YK8-X1TP6BQnYNseE2bVRyx-w4ozZlPVochGD_bQwasmbOOOiQUNa7QHRl7QHPwPgSN/OWr7eDRd2qDt1271QflV1IIq3CwvwjqZ3e79pTDEW08",
+        "filename": "Screenshot 2024-11-01 at 12.21.39 PM.png",
+        "size": 8736,
+        "type": "image/png",
+        "thumbnails": {
+          "small": {
+            "url": "https://v5.airtableusercontent.com/v3/u/44/44/1755460800000/jeGhmTCc2Hvne089ZA1jYQ/BPKESECOOElyIoEzDwT7P4c7usDF6jWNthpMGy1ZnKfitzKhN4C30S4IVi7OIwp3xPKZvbmLoh_i2XDftkqhzOEwlkc4BsjK59gIzTdl4iOllI-fXSidvg_3zIGxV4YOashSKeu4OPc3JQGyWmVpgg/A4BYDmb8soiL56fxtWddtjKL65_LDV8eFl-PV7013mE",
+            "width": 30,
+            "height": 36
+          },
+          "large": {
+            "url": "https://v5.airtableusercontent.com/v3/u/44/44/1755460800000/cfhcmAmYn3ND__cdnN_PKQ/wC02t0TfAb0shCOeoQAx7P-WrtguwwKBSNufV1PBL8rsRQDGYZveRaROdk8HecUY-ikzeO6-eMiMxM2eEpOJaNbuqxw6Etfp8n-WnJbZFWGgkOakDU_8_aIMIEdteREnN6bod8CAdaNAYDP-rv-ggw/IOatf618MkKLl6MESO0JGK8WisNMA1VflCWW0Gt6uUU",
+            "width": 72,
+            "height": 86
+          },
+          "full": {
+            "url": "https://v5.airtableusercontent.com/v3/u/44/44/1755460800000/ltedJw9CWkTyH8fSYuSZ9g/vGenaY8xDDMxWd8Lit6cIIHjSqRatOv_EAQ3AsBkOz_dr-PJNyV3hKsTG5ZR-z95wZ7RR9fJfxaE4c48yxZ02LyZeYqSnTrE7TstVdSnaiDQNbCkBsEtH1hIKpqs5m0AqaVwGJsfzHHjipb4Qll5xw/JR1KnB8lOwpbI_MUudVlUpCJa6HX93eSrHVSk1jSa3A",
+            "width": 72,
+            "height": 86
+          }
+        }
+      }
+    ],
+    "mainIndustry": [
+      "Finance"
+    ],
+    "problem": "Humans cannot make optimal decisions in the Amazon wholesale market due to the high volume and complexity of decisions required.\n- [Page #1: HyperC LMM has reached AI supremacy on Amazon wholesale market, audited by $2B+ Tier-1 revenue financer](https://api.vcmate.ai/pitch_decks/b1714a01-5abb-4602-b56b-aeac4fed5fe9/48046679-7789-4736-bf29-07b3639f7996/file_13.pdf#page=1)\n- [Page #2: Humans can’t make better decisions on Amazon wholesale market, and will never be able to.](https://api.vcmate.ai/pitch_decks/b1714a01-5abb-4602-b56b-aeac4fed5fe9/48046679-7789-4736-bf29-07b3639f7996/file_13.pdf#page=2)\n",
+    "productStructureType": [
+      "Single product"
+    ],
+    "revenueModelType": [
+      "Commission fees"
+    ],
+    "targetMarket": "USA, Europe, Great Britain, Asia, Canada",
+    "burnRate": null,
+    "currentStage": "Pre-seed/seed (Early)",
+    "entryStage": "Pre-Seed/Seed(Early)",
+    "entryValuation": "$20-50M",
+    "investingFund": "D1 - Q4 24",
+    "latestValuation": [
+      30000000
+    ],
+    "performanceOutlook": "HighGrowth/High Potential",
+    "revenue": null,
+    "runway": 12
+  },
+  "status": "Invested"
+}
