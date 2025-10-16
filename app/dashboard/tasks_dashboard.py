@@ -66,8 +66,7 @@ def tasks_dashboard_page():
             "View",
             options=["All tasks", "My active tasks", "Created by me", "Overdue", "Due today", "Due this week"],
             label_visibility="collapsed",
-            key="task_filter_view_dashboard",
-            index=1  # Default to "My active tasks" (assigned to me)
+            key="task_filter_view_dashboard"
         )
     
     # Apply filters
