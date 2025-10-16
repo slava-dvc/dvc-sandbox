@@ -269,8 +269,8 @@ def show_company_tasks_table(tasks: List[Task]):
                 default=True
             ),
             "due_date": st.column_config.DateColumn(
-                "Completed",
-                help="Completion date",
+                "Completed On",
+                help="Date when the task was completed",
                 format="MMM DD, YYYY"
             ),
             "outcome": st.column_config.TextColumn(
