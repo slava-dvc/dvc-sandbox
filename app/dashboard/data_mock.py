@@ -8,178 +8,222 @@ from bson import ObjectId
 from app.shared.company import Company
 from app.shared.task import Task
 
-# Mock companies data matching the structure from screenshots
+# Demo AI Portfolio Companies for Early-Stage Due Diligence
 MOCK_COMPANIES = [
     {
         "_id": ObjectId("68e69a2dc32b590896149739"),
-        "name": "Generous",
-        "status": "New Company",
-        "website": "https://meetgenerous.com",
-        "shortDescription": "An AI-powered gifting platform that offers personalized gift recommendations and transaction handling to reduce consumer anxiety and financial losses for retailers.",
-        "mainIndustry": "AI, E-commerce, Artificial Intelligence",
-        "summary": "Generous presents an exceptional opportunity to invest in the next generation of e-commerce and AI-powered consumer platforms. Founded by Kyle Montgomery and Vlad Turcu, the company has already established strategic partnerships with industry giants like Salesforce and Shopify. With over 800 people on the waitlist and access to 400+ gift card brands, Generous is positioned to capture a significant share of the $160 billion gifting market.",
-        "problem": "Gifting causes significant anxiety for consumers and financial losses for retailers. 71% of consumers say gifting causes anxiety. Current gifting solutions are fragmented and don't provide personalized recommendations.",
-        "solution": "Generous is an AI-powered gifting assistant and e-commerce marketplace that connects gifters, merchants, and recipients. The platform features intelligent occasion remembering, AI-powered gift recommendations, Autogift™ for automated gifting, a comprehensive dashboard for tracking, and a retail brand platform for merchants to showcase their products.",
-        "marketOpportunity": "The global gifting market is valued at $160 billion and growing at 8% annually. Digital gifting represents the fastest-growing segment with 25% year-over-year growth.",
-        "introductionSource": "Alice Yagolnitser",
-        "source": "Alice Yagolnitser",
-        "blurb": "An AI-powered gifting platform that offers personalized gift recommendations and transaction handling to reduce consumer anxiety and financial losses for retailers.",
-        "createdAt": datetime.now(timezone.utc) - timedelta(days=1),
+        "name": "VectorAI",
+        "status": "Diligence",
+        "website": "https://vectorai.io",
+        "shortDescription": "Enterprise vector database for AI applications",
+        "mainIndustry": "AI Infrastructure, Vector Databases, Machine Learning",
+        "summary": "VectorAI is building the next generation of vector databases specifically optimized for AI applications. The platform enables real-time similarity search and retrieval-augmented generation (RAG) at enterprise scale. With 150+ enterprise customers and processing 10M+ queries daily, VectorAI addresses the critical infrastructure gap in the AI stack.",
+        "problem": "Existing vector databases can't handle enterprise-scale AI workloads. Current solutions lack real-time performance, cost-effective scaling, and enterprise security features needed for production AI applications.",
+        "solution": "VectorAI provides a purpose-built vector database with sub-millisecond query latency, automatic scaling, and enterprise-grade security. Features include real-time indexing, hybrid search (vector + keyword), and seamless integration with AI frameworks.",
+        "marketOpportunity": "The vector database market is projected to reach $4.2B by 2027, growing at 45% annually. Enterprise AI adoption is driving demand for specialized infrastructure.",
+        "introductionSource": "Sarah Chen",
+        "source": "Sarah Chen",
+        "blurb": "Enterprise vector database for AI applications",
+        "createdAt": datetime.now(timezone.utc) - timedelta(days=3),
         "bulletPoints": [
-            "Page #2: 71% of consumers say gifting causes anxiety.",
-            "Page #3: AI-powered gifting, connected"
+            "Page #1: 10M+ daily queries with sub-millisecond latency",
+            "Page #3: 150+ enterprise customers including Fortune 500"
         ],
-        "signals": "No signals for this company.",
-        "fundingStage": "Pre-seed/seed (Early)",
+        "signals": "Strong technical signals: AWS partnership confirmed, $2M ARR",
+        "fundingStage": "Pre-seed",
         "team": [
-            {"name": "Kyle Montgomery", "role": "Co-founder & CEO"},
-            {"name": "Vlad Turcu", "role": "Co-founder & CTO"}
+            {"name": "Dr. Sarah Patel", "role": "Founder & CEO"},
+            {"name": "Marcus Rodriguez", "role": "Co-founder & CTO"},
+            {"name": "Lisa Wang", "role": "VP of Engineering"}
         ],
-        "partnerships": ["Salesforce", "Shopify"],
+        "partnerships": ["AWS", "Microsoft Azure"],
         "metrics": {
-            "waitlist": "800+",
-            "giftCardBrands": "400+"
+            "enterpriseCustomers": "150+",
+            "dailyQueries": "10M+",
+            "arr": "$2M"
         }
     },
     {
         "_id": ObjectId("68e69a2dc32b590896149740"),
-        "name": "TechFlow",
-        "status": "Processing", 
-        "website": "https://techflow.io",
-        "shortDescription": "A comprehensive workflow automation platform that helps teams streamline their processes and increase productivity through intelligent task management.",
-        "mainIndustry": "SaaS, Productivity, Workflow Automation",
-        "summary": "TechFlow is revolutionizing how teams collaborate and manage their workflows. The platform integrates with over 100+ popular tools and uses AI to automatically optimize team processes. With 2,500+ active users and $50K MRR, TechFlow is experiencing rapid growth in the competitive productivity software market.",
-        "problem": "Teams struggle with fragmented workflows across multiple tools, leading to decreased productivity and missed deadlines. 78% of knowledge workers report spending significant time on manual coordination tasks.",
-        "solution": "TechFlow provides a unified workflow automation platform with intelligent task routing, automated notifications, and seamless integration with existing tools. Features include drag-and-drop workflow builder, AI-powered task prioritization, and real-time collaboration tools.",
-        "marketOpportunity": "The workflow automation market is expected to reach $19.6 billion by 2025, with enterprise adoption growing at 35% annually.",
-        "introductionSource": "Sarah Chen",
-        "source": "Sarah Chen",
-        "blurb": "A comprehensive workflow automation platform that helps teams streamline their processes and increase productivity through intelligent task management.",
-        "createdAt": datetime.now(timezone.utc) - timedelta(days=2),
+        "name": "CopilotMD",
+        "status": "Diligence", 
+        "website": "https://copilotmd.ai",
+        "shortDescription": "AI-powered clinical decision support for physicians",
+        "mainIndustry": "Healthcare AI, Clinical Decision Support, Medical Technology",
+        "summary": "CopilotMD is revolutionizing healthcare with AI-powered clinical decision support that helps physicians make faster, more accurate diagnoses. The platform integrates with existing EHR systems and provides real-time recommendations based on patient data and clinical guidelines. With FDA breakthrough device designation and pilot programs at 5 major health systems, CopilotMD is positioned to transform clinical workflows.",
+        "problem": "Physicians face information overload and time constraints, leading to diagnostic errors and delayed treatments. 40% of diagnostic errors could be prevented with better decision support tools.",
+        "solution": "CopilotMD provides AI-powered clinical decision support that analyzes patient data, medical history, and symptoms to provide evidence-based recommendations. Features include real-time alerts, drug interaction checking, and automated documentation.",
+        "marketOpportunity": "The clinical decision support market is valued at $1.8B and growing at 15% annually. Healthcare AI adoption is accelerating post-COVID.",
+        "introductionSource": "Dr. Michael Thompson",
+        "source": "Dr. Michael Thompson",
+        "blurb": "AI-powered clinical decision support for physicians",
+        "createdAt": datetime.now(timezone.utc) - timedelta(days=5),
         "bulletPoints": [
-            "Page #1: 78% of workers struggle with fragmented workflows.",
-            "Page #4: AI-powered task optimization increases productivity by 40%"
+            "Page #1: FDA breakthrough device designation secured",
+            "Page #2: Pilot programs at 5 major health systems"
         ],
-        "signals": "Strong growth signals: 40% month-over-month user growth.",
+        "signals": "Strong regulatory signals: FDA fast-track designation, HIPAA compliant",
         "fundingStage": "Seed",
         "team": [
-            {"name": "Sarah Chen", "role": "Founder & CEO"},
-            {"name": "Marcus Rodriguez", "role": "Co-founder & CTO"}
+            {"name": "Dr. Michael Thompson", "role": "Founder & CEO"},
+            {"name": "Dr. Lisa Park", "role": "Co-founder & CTO"},
+            {"name": "James Wilson", "role": "VP of Clinical Affairs"}
         ],
         "metrics": {
-            "activeUsers": "2,500+",
-            "mrr": "$50K",
-            "integrations": "100+"
+            "healthSystems": "5 pilot programs",
+            "fdaStatus": "Breakthrough device",
+            "accuracyRate": "94%"
         }
     },
     {
         "_id": ObjectId("68e69a2dc32b590896149741"),
-        "name": "HealthSync",
+        "name": "DataWeave",
         "status": "Contacted",
-        "website": "https://healthsync.app",
-        "shortDescription": "A comprehensive healthcare data synchronization platform that connects patients, providers, and payers through secure, real-time data exchange.",
-        "mainIndustry": "Healthcare, HealthTech, Data Synchronization",
-        "summary": "HealthSync addresses the critical need for seamless healthcare data exchange between different stakeholders. The platform ensures HIPAA-compliant data sharing while reducing administrative burden for healthcare providers. With partnerships with 15 major health systems and processing 100K+ patient records monthly, HealthSync is well-positioned for growth.",
-        "problem": "Healthcare data remains siloed across different systems, leading to fragmented patient care and increased administrative costs. Providers spend 40% of their time on administrative tasks rather than patient care.",
-        "solution": "HealthSync provides a secure, real-time data synchronization platform that connects electronic health records (EHRs), insurance systems, and patient portals. Features include automated data validation, real-time synchronization, and comprehensive audit trails.",
-        "marketOpportunity": "The healthcare data integration market is valued at $4.2 billion and growing at 12% annually, driven by increasing digitization and interoperability requirements.",
-        "introductionSource": "Dr. Michael Thompson",
-        "source": "Dr. Michael Thompson",
-        "blurb": "A comprehensive healthcare data synchronization platform that connects patients, providers, and payers through secure, real-time data exchange.",
-        "createdAt": datetime.now(timezone.utc) - timedelta(days=5),
+        "website": "https://dataweave.ai",
+        "shortDescription": "Automated data transformation and quality for ML teams",
+        "mainIndustry": "AI Data Pipeline, Machine Learning, Data Engineering",
+        "summary": "DataWeave is solving the critical data quality problem in AI/ML workflows. The platform automatically cleans, transforms, and validates data for machine learning pipelines, reducing data preparation time from weeks to hours. With 200+ ML teams using the platform and processing 50TB+ of data monthly, DataWeave is becoming essential infrastructure for AI companies.",
+        "problem": "ML teams spend 80% of their time on data preparation and quality issues. Poor data quality leads to model failures and unreliable AI systems. Current ETL tools are not designed for ML workflows.",
+        "solution": "DataWeave provides automated data transformation and quality validation specifically for ML pipelines. Features include intelligent schema detection, automated data cleaning, and real-time quality monitoring.",
+        "marketOpportunity": "The data preparation market is valued at $8.2B and growing at 20% annually. ML adoption is driving demand for specialized data tools.",
+        "introductionSource": "David Kim",
+        "source": "David Kim",
+        "blurb": "Automated data transformation and quality for ML teams",
+        "createdAt": datetime.now(timezone.utc) - timedelta(days=4),
         "bulletPoints": [
-            "Page #1: 40% of provider time spent on administrative tasks.",
-            "Page #2: Healthcare data silos cost $350B annually in inefficiencies"
+            "Page #1: 80% reduction in data preparation time",
+            "Page #3: 200+ ML teams processing 50TB+ monthly"
         ],
-        "signals": "Positive regulatory signals: FDA fast-track designation for core platform.",
-        "fundingStage": "Series A",
+        "signals": "Strong product-market fit: 95% customer retention rate",
+        "fundingStage": "Pre-seed",
         "team": [
-            {"name": "Dr. Michael Thompson", "role": "Founder & CEO"},
-            {"name": "Lisa Park", "role": "Co-founder & CTO"},
-            {"name": "James Wilson", "role": "VP of Sales"}
+            {"name": "David Kim", "role": "Founder & CEO"},
+            {"name": "Dr. Sarah Patel", "role": "Co-founder & CTO"},
+            {"name": "Michael Torres", "role": "VP of Data Science"}
         ],
         "metrics": {
-            "healthSystems": "15+",
-            "patientRecords": "100K+ monthly",
-            "compliance": "HIPAA certified"
+            "mlTeams": "200+",
+            "dataProcessed": "50TB+ monthly",
+            "retentionRate": "95%"
         }
     },
     {
         "_id": ObjectId("68e69a2dc32b590896149742"),
-        "name": "CloudScale AI",
-        "status": "New Company",
-        "website": "https://cloudscaleai.com",
-        "shortDescription": "Enterprise-grade AI infrastructure platform that enables companies to deploy and scale machine learning models at unprecedented speed and efficiency.",
-        "mainIndustry": "AI Infrastructure, Cloud Computing, Machine Learning",
-        "summary": "CloudScale AI is revolutionizing enterprise AI deployment with its cutting-edge infrastructure platform. The company has developed proprietary technology that reduces AI model deployment time from weeks to hours, while maintaining enterprise-grade security and scalability. With partnerships with AWS and Microsoft Azure, and 150+ enterprise customers processing 10M+ predictions daily, CloudScale AI is positioned to capture significant market share in the rapidly growing AI infrastructure market.",
-        "problem": "Enterprise AI deployment is slow, expensive, and complex. Companies take 6-12 months to deploy AI models, with 70% of AI projects failing due to infrastructure challenges. Current solutions lack enterprise-grade security and scalability.",
-        "solution": "CloudScale AI provides a unified platform for AI model deployment, scaling, and management. Features include automated model optimization, real-time scaling, enterprise security compliance, and seamless integration with existing cloud infrastructure. The platform reduces deployment time by 95% and operational costs by 60%.",
-        "marketOpportunity": "The AI infrastructure market is valued at $15.8 billion and growing at 28% annually. Enterprise AI adoption is accelerating with 85% of companies planning to increase AI investments in 2024.",
-        "introductionSource": "David Kim",
-        "source": "David Kim",
-        "blurb": "Enterprise-grade AI infrastructure platform that enables companies to deploy and scale machine learning models at unprecedented speed and efficiency.",
-        "createdAt": datetime.now(timezone.utc) - timedelta(hours=6),
+        "name": "SynthLabs",
+        "status": "Diligence",
+        "website": "https://synthlabs.ai",
+        "shortDescription": "Generate privacy-compliant synthetic datasets for AI training",
+        "mainIndustry": "Synthetic Data, Privacy Tech, AI Training Data",
+        "summary": "SynthLabs is solving the critical data privacy challenge in AI development by generating high-quality synthetic datasets that preserve statistical properties while protecting privacy. The platform enables AI companies to train models without accessing real personal data. With 50+ enterprise customers and generating 100M+ synthetic records monthly, SynthLabs is becoming essential for privacy-compliant AI development.",
+        "problem": "AI companies face increasing privacy regulations and data scarcity. GDPR, CCPA, and other privacy laws restrict access to personal data, while high-quality training data remains expensive and limited.",
+        "solution": "SynthLabs generates privacy-compliant synthetic datasets using advanced generative models. Features include statistical fidelity validation, privacy guarantees, and domain-specific data generation for healthcare, finance, and other regulated industries.",
+        "marketOpportunity": "The synthetic data market is valued at $2.1B and growing at 35% annually. Privacy regulations are driving adoption of synthetic data solutions.",
+        "introductionSource": "Alice Yagolnitser",
+        "source": "Alice Yagolnitser",
+        "blurb": "Generate privacy-compliant synthetic datasets for AI training",
+        "createdAt": datetime.now(timezone.utc) - timedelta(hours=8),
         "bulletPoints": [
-            "Page #1: 95% reduction in AI deployment time (weeks to hours)",
-            "Page #2: 150+ enterprise customers with 10M+ daily predictions"
+            "Page #1: 100M+ synthetic records generated monthly",
+            "Page #2: 50+ enterprise customers across regulated industries"
         ],
-        "signals": "Strong technical signals: AWS and Microsoft Azure partnerships confirmed.",
-        "fundingStage": "Series A",
+        "signals": "Strong compliance signals: SOC 2 Type II certified, GDPR compliant",
+        "fundingStage": "Seed",
         "team": [
-            {"name": "David Kim", "role": "Founder & CEO"},
-            {"name": "Dr. Sarah Patel", "role": "Co-founder & CTO"},
-            {"name": "Michael Torres", "role": "VP of Engineering"}
+            {"name": "Dr. Rachel Chen", "role": "Founder & CEO"},
+            {"name": "Alex Kumar", "role": "Co-founder & CTO"},
+            {"name": "Maria Santos", "role": "VP of Privacy Engineering"}
         ],
         "metrics": {
-            "enterpriseCustomers": "150+",
-            "dailyPredictions": "10M+",
-            "deploymentTimeReduction": "95%",
-            "costReduction": "60%"
+            "enterpriseCustomers": "50+",
+            "syntheticRecords": "100M+ monthly",
+            "privacyCompliance": "SOC 2, GDPR"
+        }
+    },
+    {
+        "_id": ObjectId("68e69a2dc32b590896149743"),
+        "name": "AgentOS",
+        "status": "New Company",
+        "website": "https://agentos.ai",
+        "shortDescription": "Operating system for deploying and managing AI agents",
+        "mainIndustry": "AI Agents, Multi-Agent Systems, AI Orchestration",
+        "summary": "AgentOS is building the infrastructure layer for the AI agent economy. The platform enables companies to deploy, orchestrate, and manage multiple AI agents at scale. With early traction from 25+ companies and managing 500+ active agents, AgentOS is positioned to become the standard platform for AI agent deployment.",
+        "problem": "AI agents are becoming powerful but lack infrastructure for deployment at scale. Companies struggle with agent coordination, resource management, and monitoring in production environments.",
+        "solution": "AgentOS provides a unified platform for AI agent deployment and management. Features include multi-agent orchestration, resource optimization, monitoring and debugging, and seamless integration with existing AI models.",
+        "marketOpportunity": "The AI agent market is projected to reach $12.8B by 2028, growing at 40% annually. Enterprise adoption of AI agents is accelerating.",
+        "introductionSource": "Sarah Chen",
+        "source": "Sarah Chen",
+        "blurb": "Operating system for deploying and managing AI agents",
+        "createdAt": datetime.now(timezone.utc) - timedelta(hours=12),
+        "bulletPoints": [
+            "Page #1: 500+ active agents managed across 25+ companies",
+            "Page #3: 90% reduction in agent deployment complexity"
+        ],
+        "signals": "Early traction: Strong developer adoption, open source community",
+        "fundingStage": "Pre-seed",
+        "team": [
+            {"name": "Jordan Lee", "role": "Founder & CEO"},
+            {"name": "Dr. Priya Sharma", "role": "Co-founder & CTO"},
+            {"name": "Tom Wilson", "role": "VP of Engineering"}
+        ],
+        "metrics": {
+            "companies": "25+",
+            "activeAgents": "500+",
+            "developerAdoption": "1K+ GitHub stars"
         }
     }
 ]
 
-# Mock investments data
+# Mock investments data for AI portfolio companies
 MOCK_INVESTMENTS = [
     {
         "id": "inv_001",
-        "company_name": "Generous",
-        "investment_amount": "$500K",
+        "company_name": "VectorAI",
+        "investment_amount": "$750K",
         "investment_date": "2024-01-15",
         "stage": "Pre-seed",
-        "status": "Active",
+        "status": "Under Review",
         "Fund": "DVC Fund I",
-        "Amount Invested": 500000
+        "Amount Invested": 750000
     },
     {
         "id": "inv_002", 
-        "company_name": "TechFlow",
-        "investment_amount": "$1.2M",
+        "company_name": "CopilotMD",
+        "investment_amount": "$1.5M",
         "investment_date": "2024-02-20",
         "stage": "Seed",
-        "status": "Active",
+        "status": "Under Review",
         "Fund": "DVC Fund I",
-        "Amount Invested": 1200000
+        "Amount Invested": 1500000
     },
     {
         "id": "inv_003",
-        "company_name": "HealthSync", 
-        "investment_amount": "$2.5M",
+        "company_name": "DataWeave", 
+        "investment_amount": "$650K",
         "investment_date": "2024-03-10",
-        "stage": "Series A",
-        "status": "Active",
+        "stage": "Pre-seed",
+        "status": "Under Review",
         "Fund": "DVC Fund I",
-        "Amount Invested": 2500000
+        "Amount Invested": 650000
     },
     {
         "id": "inv_004",
-        "company_name": "CloudScale AI",
-        "investment_amount": "$3.8M",
+        "company_name": "SynthLabs",
+        "investment_amount": "$2.2M",
         "investment_date": "2024-10-14",
-        "stage": "Series A",
-        "status": "Active",
+        "stage": "Seed",
+        "status": "Under Review",
         "Fund": "DVC Fund I",
-        "Amount Invested": 3800000
+        "Amount Invested": 2200000
+    },
+    {
+        "id": "inv_005",
+        "company_name": "AgentOS",
+        "investment_amount": "$800K",
+        "investment_date": "2024-10-16",
+        "stage": "Pre-seed",
+        "status": "Under Review",
+        "Fund": "DVC Fund I",
+        "Amount Invested": 800000
     }
 ]
 
@@ -293,19 +337,19 @@ def get_mock_companies_by_status(status: str) -> list:
 # ============================================================================
 
 def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
-    """Return mock tasks for a specific company with updated Task model fields"""
-    # Mock tasks for Generous company (68e69a2dc32b590896149739)
+    """Return mock tasks for AI portfolio companies focused on due diligence workflows"""
+    # Mock tasks for VectorAI company (68e69a2dc32b590896149739)
     if company_id == "68e69a2dc32b590896149739":
         return [
             {
                 "id": "task_001",
                 "company_id": company_id,
-                "text": "Draft IC memo for investment committee",
-                "due_date": date.today() + timedelta(days=5),
-                "assignee": "Marina",
+                "text": "Review technical architecture for scalability concerns",
+                "due_date": date.today() + timedelta(days=2),
+                "assignee": "Alexey",
                 "status": "active",
                 "outcome": None,
-                "notes": "Focus on AI differentiation and market opportunity. Include competitive analysis with Shopify and Salesforce partnerships.",
+                "notes": "Focus on 10M+ daily queries performance and enterprise scalability. Check vector indexing algorithms.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=2),
                 "created_by": "Nick",
                 "completed_at": None
@@ -313,38 +357,38 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
             {
                 "id": "task_002", 
                 "company_id": company_id,
-                "text": "Review pitch deck and financials",
+                "text": "Schedule founder call to discuss enterprise GTM",
                 "due_date": date.today(),
-                "assignee": "Marina",
-                "status": "active",
-                "outcome": None,
-                "notes": "Pay special attention to the $160B market sizing and 800+ waitlist validation.",
-                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
-                "created_by": "Nick",
-                "completed_at": None
-            },
-            {
-                "id": "task_003",
-                "company_id": company_id,
-                "text": "Schedule follow-up call with founders",
-                "due_date": date.today() + timedelta(days=1),
                 "assignee": "Nick",
                 "status": "active",
                 "outcome": None,
-                "notes": "Discuss technical roadmap and partnership expansion plans.",
+                "notes": "Discuss AWS/Azure partnerships and enterprise sales strategy. Validate $2M ARR claim.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=1),
                 "created_by": "Marina",
                 "completed_at": None
             },
             {
-                "id": "task_004",
+                "id": "task_003",
                 "company_id": company_id,
-                "text": "Get technical architecture documentation",
-                "due_date": date.today() - timedelta(days=1),
-                "assignee": "Vlad",
+                "text": "Research competitive landscape - Pinecone, Weaviate comparison",
+                "due_date": date.today() + timedelta(days=1),
+                "assignee": "Marina",
                 "status": "active",
                 "outcome": None,
-                "notes": "Need to understand scalability for 400+ gift card brands integration.",
+                "notes": "Compare technical differentiation and market positioning against established players.",
+                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
+                "created_by": "Nick",
+                "completed_at": None
+            },
+            {
+                "id": "task_004",
+                "company_id": company_id,
+                "text": "Validate $4.2B TAM claim with market research",
+                "due_date": date.today() - timedelta(days=1),
+                "assignee": "Charles",
+                "status": "active",
+                "outcome": None,
+                "notes": "Research vector database market sizing and growth projections. Check analyst reports.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=3),
                 "created_by": "Nick",
                 "completed_at": None
@@ -352,56 +396,56 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
             {
                 "id": "task_005",
                 "company_id": company_id,
-                "text": "Check references from previous investors",
+                "text": "Reference check with AWS partnership contacts",
                 "due_date": date.today() - timedelta(days=2),
                 "assignee": "Nick",
                 "status": "completed",
-                "outcome": "All references positive. Team execution is strong.",
-                "notes": "Spoke with 3 previous investors, all had positive feedback about founder execution and market timing.",
+                "outcome": "AWS partnership confirmed. Strong technical team with clear differentiation in vector search performance.",
+                "notes": "Spoke with AWS partner team. Partnership is legitimate and VectorAI has strong technical capabilities.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=5),
                 "created_by": "Marina",
                 "completed_at": datetime.now(timezone.utc) - timedelta(days=1)
             }
         ]
     
-    # Mock tasks for TechFlow company (68e69a2dc32b590896149740)
+    # Mock tasks for CopilotMD company (68e69a2dc32b590896149740)
     elif company_id == "68e69a2dc32b590896149740":
         return [
             {
                 "id": "task_009",
                 "company_id": company_id,
-                "text": "Analyze competitive landscape",
-                "due_date": date.today() + timedelta(days=3),
-                "assignee": "Nick",
+                "text": "Verify regulatory pathway for clinical AI tool",
+                "due_date": date.today() + timedelta(days=1),
+                "assignee": "Mel",
                 "status": "active",
                 "outcome": None,
-                "notes": "Focus on Zapier, Microsoft Power Automate, and Asana. Document key differentiators.",
+                "notes": "Confirm FDA breakthrough device designation and understand regulatory timeline for market approval.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=2),
-                "created_by": "Marina",
+                "created_by": "Nick",
                 "completed_at": None
             },
             {
                 "id": "task_010",
                 "company_id": company_id,
-                "text": "Review technical architecture",
-                "due_date": date.today() + timedelta(days=8),
-                "assignee": "Alexey",
+                "text": "Reference check with founder's previous startup investors",
+                "due_date": date.today() + timedelta(days=3),
+                "assignee": "Nick",
                 "status": "active",
                 "outcome": None,
-                "notes": "Assess scalability for 100+ integrations and 2,500+ users. Check API rate limits.",
+                "notes": "Dr. Thompson has previous healthcare startup experience. Check references from prior investors.",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=6),
-                "created_by": "Nick",
+                "created_by": "Marina",
                 "completed_at": None
             },
             {
                 "id": "task_011",
                 "company_id": company_id,
-                "text": "Validate MRR growth metrics",
-                "due_date": date.today() + timedelta(days=1),
-                "assignee": "Mel",
+                "text": "Interview 3 potential physician users",
+                "due_date": date.today() + timedelta(days=4),
+                "assignee": "Charles",
                 "status": "active",
                 "outcome": None,
-                "notes": "Verify the $50K MRR claim and analyze churn rates.",
+                "notes": "Validate product-market fit with actual physicians. Test clinical decision support accuracy.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=1),
                 "created_by": "Nick",
                 "completed_at": None
@@ -409,30 +453,30 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
             {
                 "id": "task_012",
                 "company_id": company_id,
-                "text": "Schedule demo with founders",
+                "text": "Assess FDA approval timeline and costs",
                 "due_date": date.today() - timedelta(days=1),
-                "assignee": "Charles",
+                "assignee": "Marina",
                 "status": "completed",
-                "outcome": "Demo completed successfully. Product shows strong potential.",
-                "notes": "Demo went well. Team is impressive and product has clear market fit.",
+                "outcome": "FDA pathway confirmed. 12-18 month timeline with $500K-1M in regulatory costs. Breakthrough device status accelerates review process.",
+                "notes": "Confirmed with regulatory consultants. Breakthrough designation provides significant advantage in approval timeline.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=3),
-                "created_by": "Marina",
+                "created_by": "Mel",
                 "completed_at": datetime.now(timezone.utc) - timedelta(hours=2)
             }
         ]
     
-    # Mock tasks for HealthSync company (68e69a2dc32b590896149741)
+    # Mock tasks for DataWeave company (68e69a2dc32b590896149741)
     elif company_id == "68e69a2dc32b590896149741":
         return [
             {
                 "id": "task_013",
                 "company_id": company_id,
-                "text": "Due diligence on HIPAA compliance",
-                "due_date": date.today() + timedelta(days=14),
-                "assignee": "Marina",
+                "text": "Technical demo review - focus on data quality metrics",
+                "due_date": date.today() + timedelta(days=2),
+                "assignee": "Alexey",
                 "status": "active",
                 "outcome": None,
-                "notes": "Focus on data encryption standards and patient consent management. Review with legal team by end of week.",
+                "notes": "Evaluate ML data pipeline automation and quality validation algorithms. Test with sample datasets.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=3),
                 "created_by": "Nick",
                 "completed_at": None
@@ -440,56 +484,56 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
             {
                 "id": "task_014",
                 "company_id": company_id,
-                "text": "Verify health system partnerships",
-                "due_date": date.today() + timedelta(days=7),
-                "assignee": "Mel",
+                "text": "Competitive analysis vs Fivetran, Airbyte",
+                "due_date": date.today() + timedelta(days=3),
+                "assignee": "Marina",
                 "status": "active",
                 "outcome": None,
-                "notes": "Confirm the 15+ health systems claim. Get partnership agreements and integration details.",
+                "notes": "Compare technical differentiation in ML-specific data transformation vs general ETL tools.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=2),
-                "created_by": "Marina",
+                "created_by": "Nick",
                 "completed_at": None
             },
             {
                 "id": "task_015",
                 "company_id": company_id,
-                "text": "Review FDA fast-track designation",
-                "due_date": date.today() + timedelta(days=2),
-                "assignee": "Charles",
+                "text": "Validate customer acquisition costs with founders",
+                "due_date": date.today() + timedelta(days=1),
+                "assignee": "Nick",
                 "status": "active",
                 "outcome": None,
-                "notes": "Verify FDA fast-track status and understand regulatory timeline implications.",
+                "notes": "Understand go-to-market strategy and customer acquisition metrics for ML teams.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=1),
-                "created_by": "Nick",
+                "created_by": "Marina",
                 "completed_at": None
             },
             {
                 "id": "task_016",
                 "company_id": company_id,
-                "text": "Technical assessment of data sync platform",
-                "due_date": date.today() + timedelta(days=10),
-                "assignee": "Vlad",
-                "status": "active",
-                "outcome": None,
-                "notes": "Evaluate scalability for 100K+ patient records monthly. Check real-time sync capabilities.",
+                "text": "Prepare IC memo for pipeline review",
+                "due_date": date.today() - timedelta(days=1),
+                "assignee": "Nick",
+                "status": "completed",
+                "outcome": "IC memo completed. Strong recommendation to proceed to next stage. Key strengths: clear product-market fit, strong technical team, growing market demand for ML data tools.",
+                "notes": "Memo highlights 95% customer retention and 50TB+ monthly data processing as key validation metrics.",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=18),
                 "created_by": "Marina",
-                "completed_at": None
+                "completed_at": datetime.now(timezone.utc) - timedelta(hours=4)
             }
         ]
     
-    # Mock tasks for AI Startup company (68e69a2dc32b590896149742)
+    # Mock tasks for SynthLabs company (68e69a2dc32b590896149742)
     elif company_id == "68e69a2dc32b590896149742":
         return [
             {
                 "id": "task_020",
                 "company_id": company_id,
-                "text": "Review AI model performance metrics",
+                "text": "Verify SOC 2 Type II certification and GDPR compliance",
                 "due_date": date.today() + timedelta(days=4),
-                "assignee": "Alexey",
+                "assignee": "Mel",
                 "status": "active",
                 "outcome": None,
-                "notes": "Evaluate accuracy, latency, and cost metrics for production deployment.",
+                "notes": "Review privacy compliance documentation and audit reports for enterprise customers.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=2),
                 "created_by": "Marina",
                 "completed_at": None
@@ -497,95 +541,95 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
             {
                 "id": "task_021",
                 "company_id": company_id,
-                "text": "Platform automation improvements",
+                "text": "Validate synthetic data quality with ML experts",
                 "due_date": date.today() + timedelta(days=6),
-                "assignee": "Tony",
+                "assignee": "Alexey",
                 "status": "active",
                 "outcome": None,
-                "notes": "Implement automated workflow triggers for investor updates and portfolio monitoring.",
+                "notes": "Test synthetic data generation quality across different domains (healthcare, finance, retail).",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=12),
-                "created_by": "Marina",
+                "created_by": "Nick",
                 "completed_at": None
             },
             {
                 "id": "task_022",
                 "company_id": company_id,
-                "text": "Investor relations update",
+                "text": "Interview 3 enterprise customers",
                 "due_date": date.today() + timedelta(days=3),
-                "assignee": "Elena",
+                "assignee": "Charles",
                 "status": "active",
                 "outcome": None,
-                "notes": "Prepare monthly portfolio update and community engagement metrics for LPs.",
+                "notes": "Validate customer satisfaction and use cases. Focus on regulated industries.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=1),
-                "created_by": "Nick",
+                "created_by": "Marina",
                 "completed_at": None
             },
             {
                 "id": "task_023",
                 "company_id": company_id,
-                "text": "Build AI agent for deal sourcing",
-                "due_date": date.today() + timedelta(days=14),
-                "assignee": "Vlad",
+                "text": "Assess IP portfolio and competitive moats",
+                "due_date": date.today() + timedelta(days=7),
+                "assignee": "Marina",
                 "status": "active",
                 "outcome": None,
-                "notes": "Develop automated workflow to connect data sources and enhance deal pipeline efficiency.",
+                "notes": "Review patents, trade secrets, and technical differentiation in synthetic data generation.",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=24),
-                "created_by": "Marina",
+                "created_by": "Nick",
                 "completed_at": None
             },
             {
                 "id": "task_024",
                 "company_id": company_id,
-                "text": "Board meeting preparation",
+                "text": "Prepare investment committee materials",
                 "due_date": date.today() - timedelta(days=1),
-                "assignee": "Slava",
+                "assignee": "Nick",
                 "status": "completed",
-                "outcome": "Board materials prepared. All metrics and KPIs updated for Q4 review.",
-                "notes": "Completed financial review and prepared strategic recommendations for board discussion.",
+                "outcome": "IC materials completed. Strong recommendation for investment. Key highlights: clear market need, strong technical team, regulatory compliance, growing enterprise adoption.",
+                "notes": "Materials emphasize privacy regulation tailwinds and enterprise demand for synthetic data solutions.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=5),
                 "created_by": "Marina",
                 "completed_at": datetime.now(timezone.utc) - timedelta(hours=4)
             }
         ]
     
-    # Mock tasks for FinTech company (68e69a2dc32b590896149743)
+    # Mock tasks for AgentOS company (68e69a2dc32b590896149743)
     elif company_id == "68e69a2dc32b590896149743":
         return [
             {
                 "id": "task_025",
                 "company_id": company_id,
-                "text": "Regulatory compliance review",
-                "due_date": date.today() + timedelta(days=10),
-                "assignee": "Mel",
+                "text": "Evaluate multi-agent orchestration architecture",
+                "due_date": date.today() + timedelta(days=5),
+                "assignee": "Alexey",
                 "status": "active",
                 "outcome": None,
-                "notes": "Review SEC compliance and banking regulations for fintech operations.",
+                "notes": "Review technical architecture for managing 500+ agents. Focus on resource optimization and fault tolerance.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=3),
-                "created_by": "Charles",
+                "created_by": "Nick",
                 "completed_at": None
             },
             {
                 "id": "task_026",
                 "company_id": company_id,
-                "text": "Technical security audit",
-                "due_date": date.today() + timedelta(days=7),
-                "assignee": "Alexey",
+                "text": "Validate developer adoption metrics",
+                "due_date": date.today() + timedelta(days=3),
+                "assignee": "Marina",
                 "status": "active",
                 "outcome": None,
-                "notes": "Conduct penetration testing and security review for payment processing systems.",
+                "notes": "Verify 1K+ GitHub stars and developer community growth. Check open source engagement.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=2),
-                "created_by": "Vlad",
+                "created_by": "Nick",
                 "completed_at": None
             },
             {
                 "id": "task_027",
                 "company_id": company_id,
-                "text": "Community event planning",
-                "due_date": date.today() + timedelta(days=5),
-                "assignee": "Elena",
+                "text": "Interview early enterprise customers",
+                "due_date": date.today() + timedelta(days=4),
+                "assignee": "Charles",
                 "status": "active",
                 "outcome": None,
-                "notes": "Plan fintech startup showcase event for portfolio companies and potential LPs.",
+                "notes": "Validate use cases and ROI from 25+ companies using the platform for agent deployment.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=1),
                 "created_by": "Marina",
                 "completed_at": None
@@ -593,100 +637,33 @@ def get_mock_tasks_for_company(company_id: str) -> typing.List[dict]:
             {
                 "id": "task_028",
                 "company_id": company_id,
-                "text": "Product roadmap review",
+                "text": "Assess technical vision and team capability",
                 "due_date": date.today() + timedelta(days=2),
-                "assignee": "Tony",
+                "assignee": "Alexey",
                 "status": "active",
                 "outcome": None,
-                "notes": "Review product analytics and user feedback to prioritize next quarter features.",
+                "notes": "Evaluate founding team's technical depth and vision for AI agent infrastructure market.",
                 "created_at": datetime.now(timezone.utc) - timedelta(hours=18),
-                "created_by": "Alexey",
+                "created_by": "Nick",
                 "completed_at": None
             },
             {
                 "id": "task_029",
                 "company_id": company_id,
-                "text": "Due diligence call with founders",
+                "text": "Schedule technical deep-dive with founders",
                 "due_date": date.today() - timedelta(days=2),
                 "assignee": "Nick",
                 "status": "completed",
-                "outcome": "Call completed. Strong technical team with clear go-to-market strategy.",
-                "notes": "Founders demonstrated deep understanding of compliance requirements and market opportunity.",
+                "outcome": "Technical deep-dive completed. Strong founding team with clear vision for agent infrastructure. Platform shows early traction with solid technical foundation.",
+                "notes": "Founders demonstrated deep technical knowledge and clear understanding of market opportunity.",
                 "created_at": datetime.now(timezone.utc) - timedelta(days=4),
                 "created_by": "Marina",
                 "completed_at": datetime.now(timezone.utc) - timedelta(days=2)
             }
         ]
     
-    # Mock tasks for SaaS company (68e69a2dc32b590896149744)
-    elif company_id == "68e69a2dc32b590896149744":
-        return [
-            {
-                "id": "task_030",
-                "company_id": company_id,
-                "text": "Customer success metrics analysis",
-                "due_date": date.today() + timedelta(days=6),
-                "assignee": "Marina",
-                "status": "active",
-                "outcome": None,
-                "notes": "Analyze churn rates, NPS scores, and expansion revenue trends.",
-                "created_at": datetime.now(timezone.utc) - timedelta(days=2),
-                "created_by": "Nick",
-                "completed_at": None
-            },
-            {
-                "id": "task_031",
-                "company_id": company_id,
-                "text": "Platform scalability assessment",
-                "due_date": date.today() + timedelta(days=12),
-                "assignee": "Vlad",
-                "status": "active",
-                "outcome": None,
-                "notes": "Evaluate infrastructure capacity for 10x user growth and enterprise features.",
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=24),
-                "created_by": "Alexey",
-                "completed_at": None
-            },
-            {
-                "id": "task_032",
-                "company_id": company_id,
-                "text": "Enterprise sales strategy review",
-                "due_date": date.today() + timedelta(days=8),
-                "assignee": "Charles",
-                "status": "active",
-                "outcome": None,
-                "notes": "Review enterprise sales process and pricing strategy for large customers.",
-                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
-                "created_by": "Mel",
-                "completed_at": None
-            },
-            {
-                "id": "task_033",
-                "company_id": company_id,
-                "text": "Product analytics dashboard",
-                "due_date": date.today() + timedelta(days=4),
-                "assignee": "Tony",
-                "status": "active",
-                "outcome": None,
-                "notes": "Build real-time dashboard for tracking product usage and feature adoption.",
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=12),
-                "created_by": "Vlad",
-                "completed_at": None
-            },
-            {
-                "id": "task_034",
-                "company_id": company_id,
-                "text": "LP quarterly report",
-                "due_date": date.today() - timedelta(days=3),
-                "assignee": "Elena",
-                "status": "completed",
-                "outcome": "Report completed and sent to all LPs. Strong portfolio performance highlighted.",
-                "notes": "Included portfolio company updates, financial metrics, and market analysis.",
-                "created_at": datetime.now(timezone.utc) - timedelta(days=7),
-                "created_by": "Marina",
-                "completed_at": datetime.now(timezone.utc) - timedelta(days=3)
-            }
-        ]
+    # No additional companies - only 5 AI startups for focused demo
+    # Remove the SaaS company tasks as we only need 5 companies
     
     # No tasks for other companies
     return []
